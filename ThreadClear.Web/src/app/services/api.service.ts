@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface AnalysisRequest {
   conversationText: string;
@@ -11,28 +12,29 @@ export interface AnalysisRequest {
 export interface AnalysisResponse {
   success: boolean;
   capsule: any;
+  parsingMode: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  //private apiUrl = 'http://localhost:7083/api';
-  private apiUrl = 'https://threadclear-functions-fsewbzcsd8fuegdj.eastus-01.azurewebsites.net/api';
-  private functionKey = '';
+  private apiUrl = environment.apiUrl;
+  private functionKey = environment.functionKey;
 
   constructor(private http: HttpClient) { }
 
   analyzeConversation(request: AnalysisRequest): Observable<AnalysisResponse> {
-    return this.http.post<AnalysisResponse>(
-      `${this.apiUrl}/analyze?code=${this.functionKey}`,
-      request
-    );
+    const url = this.functionKey
+      ? `${this.apiUrl}/analyze?code=${this.functionKey}`
+      : `${this.apiUrl}/analyze`;
+    return this.http.post<AnalysisResponse>(url, request);
   }
 
   healthCheck(): Observable<any> {
     return this.http.get(`${this.apiUrl}/health`);
   }
+
 
   detectSourceType(text: string): string {
     // Email detection

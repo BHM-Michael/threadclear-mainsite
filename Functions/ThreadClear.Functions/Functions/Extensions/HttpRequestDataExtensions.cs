@@ -18,6 +18,8 @@ namespace ThreadClear.Functions.Extensions
         public void Add(FormFile file) => _files.Add(file);
 
         public FormFile? GetFile(string name) => _files.FirstOrDefault(f => f.Name == name);
+
+        public IEnumerable<FormFile> GetFiles(string name) => _files.Where(f => f.Name == name);
     }
 
     public class FormFile

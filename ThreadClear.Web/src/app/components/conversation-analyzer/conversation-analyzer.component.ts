@@ -14,18 +14,20 @@ export class ConversationAnalyzerComponent {
   results: any = null;
   error = '';
 
-  // Image upload
+  // Image upload - now supports multiple
   inputMode: 'text' | 'image' = 'text';
-  selectedImage: File | null = null;
-  imagePreview: string | null = null;
+  selectedImages: File[] = [];
+  imagePreviews: string[] = [];
 
   constructor(private apiService: ApiService) { }
 
   onFileSelected(event: any) {
-    const file = event.target.files[0];
-    if (file) {
-      this.selectImage(file);
+    const files = event.target.files;
+    if (files) {
+      this.addImages(Array.from(files));
     }
+    // Reset input so same file can be selected again
+    event.target.value = '';
   }
 
   onDragOver(event: DragEvent) {
@@ -38,42 +40,49 @@ export class ConversationAnalyzerComponent {
     event.stopPropagation();
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
-      this.selectImage(files[0]);
+      this.addImages(Array.from(files));
     }
   }
 
-  selectImage(file: File) {
-    if (!file.type.startsWith('image/')) {
-      this.error = 'Please select an image file';
-      return;
+  addImages(files: File[]) {
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        this.error = 'Please select only image files';
+        continue;
+      }
+
+      // Check file size (max 10MB per image)
+      if (file.size > 10 * 1024 * 1024) {
+        this.error = 'Each image must be less than 10MB';
+        continue;
+      }
+
+      // Max 10 images
+      if (this.selectedImages.length >= 10) {
+        this.error = 'Maximum 10 images allowed';
+        break;
+      }
+
+      this.selectedImages.push(file);
+      this.error = '';
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.imagePreviews.push(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-
-    // Check file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      this.error = 'Image must be less than 10MB';
-      return;
-    }
-
-    this.selectedImage = file;
-    this.error = '';
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      this.imagePreview = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
   }
 
-  removeImage(event: Event) {
-    event.stopPropagation();
-    this.selectedImage = null;
-    this.imagePreview = null;
+  removeImage(index: number) {
+    this.selectedImages.splice(index, 1);
+    this.imagePreviews.splice(index, 1);
   }
 
   analyze() {
-    if (this.inputMode === 'image' && this.selectedImage) {
-      this.analyzeImage();
+    if (this.inputMode === 'image' && this.selectedImages.length > 0) {
+      this.analyzeImages();
     } else {
       this.analyzeText();
     }
@@ -101,21 +110,19 @@ export class ConversationAnalyzerComponent {
     });
   }
 
-  analyzeImage() {
-    if (!this.selectedImage) return;
-
+  analyzeImages() {
     this.loading = true;
     this.error = '';
     this.results = null;
 
-    this.apiService.analyzeImage(this.selectedImage, this.sourceType, this.parsingMode)
+    this.apiService.analyzeImages(this.selectedImages, this.sourceType, this.parsingMode)
       .subscribe({
         next: (response) => {
           this.results = response.capsule;
           this.loading = false;
         },
         error: (err) => {
-          this.error = 'Error analyzing image. Please try again.';
+          this.error = 'Error analyzing images. Please try again.';
           this.loading = false;
           console.error(err);
         }
@@ -126,7 +133,7 @@ export class ConversationAnalyzerComponent {
     this.conversationText = '';
     this.results = null;
     this.error = '';
-    this.selectedImage = null;
-    this.imagePreview = null;
+    this.selectedImages = [];
+    this.imagePreviews = [];
   }
 }

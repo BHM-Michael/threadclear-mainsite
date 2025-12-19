@@ -44,6 +44,24 @@ export class ApiService {
     return this.http.post<AnalysisResponse>(url, formData);
   }
 
+  analyzeImages(files: File[], sourceType: string, parsingMode: number): Observable<AnalysisResponse> {
+    const formData = new FormData();
+
+    // Append each image with index to maintain order
+    files.forEach((file, index) => {
+      formData.append('images', file);
+    });
+
+    formData.append('sourceType', sourceType);
+    formData.append('parsingMode', parsingMode.toString());
+
+    const url = this.functionKey
+      ? `${this.apiUrl}/analyze-images?code=${this.functionKey}`
+      : `${this.apiUrl}/analyze-images`;
+
+    return this.http.post<AnalysisResponse>(url, formData);
+  }
+
   healthCheck(): Observable<any> {
     return this.http.get(`${this.apiUrl}/health`);
   }

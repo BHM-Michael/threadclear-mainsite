@@ -23,15 +23,25 @@
         <!-- Image Upload -->
         <div *ngIf="inputMode === 'image'" class="image-upload">
             <div class="drop-zone" (click)="fileInput.click()" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
-                <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" hidden>
-                <div *ngIf="!selectedImage">
+                <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" multiple hidden>
+                <div *ngIf="selectedImages.length === 0">
                     <span class="upload-icon">📷</span>
-                    <p>Click or drag to upload a screenshot</p>
+                    <p>Click or drag to upload screenshots</p>
                     <p class="hint">Supports: PNG, JPG, JPEG, GIF, WebP</p>
+                    <p class="hint">Upload multiple images in order to reconstruct a conversation</p>
+                    <p class="hint">Maximum 10 images, 10MB each</p>
                 </div>
-                <div *ngIf="selectedImage" class="preview">
-                    <img [src]="imagePreview" alt="Preview">
-                    <button class="remove-btn" (click)="removeImage($event)">✕</button>
+            </div>
+
+            <!-- Image Previews -->
+            <div *ngIf="selectedImages.length > 0" class="image-previews">
+                <div class="preview-item" *ngFor="let img of selectedImages; let i = index">
+                    <span class="image-number">{{ i + 1 }}</span>
+                    <img [src]="imagePreviews[i]" alt="Preview {{ i + 1 }}">
+                    <button class="remove-btn" (click)="removeImage(i)">✕</button>
+                </div>
+                <div class="add-more" (click)="fileInput.click()">
+                    <span>+ Add More</span>
                 </div>
             </div>
         </div>
@@ -56,7 +66,7 @@
                 </select>
             </label>
 
-            <button (click)="analyze()" [disabled]="loading || (!conversationText && !selectedImage)">
+            <button (click)="analyze()" [disabled]="loading || (!conversationText && selectedImages.length === 0)">
                 {{ loading ? 'Analyzing...' : 'Analyze' }}
             </button>
             <button (click)="clear()" [disabled]="loading" class="clear-btn">

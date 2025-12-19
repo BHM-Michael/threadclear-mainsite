@@ -1,4 +1,10 @@
 <div class="page-container">
+    <div class="loading-overlay" *ngIf="loading">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Analyzing conversation...</p>
+        </div>
+    </div>
     <!-- Header -->
     <header class="app-header">
         <div class="header-left">
@@ -20,6 +26,9 @@
                 </button>
                 <button [class.active]="inputMode === 'image'" (click)="inputMode = 'image'">
                     Upload Screenshot
+                </button>
+                <button [class.active]="inputMode === 'audio'" (click)="inputMode = 'audio'">
+                    Upload Audio
                 </button>
             </div>
 
@@ -59,6 +68,26 @@
                 </div>
             </div>
 
+            <div *ngIf="inputMode === 'audio'" class="audio-upload">
+                <div class="drop-zone" (click)="audioInput.click()" (dragover)="onDragOver($event)"
+                    (drop)="onDropAudio($event)">
+                    <input type="file" #audioInput (change)="onAudioSelected($event)"
+                        accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg" hidden>
+                    <div *ngIf="!selectedAudio">
+                        <span class="upload-icon">🎤</span>
+                        <p>Click or drag to upload an audio file</p>
+                        <p class="hint">Supports: MP3, WAV, M4A, WebM, OGG</p>
+                        <p class="hint">Maximum 25MB, up to 60 minutes</p>
+                    </div>
+                    <div *ngIf="selectedAudio" class="audio-preview">
+                        <span class="audio-icon">🎵</span>
+                        <p class="audio-name">{{ selectedAudio.name }}</p>
+                        <p class="audio-size">{{ formatFileSize(selectedAudio.size) }}</p>
+                        <button class="remove-btn" (click)="removeAudio($event)">✕ Remove</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="controls">
                 <label>
                     Source Type:
@@ -79,7 +108,8 @@
                     </select>
                 </label>
 
-                <button (click)="analyze()" [disabled]="loading || (!conversationText && selectedImages.length === 0)">
+                <button (click)="analyze()"
+                    [disabled]="loading || (!conversationText && selectedImages.length === 0 && !selectedAudio)">
                     {{ loading ? 'Analyzing...' : 'Analyze' }}
                 </button>
                 <button (click)="clear()" [disabled]="loading" class="clear-btn">

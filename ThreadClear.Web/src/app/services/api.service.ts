@@ -62,6 +62,19 @@ export class ApiService {
     return this.http.post<AnalysisResponse>(url, formData);
   }
 
+  analyzeAudio(file: File, sourceType: string, parsingMode: number): Observable<AnalysisResponse> {
+    const formData = new FormData();
+    formData.append('audio', file);
+    formData.append('sourceType', sourceType);
+    formData.append('parsingMode', parsingMode.toString());
+
+    const url = this.functionKey
+      ? `${this.apiUrl}/analyze-audio?code=${this.functionKey}`
+      : `${this.apiUrl}/analyze-audio`;
+
+    return this.http.post<AnalysisResponse>(url, formData);
+  }
+
   healthCheck(): Observable<any> {
     return this.http.get(`${this.apiUrl}/health`);
   }

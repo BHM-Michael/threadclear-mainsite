@@ -17,8 +17,9 @@ export class ConversationAnalyzerComponent implements OnInit {
   error = '';
 
   // Image upload - supports multiple
-  inputMode: 'text' | 'image' = 'text';
+  inputMode: 'text' | 'image' | 'audio' = 'text';
   selectedImages: File[] = [];
+  selectedAudio: File | null = null;
   imagePreviews: string[] = [];
 
   constructor(
@@ -48,6 +49,45 @@ export class ConversationAnalyzerComponent implements OnInit {
   get permissions(): any {
     const user = this.currentUser as any;
     return user?.permissions || user?.Permissions;
+  }
+
+  onAudioSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectAudio(file);
+    }
+    event.target.value = '';
+  }
+
+  onDropAudio(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      this.selectAudio(files[0]);
+    }
+  }
+
+  selectAudio(file: File) {
+    // Check file size (max 25MB for Whisper)
+    if (file.size > 25 * 1024 * 1024) {
+      this.error = 'Audio file must be less than 25MB';
+      return;
+    }
+
+    this.selectedAudio = file;
+    this.error = '';
+  }
+
+  removeAudio(event: Event) {
+    event.stopPropagation();
+    this.selectedAudio = null;
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
   onFileSelected(event: any) {
@@ -108,6 +148,8 @@ export class ConversationAnalyzerComponent implements OnInit {
   analyze() {
     if (this.inputMode === 'image' && this.selectedImages.length > 0) {
       this.analyzeImages();
+    } else if (this.inputMode === 'audio' && this.selectedAudio) {
+      this.analyzeAudio();
     } else {
       this.analyzeText();
     }
@@ -158,6 +200,27 @@ export class ConversationAnalyzerComponent implements OnInit {
       });
   }
 
+  analyzeAudio() {
+    if (!this.selectedAudio) return;
+
+    this.loading = true;
+    this.error = '';
+    this.results = null;
+
+    this.apiService.analyzeAudio(this.selectedAudio, this.sourceType, this.parsingMode)
+      .subscribe({
+        next: (response) => {
+          this.results = this.filterResultsByPermissions(response.capsule);
+          this.loading = false;
+        },
+        error: (err) => {
+          this.error = 'Error analyzing audio. Please try again.';
+          this.loading = false;
+          console.error(err);
+        }
+      });
+  }
+
   getEnabledFeatures() {
     if (this.isAdmin || !this.permissions) {
       return {}; // Admin gets all features
@@ -172,6 +235,10 @@ export class ConversationAnalyzerComponent implements OnInit {
   }
 
   filterResultsByPermissions(capsule: any) {
+    if (!capsule) {
+      return capsule;
+    }
+
     console.log("Filtering results. isAdmin:", this.isAdmin, "permissions:", this.permissions);
 
     if (this.isAdmin || !this.permissions) {
@@ -226,6 +293,7 @@ export class ConversationAnalyzerComponent implements OnInit {
     this.error = '';
     this.selectedImages = [];
     this.imagePreviews = [];
+    this.selectedAudio = null;
   }
 
   goToAdmin() {

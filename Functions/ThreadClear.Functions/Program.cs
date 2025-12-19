@@ -2,6 +2,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using ThreadClear.Functions.Models;
 using ThreadClear.Functions.Services.Implementations;
 using ThreadClear.Functions.Services.Interfaces;
@@ -12,9 +13,16 @@ var host = new HostBuilder()
     {
         var configuration = context.Configuration;
 
+        // ⭐ Register SQL Connection String and UserService
+        var sqlConnectionString = configuration["SqlConnectionString"]
+            ?? configuration.GetConnectionString("SqlConnectionString")
+            ?? throw new InvalidOperationException("SqlConnectionString is required");
+
+        services.AddSingleton<IUserService>(sp =>
+            new UserService(sqlConnectionString, sp.GetRequiredService<ILogger<UserService>>()));
+
         // ⭐ Register AI Service based on configuration
         var aiProvider = configuration["AI:Provider"] ?? "Anthropic";
-
         if (aiProvider == "Anthropic")
         {
             services.AddSingleton<IAIService>(sp =>
@@ -50,21 +58,18 @@ var host = new HostBuilder()
         services.AddScoped<IConversationParser>(sp =>
         {
             var modeString = configuration["Parsing:DefaultMode"] ?? "Auto";
-            
-            // Try to parse the mode
+
             if (!Enum.TryParse<ParsingMode>(modeString, true, out var mode))
             {
-                mode = ParsingMode.Auto; // Default fallback
+                mode = ParsingMode.Auto;
             }
-            
+
             if (mode == ParsingMode.Basic)
             {
-                // Basic mode - no AI service needed
                 return new ConversationParser();
             }
             else
             {
-                // Advanced or Auto mode - needs AI service
                 try
                 {
                     var aiService = sp.GetRequiredService<IAIService>();
@@ -72,17 +77,14 @@ var host = new HostBuilder()
                 }
                 catch (InvalidOperationException)
                 {
-                    // AI service not configured, fall back to Basic mode
                     return new ConversationParser();
                 }
             }
         });
-        
-        // TODO: Add your other service registrations here
+
         services.AddScoped<IThreadCapsuleBuilder, ThreadCapsuleBuilder>();
         services.AddScoped<IConversationAnalyzer, ConversationAnalyzer>();
-        // services.AddScoped<IAuthService, AuthService>();
-        
+
         // Application Insights
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();

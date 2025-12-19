@@ -1,0 +1,380 @@
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
+using ThreadClear.Functions.Models;
+using BCrypt.Net;
+
+namespace ThreadClear.Functions.Services.Implementations
+{
+    public interface IUserService
+    {
+        Task<User?> GetUserByEmail(string email);
+        Task<User?> GetUserById(Guid id);
+        Task<User?> ValidateLogin(string email, string password);
+        Task<User> CreateUser(CreateUserRequest request, Guid? createdBy = null);
+        Task<User> CreateAdminUser(string email, string password);
+        Task<List<User>> GetAllUsers();
+        Task UpdateUserPermissions(Guid userId, UserPermissions permissions);
+        Task<bool> DeleteUser(Guid userId);
+        Task<List<FeaturePricing>> GetFeaturePricing();
+        Task UpdateFeaturePricing(string featureName, decimal price, Guid updatedBy);
+    }
+
+    public class UserService : IUserService
+    {
+        private readonly string _connectionString;
+        private readonly ILogger<UserService> _logger;
+
+        public UserService(string connectionString, ILogger<UserService> logger)
+        {
+            _connectionString = connectionString;
+            _logger = logger;
+        }
+
+        public async Task<User?> GetUserByEmail(string email)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                       p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
+                       p.ConversationHealth, p.SuggestedActions
+                FROM Users u
+                LEFT JOIN UserPermissions p ON u.Id = p.UserId
+                WHERE u.Email = @Email";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@Email", email);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return MapUserFromReader(reader);
+            }
+            return null;
+        }
+
+        public async Task<User?> GetUserById(Guid id)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                       p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
+                       p.ConversationHealth, p.SuggestedActions
+                FROM Users u
+                LEFT JOIN UserPermissions p ON u.Id = p.UserId
+                WHERE u.Id = @Id";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@Id", id);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return MapUserFromReader(reader);
+            }
+            return null;
+        }
+
+        public async Task<User?> ValidateLogin(string email, string password)
+        {
+            var user = await GetUserByEmail(email);
+            if (user == null || !user.IsActive)
+                return null;
+
+            if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+            {
+                user.PasswordHash = ""; // Don't return hash
+                return user;
+            }
+            return null;
+        }
+
+        public async Task<User> CreateAdminUser(string email, string password)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var userId = Guid.NewGuid();
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                // Insert user
+                var userSql = @"
+                    INSERT INTO Users (Id, Email, PasswordHash, Role, IsActive, CreatedAt)
+                    VALUES (@Id, @Email, @PasswordHash, 'admin', 1, GETUTCDATE())";
+
+                using (var cmd = new SqlCommand(userSql, connection, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@Id", userId);
+                    cmd.Parameters.AddWithValue("@Email", email);
+                    cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                // Insert permissions (all enabled for admin)
+                var permSql = @"
+                    INSERT INTO UserPermissions (Id, UserId, UnansweredQuestions, TensionPoints, Misalignments, ConversationHealth, SuggestedActions)
+                    VALUES (NEWID(), @UserId, 1, 1, 1, 1, 1)";
+
+                using (var cmd = new SqlCommand(permSql, connection, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                transaction.Commit();
+
+                _logger.LogInformation("Created admin user: {Email}", email);
+
+                return new User
+                {
+                    Id = userId,
+                    Email = email,
+                    Role = "admin",
+                    IsActive = true,
+                    Permissions = new UserPermissions
+                    {
+                        UnansweredQuestions = true,
+                        TensionPoints = true,
+                        Misalignments = true,
+                        ConversationHealth = true,
+                        SuggestedActions = true
+                    }
+                };
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<User> CreateUser(CreateUserRequest request, Guid? createdBy = null)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var userId = Guid.NewGuid();
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                // Insert user
+                var userSql = @"
+                    INSERT INTO Users (Id, Email, PasswordHash, Role, IsActive, CreatedAt, CreatedBy)
+                    VALUES (@Id, @Email, @PasswordHash, 'user', 1, GETUTCDATE(), @CreatedBy)";
+
+                using (var cmd = new SqlCommand(userSql, connection, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@Id", userId);
+                    cmd.Parameters.AddWithValue("@Email", request.Email);
+                    cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+                    cmd.Parameters.AddWithValue("@CreatedBy", createdBy.HasValue ? createdBy.Value : DBNull.Value);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                // Insert permissions
+                var permSql = @"
+                    INSERT INTO UserPermissions (Id, UserId, UnansweredQuestions, TensionPoints, Misalignments, ConversationHealth, SuggestedActions)
+                    VALUES (NEWID(), @UserId, @UQ, @TP, @MA, @CH, @SA)";
+
+                using (var cmd = new SqlCommand(permSql, connection, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    cmd.Parameters.AddWithValue("@UQ", request.UnansweredQuestions);
+                    cmd.Parameters.AddWithValue("@TP", request.TensionPoints);
+                    cmd.Parameters.AddWithValue("@MA", request.Misalignments);
+                    cmd.Parameters.AddWithValue("@CH", request.ConversationHealth);
+                    cmd.Parameters.AddWithValue("@SA", request.SuggestedActions);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                transaction.Commit();
+
+                _logger.LogInformation("Created user: {Email}", request.Email);
+
+                return new User
+                {
+                    Id = userId,
+                    Email = request.Email,
+                    Role = "user",
+                    IsActive = true,
+                    Permissions = new UserPermissions
+                    {
+                        UserId = userId,
+                        UnansweredQuestions = request.UnansweredQuestions,
+                        TensionPoints = request.TensionPoints,
+                        Misalignments = request.Misalignments,
+                        ConversationHealth = request.ConversationHealth,
+                        SuggestedActions = request.SuggestedActions
+                    }
+                };
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<List<User>> GetAllUsers()
+        {
+            var users = new List<User>();
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                       p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
+                       p.ConversationHealth, p.SuggestedActions
+                FROM Users u
+                LEFT JOIN UserPermissions p ON u.Id = p.UserId
+                ORDER BY u.CreatedAt DESC";
+
+            using var cmd = new SqlCommand(sql, connection);
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                var user = MapUserFromReader(reader);
+                user.PasswordHash = ""; // Don't return hash
+                users.Add(user);
+            }
+            return users;
+        }
+
+        public async Task UpdateUserPermissions(Guid userId, UserPermissions permissions)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                UPDATE UserPermissions 
+                SET UnansweredQuestions = @UQ, TensionPoints = @TP, Misalignments = @MA, 
+                    ConversationHealth = @CH, SuggestedActions = @SA
+                WHERE UserId = @UserId";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            cmd.Parameters.AddWithValue("@UQ", permissions.UnansweredQuestions);
+            cmd.Parameters.AddWithValue("@TP", permissions.TensionPoints);
+            cmd.Parameters.AddWithValue("@MA", permissions.Misalignments);
+            cmd.Parameters.AddWithValue("@CH", permissions.ConversationHealth);
+            cmd.Parameters.AddWithValue("@SA", permissions.SuggestedActions);
+
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        public async Task<bool> DeleteUser(Guid userId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                // Delete permissions first
+                var permSql = "DELETE FROM UserPermissions WHERE UserId = @UserId";
+                using (var cmd = new SqlCommand(permSql, connection, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                // Delete user
+                var userSql = "DELETE FROM Users WHERE Id = @UserId";
+                using (var cmd = new SqlCommand(userSql, connection, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    var rows = await cmd.ExecuteNonQueryAsync();
+                    transaction.Commit();
+                    return rows > 0;
+                }
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<List<FeaturePricing>> GetFeaturePricing()
+        {
+            var pricing = new List<FeaturePricing>();
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = "SELECT Id, FeatureName, PricePerUse, IsActive, UpdatedAt, UpdatedBy FROM FeaturePricing";
+            using var cmd = new SqlCommand(sql, connection);
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                pricing.Add(new FeaturePricing
+                {
+                    Id = reader.GetGuid(0),
+                    FeatureName = reader.GetString(1),
+                    PricePerUse = reader.GetDecimal(2),
+                    IsActive = reader.GetBoolean(3),
+                    UpdatedAt = reader.GetDateTime(4),
+                    UpdatedBy = reader.IsDBNull(5) ? null : reader.GetGuid(5)
+                });
+            }
+            return pricing;
+        }
+
+        public async Task UpdateFeaturePricing(string featureName, decimal price, Guid updatedBy)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                UPDATE FeaturePricing 
+                SET PricePerUse = @Price, UpdatedAt = GETUTCDATE(), UpdatedBy = @UpdatedBy
+                WHERE FeatureName = @FeatureName";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@FeatureName", featureName);
+            cmd.Parameters.AddWithValue("@Price", price);
+            cmd.Parameters.AddWithValue("@UpdatedBy", updatedBy);
+
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        private User MapUserFromReader(SqlDataReader reader)
+        {
+            var user = new User
+            {
+                Id = reader.GetGuid(0),
+                Email = reader.GetString(1),
+                PasswordHash = reader.GetString(2),
+                Role = reader.GetString(3),
+                IsActive = reader.GetBoolean(4),
+                CreatedAt = reader.GetDateTime(5),
+                CreatedBy = reader.IsDBNull(6) ? null : reader.GetGuid(6)
+            };
+
+            if (!reader.IsDBNull(7))
+            {
+                user.Permissions = new UserPermissions
+                {
+                    Id = reader.GetGuid(7),
+                    UserId = user.Id,
+                    UnansweredQuestions = reader.GetBoolean(8),
+                    TensionPoints = reader.GetBoolean(9),
+                    Misalignments = reader.GetBoolean(10),
+                    ConversationHealth = reader.GetBoolean(11),
+                    SuggestedActions = reader.GetBoolean(12)
+                };
+            }
+
+            return user;
+        }
+    }
+}

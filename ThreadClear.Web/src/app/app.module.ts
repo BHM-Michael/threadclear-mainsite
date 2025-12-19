@@ -7,12 +7,16 @@ import { ConversationAnalyzerComponent } from './components/conversation-analyze
 import { ResultsDisplayComponent } from './components/results-display/results-display.component';
 import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { LoginComponent } from './components/login/login.component';
+import { AdminComponent } from './components/admin/admin.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     ConversationAnalyzerComponent,
-    ResultsDisplayComponent
+    ResultsDisplayComponent,
+    LoginComponent,
+    AdminComponent
   ],
   imports: [
     BrowserModule,

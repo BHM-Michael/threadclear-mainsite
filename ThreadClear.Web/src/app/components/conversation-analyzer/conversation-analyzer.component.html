@@ -1,81 +1,116 @@
-<div class="analyzer-container">
-    <h1>ThreadClear - Conversation Analyzer</h1>
-
-    <div class="input-section">
-        <!-- Tab Toggle -->
-        <div class="input-tabs">
-            <button [class.active]="inputMode === 'text'" (click)="inputMode = 'text'">
-                Paste Text
-            </button>
-            <button [class.active]="inputMode === 'image'" (click)="inputMode = 'image'">
-                Upload Screenshot
-            </button>
+<div class="page-container">
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <h1>ThreadClear</h1>
+            <span class="user-email" *ngIf="currentUser">{{ currentUser.email }}</span>
         </div>
-
-        <!-- Text Input -->
-        <div *ngIf="inputMode === 'text'">
-            <textarea [(ngModel)]="conversationText"
-                placeholder="Paste your conversation here...&#10;&#10;Example:&#10;John: Can you send the proposal?&#10;Jane: I'll send it today."
-                rows="10">
-            </textarea>
+        <div class="header-right">
+            <button class="btn-admin" *ngIf="isAdmin" (click)="goToAdmin()">Admin Dashboard</button>
+            <button class="btn-logout" (click)="logout()">Logout</button>
         </div>
+    </header>
 
-        <!-- Image Upload -->
-        <div *ngIf="inputMode === 'image'" class="image-upload">
-            <div class="drop-zone" (click)="fileInput.click()" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
-                <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" multiple hidden>
-                <div *ngIf="selectedImages.length === 0">
-                    <span class="upload-icon">📷</span>
-                    <p>Click or drag to upload screenshots</p>
-                    <p class="hint">Supports: PNG, JPG, JPEG, GIF, WebP</p>
-                    <p class="hint">Upload multiple images in order to reconstruct a conversation</p>
-                    <p class="hint">Maximum 10 images, 10MB each</p>
+    <div class="analyzer-container">
+        <div class="input-section">
+            <!-- Tab Toggle -->
+            <div class="input-tabs">
+                <button [class.active]="inputMode === 'text'" (click)="inputMode = 'text'">
+                    Paste Text
+                </button>
+                <button [class.active]="inputMode === 'image'" (click)="inputMode = 'image'">
+                    Upload Screenshot
+                </button>
+            </div>
+
+            <!-- Text Input -->
+            <div *ngIf="inputMode === 'text'">
+                <textarea [(ngModel)]="conversationText"
+                    placeholder="Paste your conversation here...&#10;&#10;Example:&#10;John: Can you send the proposal?&#10;Jane: I'll send it today."
+                    rows="10">
+        </textarea>
+            </div>
+
+            <!-- Image Upload -->
+            <div *ngIf="inputMode === 'image'" class="image-upload">
+                <div class="drop-zone" (click)="fileInput.click()" (dragover)="onDragOver($event)"
+                    (drop)="onDrop($event)">
+                    <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" multiple hidden>
+                    <div *ngIf="selectedImages.length === 0">
+                        <span class="upload-icon">📷</span>
+                        <p>Click or drag to upload screenshots</p>
+                        <p class="hint">Supports: PNG, JPG, JPEG, GIF, WebP</p>
+                        <p class="hint">Upload multiple images in order to reconstruct a conversation</p>
+                        <p class="hint">Maximum 10 images, 10MB each</p>
+                    </div>
+                </div>
+
+                <!-- Image Previews -->
+                <div *ngIf="selectedImages.length > 0" class="image-previews">
+                    <p class="image-count">{{ selectedImages.length }} of 10 images</p>
+                    <div class="preview-item" *ngFor="let img of selectedImages; let i = index">
+                        <span class="image-number">{{ i + 1 }}</span>
+                        <img [src]="imagePreviews[i]" alt="Preview {{ i + 1 }}">
+                        <button class="remove-btn" (click)="removeImage(i)">✕</button>
+                    </div>
+                    <div class="add-more" *ngIf="selectedImages.length < 10" (click)="fileInput.click()">
+                        <span>+ Add More</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Image Previews -->
-            <div *ngIf="selectedImages.length > 0" class="image-previews">
-                <div class="preview-item" *ngFor="let img of selectedImages; let i = index">
-                    <span class="image-number">{{ i + 1 }}</span>
-                    <img [src]="imagePreviews[i]" alt="Preview {{ i + 1 }}">
-                    <button class="remove-btn" (click)="removeImage(i)">✕</button>
-                </div>
-                <div class="add-more" (click)="fileInput.click()">
-                    <span>+ Add More</span>
+            <div class="controls">
+                <label>
+                    Source Type:
+                    <select [(ngModel)]="sourceType">
+                        <option value="auto">Auto (Detect)</option>
+                        <option value="simple">Simple</option>
+                        <option value="email">Email</option>
+                        <option value="slack">Slack</option>
+                    </select>
+                </label>
+
+                <label>
+                    Parsing Mode:
+                    <select [(ngModel)]="parsingMode">
+                        <option [ngValue]="0">Basic (Free)</option>
+                        <option [ngValue]="1">Advanced (AI)</option>
+                        <option [ngValue]="2">Auto (Smart)</option>
+                    </select>
+                </label>
+
+                <button (click)="analyze()" [disabled]="loading || (!conversationText && selectedImages.length === 0)">
+                    {{ loading ? 'Analyzing...' : 'Analyze' }}
+                </button>
+                <button (click)="clear()" [disabled]="loading" class="clear-btn">
+                    Clear
+                </button>
+            </div>
+
+            <!-- Permission Info -->
+            <!-- Permission Info -->
+            <div class="permissions-info" *ngIf="permissions && !isAdmin">
+                <p>Your enabled features:</p>
+                <div class="feature-badges">
+                    <span class="feature-badge"
+                        [class.enabled]="permissions.UnansweredQuestions || permissions.unansweredQuestions">Unanswered
+                        Questions</span>
+                    <span class="feature-badge"
+                        [class.enabled]="permissions.TensionPoints || permissions.tensionPoints">Tension Points</span>
+                    <span class="feature-badge"
+                        [class.enabled]="permissions.Misalignments || permissions.misalignments">Misalignments</span>
+                    <span class="feature-badge"
+                        [class.enabled]="permissions.ConversationHealth || permissions.conversationHealth">Conversation
+                        Health</span>
+                    <span class="feature-badge"
+                        [class.enabled]="permissions.SuggestedActions || permissions.suggestedActions">Suggested
+                        Actions</span>
                 </div>
             </div>
         </div>
 
-        <div class="controls">
-            <label>
-                Source Type:
-                <select [(ngModel)]="sourceType">
-                    <option value="auto">Auto (Detect)</option>
-                    <option value="simple">Simple</option>
-                    <option value="email">Email</option>
-                    <option value="slack">Slack</option>
-                </select>
-            </label>
+        <div class="error" *ngIf="error">{{ error }}</div>
 
-            <label>
-                Parsing Mode:
-                <select [(ngModel)]="parsingMode">
-                    <option [ngValue]="0">Basic (Free)</option>
-                    <option [ngValue]="1">Advanced (AI)</option>
-                    <option [ngValue]="2">Auto (Smart)</option>
-                </select>
-            </label>
-
-            <button (click)="analyze()" [disabled]="loading || (!conversationText && selectedImages.length === 0)">
-                {{ loading ? 'Analyzing...' : 'Analyze' }}
-            </button>
-            <button (click)="clear()" [disabled]="loading" class="clear-btn">
-                Clear
-            </button>
-        </div>
+        <app-results-display *ngIf="results" [results]="results"></app-results-display>
     </div>
-
-    <div class="error" *ngIf="error">{{ error }}</div>
-
-    <app-results-display *ngIf="results" [results]="results"></app-results-display>
 </div>

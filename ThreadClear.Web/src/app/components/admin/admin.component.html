@@ -1,0 +1,159 @@
+<div class="admin-container">
+    <header class="admin-header">
+        <h1>Admin Dashboard</h1>
+        <div class="header-actions">
+            <button class="btn-secondary" (click)="goToAnalyzer()">Go to Analyzer</button>
+            <button class="btn-logout" (click)="logout()">Logout</button>
+        </div>
+    </header>
+
+    <div class="messages">
+        <div class="error" *ngIf="error">{{ error }}</div>
+        <div class="success" *ngIf="success">{{ success }}</div>
+    </div>
+
+    <!-- Users Section -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Users</h2>
+            <button class="btn-primary" (click)="showNewUserForm = !showNewUserForm">
+                {{ showNewUserForm ? 'Cancel' : '+ Add User' }}
+            </button>
+        </div>
+
+        <!-- New User Form -->
+        <div class="new-user-form" *ngIf="showNewUserForm">
+            <h3>Create New User</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" [(ngModel)]="newUser.email" placeholder="user@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" [(ngModel)]="newUser.password" placeholder="Password">
+                </div>
+            </div>
+
+            <div class="permissions-grid">
+                <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="newUser.unansweredQuestions">
+                    Unanswered Questions
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="newUser.tensionPoints">
+                    Tension Points
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="newUser.misalignments">
+                    Misalignments
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="newUser.conversationHealth">
+                    Conversation Health
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="newUser.suggestedActions">
+                    Suggested Actions
+                </label>
+            </div>
+
+            <button class="btn-primary" (click)="createUser()" [disabled]="loading">
+                {{ loading ? 'Creating...' : 'Create User' }}
+            </button>
+        </div>
+
+        <!-- Users Table -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Permissions</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let user of users">
+                        <td>{{ user.Email }}</td>
+                        <td><span class="role-badge" [class.admin]="user.Role === 'admin'">{{ user.Role }}</span></td>
+                        <td>
+                            <div class="permission-badges" *ngIf="user.Permissions">
+                                <span class="perm-badge" [class.enabled]="user.Permissions.UnansweredQuestions"
+                                    title="Unanswered Questions">UQ</span>
+                                <span class="perm-badge" [class.enabled]="user.Permissions.TensionPoints"
+                                    title="Tension Points">TP</span>
+                                <span class="perm-badge" [class.enabled]="user.Permissions.Misalignments"
+                                    title="Misalignments">MA</span>
+                                <span class="perm-badge" [class.enabled]="user.Permissions.ConversationHealth"
+                                    title="Conversation Health">CH</span>
+                                <span class="perm-badge" [class.enabled]="user.Permissions.SuggestedActions"
+                                    title="Suggested Actions">SA</span>
+                            </div>
+                        </td>
+                        <td>
+                            <button class="btn-small" (click)="editUser(user)"
+                                *ngIf="user.Role !== 'admin'">Edit</button>
+                            <button class="btn-small btn-danger" (click)="deleteUser(user)"
+                                *ngIf="user.Role !== 'admin'">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Edit User Modal -->
+    <div class="modal-overlay" *ngIf="editingUser" (click)="cancelEdit()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <h3>Edit Permissions: {{ editingUser.Email }}</h3>
+
+            <div class="permissions-grid">
+                <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="editingUser.Permissions.UnansweredQuestions">
+                    Unanswered Questions
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="editingUser.Permissions.TensionPoints">
+                    Tension Points
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="editingUser.Permissions.Misalignments">
+                    Misalignments
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="editingUser.Permissions.ConversationHealth">
+                    Conversation Health
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="editingUser.Permissions.SuggestedActions">
+                    Suggested Actions
+                </label>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-secondary" (click)="cancelEdit()">Cancel</button>
+                <button class="btn-primary" (click)="savePermissions()" [disabled]="loading">
+                    {{ loading ? 'Saving...' : 'Save Changes' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Section -->
+    <section class="section">
+        <h2>Feature Pricing</h2>
+        <div class="pricing-grid">
+            <div class="pricing-card" *ngFor="let feature of pricing">
+                <h4>{{ getFeatureDisplayName(feature.FeatureName) }}</h4>
+                <div class="price-input">
+                    <span class="currency">$</span>
+                    <input type="number" [(ngModel)]="feature.PricePerUse" step="0.01" min="0">
+                    <span class="per-use">per use</span>
+                </div>
+                <button class="btn-small" (click)="updatePricing(feature)">Update</button>
+            </div>
+        </div>
+    </section>
+</div>

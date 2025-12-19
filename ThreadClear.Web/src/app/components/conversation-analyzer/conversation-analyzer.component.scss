@@ -1,3 +1,138 @@
+.page-container {
+    min-height: 100vh;
+    background: #f5f7fa;
+}
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 24px;
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .user-email {
+            color: #666;
+            font-size: 14px;
+            padding: 4px 12px;
+            background: #f0f0f0;
+            border-radius: 16px;
+        }
+    }
+
+    .header-right {
+        display: flex;
+        gap: 10px;
+    }
+}
+
+.btn-admin {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+}
+
+.btn-logout {
+    padding: 10px 20px;
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+        background: #e8e8e8;
+    }
+}
+
+.permissions-info {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    font-size: 13px;
+
+    p {
+        margin: 0 0 8px;
+        color: #666;
+    }
+
+    .feature-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .feature-badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        background: #f0f0f0;
+        color: #999;
+
+        &.enabled {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    }
+}
+
+// Mobile header
+@media (max-width: 600px) {
+    .app-header {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px 16px;
+
+        .header-left {
+            flex-direction: column;
+            gap: 8px;
+
+            h1 {
+                font-size: 20px;
+            }
+        }
+
+        .header-right {
+            width: 100%;
+
+            button {
+                flex: 1;
+            }
+        }
+    }
+
+    .permissions-info .feature-badges {
+        flex-direction: column;
+    }
+}
+
 .analyzer-container {
     max-width: 1200px;
     margin: 0 auto;

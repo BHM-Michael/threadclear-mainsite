@@ -53,6 +53,12 @@ namespace ThreadClear.Tests
         {
             return Task.FromResult(new List<string> { "Review conversation", "Follow up on items" });
         }
+
+        public Task<string> ExtractTextFromImage(string base64Image, string mimeType)
+        {
+            // Return a sample conversation for testing
+            return Task.FromResult("John: Hey, did you get my message?\nJane: Yes, I'll look into it today.\nJohn: Thanks!");
+        }
     }
 
     public class ConversationAnalyzerTests

@@ -2,10 +2,39 @@
     <h1>ThreadClear - Conversation Analyzer</h1>
 
     <div class="input-section">
-        <textarea [(ngModel)]="conversationText"
-            placeholder="Paste your conversation here ...&#10;&#10;Example:&#10;John: Can you send the proposal?&#10;Jane: I'll send it today."
-            rows="10">
-    </textarea>
+        <!-- Tab Toggle -->
+        <div class="input-tabs">
+            <button [class.active]="inputMode === 'text'" (click)="inputMode = 'text'">
+                Paste Text
+            </button>
+            <button [class.active]="inputMode === 'image'" (click)="inputMode = 'image'">
+                Upload Screenshot
+            </button>
+        </div>
+
+        <!-- Text Input -->
+        <div *ngIf="inputMode === 'text'">
+            <textarea [(ngModel)]="conversationText"
+                placeholder="Paste your conversation here...&#10;&#10;Example:&#10;John: Can you send the proposal?&#10;Jane: I'll send it today."
+                rows="10">
+            </textarea>
+        </div>
+
+        <!-- Image Upload -->
+        <div *ngIf="inputMode === 'image'" class="image-upload">
+            <div class="drop-zone" (click)="fileInput.click()" (dragover)="onDragOver($event)" (drop)="onDrop($event)">
+                <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" hidden>
+                <div *ngIf="!selectedImage">
+                    <span class="upload-icon">📷</span>
+                    <p>Click or drag to upload a screenshot</p>
+                    <p class="hint">Supports: PNG, JPG, JPEG, GIF, WebP</p>
+                </div>
+                <div *ngIf="selectedImage" class="preview">
+                    <img [src]="imagePreview" alt="Preview">
+                    <button class="remove-btn" (click)="removeImage($event)">✕</button>
+                </div>
+            </div>
+        </div>
 
         <div class="controls">
             <label>
@@ -27,8 +56,11 @@
                 </select>
             </label>
 
-            <button (click)="analyze()" [disabled]="!conversationText || loading">
+            <button (click)="analyze()" [disabled]="loading || (!conversationText && !selectedImage)">
                 {{ loading ? 'Analyzing...' : 'Analyze' }}
+            </button>
+            <button (click)="clear()" [disabled]="loading" class="clear-btn">
+                Clear
             </button>
         </div>
     </div>

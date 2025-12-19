@@ -31,6 +31,19 @@ export class ApiService {
     return this.http.post<AnalysisResponse>(url, request);
   }
 
+  analyzeImage(file: File, sourceType: string, parsingMode: number): Observable<AnalysisResponse> {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('sourceType', sourceType);
+    formData.append('parsingMode', parsingMode.toString());
+
+    const url = this.functionKey
+      ? `${this.apiUrl}/analyze-image?code=${this.functionKey}`
+      : `${this.apiUrl}/analyze-image`;
+
+    return this.http.post<AnalysisResponse>(url, formData);
+  }
+
   healthCheck(): Observable<any> {
     return this.http.get(`${this.apiUrl}/health`);
   }

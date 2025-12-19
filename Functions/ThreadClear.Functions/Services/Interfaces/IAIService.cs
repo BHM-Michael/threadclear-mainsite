@@ -45,5 +45,7 @@ namespace ThreadClear.Functions.Services.Interfaces
         /// <param name="capsule">The analyzed conversation capsule</param>
         /// <returns>List of suggested action strings</returns>
         Task<List<string>> GenerateSuggestedActions(ThreadCapsule capsule);
+
+        Task<string> ExtractTextFromImage(string base64Image, string mimeType);
     }
 }

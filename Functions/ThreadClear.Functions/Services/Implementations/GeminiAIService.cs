@@ -108,5 +108,10 @@ Return ONLY the JSON array.";
                 return new List<string>();
             }
         }
+
+        public async Task<string> ExtractTextFromImage(string base64Image, string mimeType)
+        {
+            return null;
+        }
     }
 }

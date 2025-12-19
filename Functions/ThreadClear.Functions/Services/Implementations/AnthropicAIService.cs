@@ -132,5 +132,67 @@ Return suggestions as a JSON array:
                 return new List<string> { "Review conversation for communication improvements" };
             }
         }
+
+        public async Task<string> ExtractTextFromImage(string base64Image, string mimeType)
+        {
+            var requestBody = new
+            {
+                model = "claude-sonnet-4-20250514",
+                max_tokens = 4096,
+                messages = new[]
+                {
+            new
+            {
+                role = "user",
+                content = new object[]
+                {
+                    new
+                    {
+                        type = "image",
+                        source = new
+                        {
+                            type = "base64",
+                            media_type = mimeType,
+                            data = base64Image
+                        }
+                    },
+                    new
+                    {
+                        type = "text",
+                        text = @"Extract all conversation messages from this screenshot. 
+
+Format the output as a conversation with each message on a new line:
+- Use the format 'Name: Message' for each message
+- Preserve the order of messages as they appear
+- Include timestamps if visible
+- If it's an email thread, include From/To/Subject headers
+
+Only output the extracted conversation text, nothing else."
+                    }
+                }
+            }
+        }
+            };
+
+            var json = JsonSerializer.Serialize(requestBody);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync("https://api.anthropic.com/v1/messages", content);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                //_logger.LogError("Claude Vision API error: {Response}", responseBody);
+                throw new Exception($"Claude API error: {response.StatusCode}");
+            }
+
+            using var doc = JsonDocument.Parse(responseBody);
+            var textContent = doc.RootElement
+                .GetProperty("content")[0]
+                .GetProperty("text")
+                .GetString();
+
+            return textContent ?? string.Empty;
+        }
     }
 }

@@ -147,5 +147,10 @@ Return suggestions as a JSON object:
                 return new List<string> { "Review conversation for communication improvements" };
             }
         }
+
+        public async Task<string> ExtractTextFromImage(string base64Image, string mimeType)
+        {
+            return null;
+        }
     }
 }

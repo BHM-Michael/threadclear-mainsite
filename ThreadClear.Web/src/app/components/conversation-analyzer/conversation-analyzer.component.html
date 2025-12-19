@@ -1,0 +1,39 @@
+<div class="analyzer-container">
+    <h1>ThreadClear - Conversation Analyzer</h1>
+
+    <div class="input-section">
+        <textarea [(ngModel)]="conversationText"
+            placeholder="Paste your conversation here ...&#10;&#10;Example:&#10;John: Can you send the proposal?&#10;Jane: I'll send it today."
+            rows="10">
+    </textarea>
+
+        <div class="controls">
+            <label>
+                Source Type:
+                <select [(ngModel)]="sourceType">
+                    <option value="auto">Auto (Detect)</option>
+                    <option value="simple">Simple</option>
+                    <option value="email">Email</option>
+                    <option value="slack">Slack</option>
+                </select>
+            </label>
+
+            <label>
+                Parsing Mode:
+                <select [(ngModel)]="parsingMode">
+                    <option [ngValue]="0">Basic (Free)</option>
+                    <option [ngValue]="1">Advanced (AI)</option>
+                    <option [ngValue]="2">Auto (Smart)</option>
+                </select>
+            </label>
+
+            <button (click)="analyze()" [disabled]="!conversationText || loading">
+                {{ loading ? 'Analyzing...' : 'Analyze' }}
+            </button>
+        </div>
+    </div>
+
+    <div class="error" *ngIf="error">{{ error }}</div>
+
+    <app-results-display *ngIf="results" [results]="results"></app-results-display>
+</div>

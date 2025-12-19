@@ -1,0 +1,950 @@
+.results-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 15px;
+
+    h2 {
+        color: #333;
+        border-bottom: 3px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 25px;
+        font-size: 24px;
+    }
+
+    h3 {
+        color: #444;
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-size: 18px;
+    }
+
+    h4 {
+        color: #666;
+        margin: 15px 0 10px;
+        font-size: 14px;
+    }
+
+    // Summary Stats Grid
+    .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+
+            .label {
+                font-size: 11px;
+                color: #666;
+                text-transform: uppercase;
+                font-weight: 600;
+                letter-spacing: 0.5px;
+            }
+
+            .value {
+                font-size: 20px;
+                font-weight: bold;
+                color: #1565c0;
+
+                &.id-value {
+                    font-size: 10px;
+                    font-family: monospace;
+                    color: #666;
+                    word-break: break-all;
+                }
+            }
+        }
+    }
+
+    // AI Summary
+    .summary-text {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+
+        h3 {
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin: 0;
+            line-height: 1.7;
+            font-size: 15px;
+        }
+    }
+
+    // Health Card
+    .health-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+        .health-overview {
+            margin-bottom: 20px;
+
+            .risk-badge {
+                display: inline-block;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-weight: bold;
+                font-size: 14px;
+
+                &.risk-low {
+                    background: #c8e6c9;
+                    color: #2e7d32;
+                }
+
+                &.risk-medium {
+                    background: #fff3e0;
+                    color: #e65100;
+                }
+
+                &.risk-high {
+                    background: #ffcdd2;
+                    color: #c62828;
+                }
+            }
+        }
+
+        .health-scores {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+
+            .score-item {
+                display: grid;
+                grid-template-columns: 120px 1fr 50px;
+                align-items: center;
+                gap: 12px;
+
+                .score-label {
+                    font-size: 13px;
+                    color: #666;
+                    font-weight: 500;
+                }
+
+                .score-bar {
+                    height: 10px;
+                    background: #e0e0e0;
+                    border-radius: 5px;
+                    overflow: hidden;
+
+                    .score-fill {
+                        height: 100%;
+                        border-radius: 5px;
+                        transition: width 0.5s ease;
+
+                        &.good {
+                            background: linear-gradient(90deg, #4caf50, #81c784);
+                        }
+
+                        &.medium {
+                            background: linear-gradient(90deg, #ff9800, #ffb74d);
+                        }
+
+                        &.poor {
+                            background: linear-gradient(90deg, #f44336, #e57373);
+                        }
+                    }
+                }
+
+                .score-value {
+                    font-weight: bold;
+                    font-size: 14px;
+                    color: #333;
+                    text-align: right;
+                }
+            }
+        }
+    }
+
+    // Alert Cards (Unanswered, Tension, Misalignment)
+    .alert-card {
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+        &.unanswered {
+            background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+            border-left: 4px solid #ffc107;
+        }
+
+        &.tension {
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+            border-left: 4px solid #e91e63;
+        }
+
+        &.misalignment {
+            background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
+            border-left: 4px solid #3f51b5;
+        }
+
+        .alert-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .alert-item {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            padding: 15px;
+
+            .alert-header {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 10px;
+                flex-wrap: wrap;
+
+                .question-text {
+                    font-style: italic;
+                    font-size: 15px;
+                    color: #333;
+                    width: 100%;
+                }
+            }
+
+            .alert-description {
+                font-size: 14px;
+                line-height: 1.6;
+                color: #444;
+                margin-bottom: 10px;
+            }
+
+            .alert-meta {
+                display: flex;
+                gap: 15px;
+                font-size: 12px;
+                color: #666;
+                flex-wrap: wrap;
+
+                .days-warning {
+                    color: #d32f2f;
+                    font-weight: bold;
+                }
+            }
+
+            .resolution {
+                margin-top: 12px;
+                padding: 12px;
+                background: rgba(255, 255, 255, 0.8);
+                border-radius: 6px;
+                border-left: 3px solid #4caf50;
+
+                strong {
+                    color: #2e7d32;
+                    font-size: 12px;
+                }
+
+                p {
+                    margin: 8px 0 0;
+                    font-size: 13px;
+                    line-height: 1.5;
+                    color: #333;
+                }
+            }
+        }
+    }
+
+    // Badges
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+
+        &.type-badge {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        &.severity-low {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        &.severity-moderate {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        &.severity-high {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        &.urgency-low {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        &.urgency-medium {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        &.urgency-high {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        &.sentiment {
+            background: #f5f5f5;
+        }
+
+        &.stats {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+    }
+
+    // Actions Card
+    .actions-card {
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-left: 4px solid #4caf50;
+
+        .actions-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+
+            li {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 10px 0;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+                font-size: 14px;
+                line-height: 1.5;
+
+                &:last-child {
+                    border-bottom: none;
+                }
+
+                .action-number {
+                    background: #4caf50;
+                    color: white;
+                    width: 24px;
+                    height: 24px;
+                    min-width: 24px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 12px;
+                    font-weight: bold;
+                    flex-shrink: 0;
+                }
+            }
+        }
+    }
+
+    // Section Cards (Participants, Messages, Metadata)
+    .section-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+        &.metadata {
+            background: #fafafa;
+        }
+    }
+
+    // Participants
+    .participant-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+    }
+
+    .participant {
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 3px solid #007bff;
+
+        .participant-name {
+            margin-bottom: 6px;
+
+            strong {
+                font-size: 15px;
+            }
+
+            .participant-id {
+                color: #888;
+                font-size: 11px;
+                margin-left: 6px;
+            }
+        }
+
+        .participant-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 12px;
+            color: #666;
+
+            .email {
+                color: #1565c0;
+            }
+
+            .role {
+                background: #e9ecef;
+                padding: 2px 8px;
+                border-radius: 4px;
+            }
+        }
+    }
+
+    .activity-breakdown {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #e0e0e0;
+
+        .activity-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 13px;
+
+            .activity-count {
+                color: #1565c0;
+                font-weight: 500;
+            }
+        }
+    }
+
+    // Messages
+    .messages-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .message {
+        background: #fafafa;
+        border: 1px solid #e8e8e8;
+        border-radius: 10px;
+        padding: 15px;
+        transition: box-shadow 0.2s;
+
+        &:hover {
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+
+            .message-sender {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+
+                strong {
+                    color: #333;
+                    font-size: 14px;
+                }
+
+                .message-id {
+                    background: #1565c0;
+                    color: white;
+                    font-size: 10px;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                }
+            }
+
+            .timestamp {
+                color: #888;
+                font-size: 12px;
+            }
+        }
+
+        .message-content {
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+            line-height: 1.6;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+            border-left: 3px solid #e0e0e0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .message-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .questions-detected {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff8e1;
+            border-radius: 6px;
+            border-left: 3px solid #ffc107;
+
+            .questions-label {
+                font-weight: 600;
+                font-size: 11px;
+                text-transform: uppercase;
+                color: #f57f17;
+                margin-bottom: 6px;
+            }
+
+            ul {
+                margin: 0;
+                padding-left: 18px;
+
+                li {
+                    color: #5d4037;
+                    font-style: italic;
+                    font-size: 13px;
+                    margin: 3px 0;
+                }
+            }
+        }
+    }
+
+    // Metadata Grid
+    .metadata-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+
+        .metadata-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+
+            .label {
+                font-size: 11px;
+                color: #888;
+                text-transform: uppercase;
+                font-weight: 600;
+            }
+
+            .value {
+                font-size: 14px;
+                color: #333;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+        }
+    }
+}
+
+// =============================================
+// MOBILE RESPONSIVE STYLES
+// =============================================
+
+// Tablets and small desktops
+@media (max-width: 768px) {
+    .results-container {
+        padding: 0 10px;
+
+        h2 {
+            font-size: 20px;
+        }
+
+        h3 {
+            font-size: 16px;
+        }
+
+        .summary-stats {
+            grid-template-columns: repeat(3, 1fr);
+            padding: 15px;
+            gap: 10px;
+
+            .stat .value {
+                font-size: 18px;
+            }
+        }
+
+        .summary-text {
+            padding: 15px;
+
+            p {
+                font-size: 14px;
+            }
+        }
+
+        .health-card {
+            padding: 15px;
+        }
+
+        .health-scores .score-item {
+            grid-template-columns: 100px 1fr 45px;
+            gap: 8px;
+
+            .score-label {
+                font-size: 12px;
+            }
+        }
+
+        .alert-card {
+            padding: 15px;
+        }
+
+        .section-card {
+            padding: 15px;
+        }
+
+        .participant-list {
+            grid-template-columns: 1fr;
+        }
+
+        .metadata-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+    }
+}
+
+// Mobile phones
+@media (max-width: 480px) {
+    .results-container {
+        padding: 0 8px;
+
+        h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        h3 {
+            font-size: 15px;
+            margin-bottom: 10px;
+        }
+
+        // Summary stats - 2 columns on mobile
+        .summary-stats {
+            grid-template-columns: repeat(2, 1fr);
+            padding: 12px;
+            gap: 8px;
+            border-radius: 8px;
+
+            .stat {
+                .label {
+                    font-size: 9px;
+                }
+
+                .value {
+                    font-size: 16px;
+
+                    &.id-value {
+                        font-size: 8px;
+                    }
+                }
+            }
+        }
+
+        // Summary text
+        .summary-text {
+            padding: 12px;
+            border-radius: 8px;
+
+            h3 {
+                font-size: 14px;
+            }
+
+            p {
+                font-size: 13px;
+                line-height: 1.5;
+            }
+        }
+
+        // Health card
+        .health-card {
+            padding: 12px;
+            border-radius: 8px;
+
+            .health-overview {
+                margin-bottom: 15px;
+
+                .risk-badge {
+                    padding: 6px 12px;
+                    font-size: 12px;
+                }
+            }
+
+            .health-scores {
+                gap: 10px;
+
+                .score-item {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid #eee;
+
+                    &:last-child {
+                        border-bottom: none;
+                        padding-bottom: 0;
+                    }
+
+                    .score-label {
+                        font-size: 12px;
+                        font-weight: 600;
+                    }
+
+                    .score-bar {
+                        height: 8px;
+                        width: 100%;
+                    }
+
+                    .score-value {
+                        text-align: left;
+                        font-size: 13px;
+                    }
+                }
+            }
+        }
+
+        // Alert cards
+        .alert-card {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+
+            h3 {
+                font-size: 14px;
+            }
+
+            .alert-list {
+                gap: 10px;
+            }
+
+            .alert-item {
+                padding: 10px;
+
+                .alert-header {
+                    .question-text {
+                        font-size: 13px;
+                    }
+                }
+
+                .alert-description {
+                    font-size: 12px;
+                    line-height: 1.5;
+                }
+
+                .alert-meta {
+                    flex-direction: column;
+                    gap: 4px;
+                    font-size: 11px;
+                }
+
+                .resolution {
+                    padding: 10px;
+                    margin-top: 10px;
+
+                    strong {
+                        font-size: 11px;
+                    }
+
+                    p {
+                        font-size: 12px;
+                    }
+                }
+            }
+        }
+
+        // Badges - smaller on mobile
+        .badge {
+            padding: 3px 8px;
+            font-size: 10px;
+            border-radius: 10px;
+        }
+
+        // Actions card
+        .actions-card {
+            padding: 12px;
+            border-radius: 8px;
+
+            h3 {
+                font-size: 14px;
+            }
+
+            .actions-list li {
+                font-size: 12px;
+                gap: 10px;
+                padding: 8px 0;
+
+                .action-number {
+                    width: 20px;
+                    height: 20px;
+                    min-width: 20px;
+                    font-size: 10px;
+                }
+            }
+        }
+
+        // Section cards
+        .section-card {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+
+            h3 {
+                font-size: 14px;
+            }
+        }
+
+        // Participants
+        .participant-list {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .participant {
+            padding: 10px;
+
+            .participant-name {
+                strong {
+                    font-size: 14px;
+                }
+
+                .participant-id {
+                    font-size: 10px;
+                }
+            }
+
+            .participant-details {
+                font-size: 11px;
+                gap: 6px;
+            }
+        }
+
+        // Messages
+        .messages-list {
+            gap: 10px;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 8px;
+
+            .message-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+                padding-bottom: 6px;
+
+                .message-sender {
+                    strong {
+                        font-size: 13px;
+                    }
+
+                    .message-id {
+                        font-size: 9px;
+                        padding: 2px 6px;
+                    }
+                }
+
+                .timestamp {
+                    font-size: 10px;
+                }
+            }
+
+            .message-content {
+                padding: 8px;
+                font-size: 13px;
+                line-height: 1.5;
+            }
+
+            .message-features {
+                gap: 4px;
+
+                .badge {
+                    padding: 2px 6px;
+                    font-size: 9px;
+                }
+            }
+
+            .questions-detected {
+                padding: 8px;
+                margin-top: 8px;
+
+                .questions-label {
+                    font-size: 10px;
+                }
+
+                ul {
+                    padding-left: 15px;
+
+                    li {
+                        font-size: 11px;
+                    }
+                }
+            }
+        }
+
+        // Metadata grid
+        .metadata-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+
+            .metadata-item {
+                .label {
+                    font-size: 9px;
+                }
+
+                .value {
+                    font-size: 12px;
+                }
+            }
+        }
+    }
+}
+
+// Extra small phones
+@media (max-width: 360px) {
+    .results-container {
+        padding: 0 5px;
+
+        .summary-stats {
+            grid-template-columns: 1fr 1fr;
+            padding: 10px;
+
+            .stat .value {
+                font-size: 14px;
+            }
+        }
+
+        .health-card .health-scores .score-item .score-label {
+            font-size: 11px;
+        }
+
+        .metadata-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+}

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+packages/
+
+# Build outputs
+bin/
+obj/
+dist/
+.angular/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Environment files
+.env
+local.settings.json
+appsettings.Development.json
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -24,11 +24,12 @@ export class ApiService {
 
   constructor(private http: HttpClient) { }
 
-  analyzeConversation(request: AnalysisRequest): Observable<AnalysisResponse> {
+  analyzeConversation(data: any): Observable<AnalysisResponse> {
     const url = this.functionKey
       ? `${this.apiUrl}/analyze?code=${this.functionKey}`
       : `${this.apiUrl}/analyze`;
-    return this.http.post<AnalysisResponse>(url, request);
+
+    return this.http.post<AnalysisResponse>(url, data);
   }
 
   analyzeImage(file: File, sourceType: string, parsingMode: number): Observable<AnalysisResponse> {
@@ -44,16 +45,20 @@ export class ApiService {
     return this.http.post<AnalysisResponse>(url, formData);
   }
 
-  analyzeImages(files: File[], sourceType: string, parsingMode: number): Observable<AnalysisResponse> {
+  analyzeImages(files: File[], sourceType: string, parsingMode: number, enableFlags: any = {}): Observable<AnalysisResponse> {
     const formData = new FormData();
 
-    // Append each image with index to maintain order
     files.forEach((file, index) => {
       formData.append('images', file);
     });
 
     formData.append('sourceType', sourceType);
     formData.append('parsingMode', parsingMode.toString());
+
+    // Add permission flags
+    if (Object.keys(enableFlags).length > 0) {
+      formData.append('enableFlags', JSON.stringify(enableFlags));
+    }
 
     const url = this.functionKey
       ? `${this.apiUrl}/analyze-images?code=${this.functionKey}`
@@ -62,11 +67,16 @@ export class ApiService {
     return this.http.post<AnalysisResponse>(url, formData);
   }
 
-  analyzeAudio(file: File, sourceType: string, parsingMode: number): Observable<AnalysisResponse> {
+  analyzeAudio(file: File, sourceType: string, parsingMode: number, enableFlags: any = {}): Observable<AnalysisResponse> {
     const formData = new FormData();
     formData.append('audio', file);
     formData.append('sourceType', sourceType);
     formData.append('parsingMode', parsingMode.toString());
+
+    // Add permission flags
+    if (Object.keys(enableFlags).length > 0) {
+      formData.append('enableFlags', JSON.stringify(enableFlags));
+    }
 
     const url = this.functionKey
       ? `${this.apiUrl}/analyze-audio?code=${this.functionKey}`

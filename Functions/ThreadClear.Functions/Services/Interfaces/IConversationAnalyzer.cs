@@ -12,7 +12,7 @@ namespace ThreadClear.Functions.Services.Interfaces
         /// <summary>
         /// Perform complete conversation analysis (hero features)
         /// </summary>
-        Task AnalyzeConversation(ThreadCapsule capsule);
+        Task AnalyzeConversation(ThreadCapsule capsule, AnalysisOptions? options = null);
 
         /// <summary>
         /// ⭐ HERO: Detect unanswered questions with persistence tracking

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -26,13 +27,27 @@ namespace ThreadClear.Functions.Services.Implementations
             _logger = logger; 
         }
 
-        public async Task AnalyzeConversation(ThreadCapsule capsule)
+        public async Task AnalyzeConversation(ThreadCapsule capsule, AnalysisOptions? options = null)
         {
             if (capsule.Analysis == null)
             {
                 capsule.Analysis = new ConversationAnalysis();
             }
 
+            // Use combined call if options provided, otherwise run all
+            if (options != null)
+            {
+                await AnalyzeConversationCombined(capsule, options);
+            }
+            else
+            {
+                // Default: run all analyses in parallel (admin or no options)
+                await AnalyzeConversationFull(capsule);
+            }
+        }
+
+        private async Task AnalyzeConversationFull(ThreadCapsule capsule)
+        {
             // Run all AI calls in parallel
             var unansweredTask = DetectUnansweredQuestions(capsule);
             var tensionTask = IdentifyTensionPoints(capsule);
@@ -42,7 +57,6 @@ namespace ThreadClear.Functions.Services.Implementations
             var actionItemsTask = IdentifyActionItems(capsule);
             var suggestionsTask = _aiService.GenerateSuggestedActions(capsule);
 
-            // Wait for all to complete
             await Task.WhenAll(
                 unansweredTask,
                 tensionTask,
@@ -53,7 +67,6 @@ namespace ThreadClear.Functions.Services.Implementations
                 suggestionsTask
             );
 
-            // Assign results
             capsule.Analysis.UnansweredQuestions = await unansweredTask;
             capsule.Analysis.TensionPoints = await tensionTask;
             capsule.Analysis.Misalignments = await misalignmentsTask;
@@ -61,6 +74,254 @@ namespace ThreadClear.Functions.Services.Implementations
             capsule.Analysis.Decisions = await decisionsTask;
             capsule.Analysis.ActionItems = await actionItemsTask;
             capsule.SuggestedActions = await suggestionsTask;
+        }
+
+        private async Task AnalyzeConversationCombined(ThreadCapsule capsule, AnalysisOptions options)
+        {
+            // Build a single prompt that requests only the enabled features
+            var prompt = BuildCombinedPrompt(capsule, options);
+
+            var response = await _aiService.GenerateResponseAsync(prompt);
+
+            // Parse the combined response
+            ParseCombinedResponse(capsule, response, options);
+        }
+
+        private string BuildCombinedPrompt(ThreadCapsule capsule, AnalysisOptions options)
+        {
+            var conversationText = capsule.RawText;
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Analyze the following conversation and provide a JSON response with the requested analyses.");
+            sb.AppendLine();
+            sb.AppendLine("CONVERSATION:");
+            sb.AppendLine(conversationText);
+            sb.AppendLine();
+            sb.AppendLine("Provide a JSON response with the following structure (only include sections that are requested):");
+            sb.AppendLine("{");
+
+            var sections = new List<string>();
+
+            if (options.EnableUnansweredQuestions)
+            {
+                sections.Add(@"  ""unansweredQuestions"": [
+    { ""question"": ""the question text"", ""askedBy"": ""person name"", ""messageIndex"": 0, ""context"": ""surrounding context"" }
+  ]");
+            }
+
+            if (options.EnableTensionPoints)
+            {
+                sections.Add(@"  ""tensionPoints"": [
+    { ""description"": ""description of tension"", ""severity"": ""Low|Medium|High"", ""participants"": [""name1"", ""name2""], ""messageIndices"": [0, 1], ""suggestedResolution"": ""how to resolve"" }
+  ]");
+            }
+
+            if (options.EnableMisalignments)
+            {
+                sections.Add(@"  ""misalignments"": [
+    { ""topic"": ""topic of misalignment"", ""perspectives"": [{""participant"": ""name"", ""position"": ""their view""}], ""severity"": ""Low|Medium|High"", ""potentialImpact"": ""impact description"" }
+  ]");
+            }
+
+            if (options.EnableConversationHealth)
+            {
+                sections.Add(@"  ""conversationHealth"": {
+    ""overallScore"": 75,
+    ""clarityScore"": 80,
+    ""responsivenessScore"": 70,
+    ""alignmentScore"": 75,
+    ""riskLevel"": ""Low|Medium|High"",
+    ""issues"": [""issue1"", ""issue2""],
+    ""strengths"": [""strength1"", ""strength2""],
+    ""recommendations"": [""recommendation1""]
+  }");
+            }
+
+            if (options.EnableSuggestedActions)
+            {
+                sections.Add(@"  ""suggestedActions"": [
+    { ""action"": ""action description"", ""priority"": ""Low|Medium|High"", ""assignee"": ""person name or null"", ""reasoning"": ""why this action"" }
+  ]");
+            }
+
+            sb.AppendLine(string.Join(",\n", sections));
+            sb.AppendLine("}");
+            sb.AppendLine();
+            sb.AppendLine("Return ONLY valid JSON, no markdown formatting or explanation.");
+
+            return sb.ToString();
+        }
+
+        private void ParseCombinedResponse(ThreadCapsule capsule, string response, AnalysisOptions options)
+        {
+            try
+            {
+                var cleanResponse = JsonHelper.CleanJsonResponse(response);
+                using var doc = JsonDocument.Parse(cleanResponse);
+                var root = doc.RootElement;
+
+                if (options.EnableUnansweredQuestions && root.TryGetProperty("unansweredQuestions", out var uqElement))
+                {
+                    capsule.Analysis.UnansweredQuestions = ParseUnansweredQuestionsCombined(uqElement);
+                }
+                else
+                {
+                    capsule.Analysis.UnansweredQuestions = new List<UnansweredQuestion>();
+                }
+
+                if (options.EnableTensionPoints && root.TryGetProperty("tensionPoints", out var tpElement))
+                {
+                    capsule.Analysis.TensionPoints = ParseTensionPointsCombined(tpElement);
+                }
+                else
+                {
+                    capsule.Analysis.TensionPoints = new List<TensionPoint>();
+                }
+
+                if (options.EnableMisalignments && root.TryGetProperty("misalignments", out var maElement))
+                {
+                    capsule.Analysis.Misalignments = ParseMisalignmentsCombined(maElement);
+                }
+                else
+                {
+                    capsule.Analysis.Misalignments = new List<Misalignment>();
+                }
+
+                if (options.EnableConversationHealth && root.TryGetProperty("conversationHealth", out var chElement))
+                {
+                    capsule.Analysis.ConversationHealth = ParseConversationHealthCombined(chElement);
+                }
+                else
+                {
+                    capsule.Analysis.ConversationHealth = null;
+                }
+
+                if (options.EnableSuggestedActions && root.TryGetProperty("suggestedActions", out var saElement))
+                {
+                    capsule.SuggestedActions = ParseSuggestedActionsCombined(saElement);
+                }
+                else
+                {
+                    capsule.SuggestedActions = new List<string>();
+                }
+
+                // Always set empty for non-requested features
+                capsule.Analysis.Decisions = new List<DecisionPoint>();
+                capsule.Analysis.ActionItems = new List<ActionItem>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing combined response");
+                // Set defaults on error
+                capsule.Analysis.UnansweredQuestions = new List<UnansweredQuestion>();
+                capsule.Analysis.TensionPoints = new List<TensionPoint>();
+                capsule.Analysis.Misalignments = new List<Misalignment>();
+                capsule.Analysis.ConversationHealth = null;
+                capsule.SuggestedActions = new List<string>();
+                capsule.Analysis.Decisions = new List<DecisionPoint>();
+                capsule.Analysis.ActionItems = new List<ActionItem>();
+            }
+        }
+
+        private List<UnansweredQuestion> ParseUnansweredQuestionsCombined(JsonElement element)
+        {
+            var result = new List<UnansweredQuestion>();
+            foreach (var item in element.EnumerateArray())
+            {
+                result.Add(new UnansweredQuestion
+                {
+                    Question = item.TryGetProperty("question", out var q) ? q.GetString() ?? "" : "",
+                    AskedBy = item.TryGetProperty("askedBy", out var a) ? a.GetString() ?? "" : "",
+                    AskedAt = DateTime.UtcNow,
+                    TimesAsked = 1,
+                    MessageId = item.TryGetProperty("messageId", out var m) ? m.GetString() : null
+                });
+            }
+            return result;
+        }
+
+        private List<TensionPoint> ParseTensionPointsCombined(JsonElement element)
+        {
+            var result = new List<TensionPoint>();
+            foreach (var item in element.EnumerateArray())
+            {
+                var tp = new TensionPoint
+                {
+                    Description = item.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "",
+                    Severity = item.TryGetProperty("severity", out var s) ? s.GetString() ?? "Low" : "Low",
+                    Type = "Conflict",
+                    Timestamp = DateTime.UtcNow,
+                    DetectedAt = DateTime.UtcNow
+                };
+
+                if (item.TryGetProperty("participants", out var participants))
+                {
+                    tp.Participants = participants.EnumerateArray().Select(p => p.GetString() ?? "").ToList();
+                }
+
+                result.Add(tp);
+            }
+            return result;
+        }
+
+        private List<Misalignment> ParseMisalignmentsCombined(JsonElement element)
+        {
+            var result = new List<Misalignment>();
+            foreach (var item in element.EnumerateArray())
+            {
+                var ma = new Misalignment
+                {
+                    Type = item.TryGetProperty("topic", out var t) ? t.GetString() ?? "" : "",
+                    Severity = item.TryGetProperty("severity", out var s) ? s.GetString() ?? "Low" : "Low",
+                    Description = item.TryGetProperty("potentialImpact", out var pi) ? pi.GetString() ?? "" : "",
+                    SuggestedResolution = item.TryGetProperty("suggestedResolution", out var sr) ? sr.GetString() : null
+                };
+
+                if (item.TryGetProperty("perspectives", out var perspectives))
+                {
+                    ma.ParticipantsInvolved = perspectives.EnumerateArray()
+                        .Select(p => p.TryGetProperty("participant", out var part) ? part.GetString() ?? "" : "")
+                        .ToList();
+                }
+
+                result.Add(ma);
+            }
+            return result;
+        }
+
+        private ConversationHealth ParseConversationHealthCombined(JsonElement element)
+        {
+            return new ConversationHealth
+            {
+                HealthScore = element.TryGetProperty("overallScore", out var os) ? os.GetInt32() / 100.0 : 0.5,
+                ClarityScore = element.TryGetProperty("clarityScore", out var cs) ? cs.GetInt32() / 100.0 : 0.5,
+                ResponsivenessScore = element.TryGetProperty("responsivenessScore", out var rs) ? rs.GetInt32() / 100.0 : 0.5,
+                AlignmentScore = element.TryGetProperty("alignmentScore", out var als) ? als.GetInt32() / 100.0 : 0.5,
+                RiskLevel = element.TryGetProperty("riskLevel", out var rl) ? rl.GetString() ?? "Low" : "Low",
+                Issues = element.TryGetProperty("issues", out var issues)
+                    ? issues.EnumerateArray().Select(i => i.GetString()).ToList()
+                    : new List<string?>(),
+                Strengths = element.TryGetProperty("strengths", out var strengths)
+                    ? strengths.EnumerateArray().Select(s => s.GetString()).ToList()
+                    : new List<string?>(),
+                Recommendations = element.TryGetProperty("recommendations", out var recs)
+                    ? recs.EnumerateArray().Select(r => r.GetString()).ToList()
+                    : new List<string?>()
+            };
+        }
+
+        private List<string> ParseSuggestedActionsCombined(JsonElement element)
+        {
+            var result = new List<string>();
+            foreach (var item in element.EnumerateArray())
+            {
+                var action = item.TryGetProperty("action", out var a) ? a.GetString() ?? "" : "";
+                if (!string.IsNullOrEmpty(action))
+                {
+                    result.Add(action);
+                }
+            }
+            return result;
         }
 
         /// <summary>

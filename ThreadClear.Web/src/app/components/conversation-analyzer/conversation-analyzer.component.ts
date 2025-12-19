@@ -160,15 +160,26 @@ export class ConversationAnalyzerComponent implements OnInit {
     this.error = '';
     this.results = null;
 
-    // Build permissions object to send to API
-    const enabledFeatures = this.getEnabledFeatures();
+    const perms = this.permissions;
+    const isAdmin = this.isAdmin;
 
-    this.apiService.analyzeConversation({
+    // Build request with permissions
+    const request: any = {
       conversationText: this.conversationText,
       sourceType: this.sourceType,
-      parsingMode: this.parsingMode,
-      ...enabledFeatures
-    }).subscribe({
+      parsingMode: this.parsingMode
+    };
+
+    // If not admin, include permission flags
+    if (!isAdmin && perms) {
+      request.enableUnansweredQuestions = perms.UnansweredQuestions || perms.unansweredQuestions || false;
+      request.enableTensionPoints = perms.TensionPoints || perms.tensionPoints || false;
+      request.enableMisalignments = perms.Misalignments || perms.misalignments || false;
+      request.enableConversationHealth = perms.ConversationHealth || perms.conversationHealth || false;
+      request.enableSuggestedActions = perms.SuggestedActions || perms.suggestedActions || false;
+    }
+
+    this.apiService.analyzeConversation(request).subscribe({
       next: (response) => {
         this.results = this.filterResultsByPermissions(response.capsule);
         this.loading = false;
@@ -186,7 +197,22 @@ export class ConversationAnalyzerComponent implements OnInit {
     this.error = '';
     this.results = null;
 
-    this.apiService.analyzeImages(this.selectedImages, this.sourceType, this.parsingMode)
+    const perms = this.permissions;
+    const isAdmin = this.isAdmin;
+
+    // Build permission flags
+    let enableFlags: any = {};
+    if (!isAdmin && perms) {
+      enableFlags = {
+        enableUnansweredQuestions: perms.UnansweredQuestions || perms.unansweredQuestions || false,
+        enableTensionPoints: perms.TensionPoints || perms.tensionPoints || false,
+        enableMisalignments: perms.Misalignments || perms.misalignments || false,
+        enableConversationHealth: perms.ConversationHealth || perms.conversationHealth || false,
+        enableSuggestedActions: perms.SuggestedActions || perms.suggestedActions || false
+      };
+    }
+
+    this.apiService.analyzeImages(this.selectedImages, this.sourceType, this.parsingMode, enableFlags)
       .subscribe({
         next: (response) => {
           this.results = this.filterResultsByPermissions(response.capsule);
@@ -207,7 +233,21 @@ export class ConversationAnalyzerComponent implements OnInit {
     this.error = '';
     this.results = null;
 
-    this.apiService.analyzeAudio(this.selectedAudio, this.sourceType, this.parsingMode)
+    const perms = this.permissions;
+    const isAdmin = this.isAdmin;
+
+    let enableFlags: any = {};
+    if (!isAdmin && perms) {
+      enableFlags = {
+        enableUnansweredQuestions: perms.UnansweredQuestions || perms.unansweredQuestions || false,
+        enableTensionPoints: perms.TensionPoints || perms.tensionPoints || false,
+        enableMisalignments: perms.Misalignments || perms.misalignments || false,
+        enableConversationHealth: perms.ConversationHealth || perms.conversationHealth || false,
+        enableSuggestedActions: perms.SuggestedActions || perms.suggestedActions || false
+      };
+    }
+
+    this.apiService.analyzeAudio(this.selectedAudio, this.sourceType, this.parsingMode, enableFlags)
       .subscribe({
         next: (response) => {
           this.results = this.filterResultsByPermissions(response.capsule);

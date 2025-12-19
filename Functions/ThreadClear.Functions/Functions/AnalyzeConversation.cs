@@ -1,11 +1,9 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using System.Drawing;
 using System.Net;
 using System.Text.Json;
 using ThreadClear.Functions.Models;
-using ThreadClear.Functions.Services.Implementations;
 using ThreadClear.Functions.Services.Interfaces;
 
 namespace ThreadClear.Functions.Functions
@@ -38,9 +36,6 @@ namespace ThreadClear.Functions.Functions
             if (req.Method == "OPTIONS")
             {
                 var corsResponse = req.CreateResponse(HttpStatusCode.OK);
-                corsResponse.Headers.Add("Access-Control-Allow-Origin", "http://localhost:4200");
-                corsResponse.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-                corsResponse.Headers.Add("Access-Control-Allow-Headers", "Content-Type");
                 return corsResponse;
             }
 
@@ -50,7 +45,7 @@ namespace ThreadClear.Functions.Functions
             {
                 // Parse request
                 var request = await req.ReadFromJsonAsync<AnalysisRequest>();
-                
+
                 if (request == null || string.IsNullOrWhiteSpace(request.ConversationText))
                 {
                     return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request");
@@ -58,15 +53,14 @@ namespace ThreadClear.Functions.Functions
 
                 // Determine parsing mode
                 ParsingMode? mode = request.ParsingMode;
-                
-                // Override based on priority if not explicitly set
+
                 if (mode == null && !string.IsNullOrEmpty(request.PriorityLevel))
                 {
                     mode = request.PriorityLevel?.ToLower() switch
                     {
                         "high" => ParsingMode.Advanced,
                         "low" => ParsingMode.Basic,
-                        _ => null // Use default Auto
+                        _ => null
                     };
                 }
 
@@ -76,31 +70,39 @@ namespace ThreadClear.Functions.Functions
                     request.SourceType ?? "simple",
                     mode);
 
-                // Log which mode was used
                 var modeUsed = capsule.Metadata["ParsingMode"];
-                _logger.LogInformation("Parsed conversation {Id} using {Mode} mode", 
+                _logger.LogInformation("Parsed conversation {Id} using {Mode} mode",
                     capsule.CapsuleId, modeUsed);
 
-                // TODO: Perform additional analysis with IConversationAnalyzer
-                await _analyzer.AnalyzeConversation(capsule);
+                // Build analysis options from request
+                AnalysisOptions? options = null;
+                if (request.HasPermissionFlags())
+                {
+                    options = new AnalysisOptions
+                    {
+                        EnableUnansweredQuestions = request.EnableUnansweredQuestions ?? true,
+                        EnableTensionPoints = request.EnableTensionPoints ?? true,
+                        EnableMisalignments = request.EnableMisalignments ?? true,
+                        EnableConversationHealth = request.EnableConversationHealth ?? true,
+                        EnableSuggestedActions = request.EnableSuggestedActions ?? true
+                    };
+                    _logger.LogInformation("Using combined analysis with options: UQ={UQ}, TP={TP}, MA={MA}, CH={CH}, SA={SA}",
+                        options.EnableUnansweredQuestions, options.EnableTensionPoints,
+                        options.EnableMisalignments, options.EnableConversationHealth,
+                        options.EnableSuggestedActions);
+                }
+
+                // Perform analysis (combined if options provided, full if not)
+                await _analyzer.AnalyzeConversation(capsule, options);
 
                 // Enrich with additional features
                 await _builder.EnrichWithLinguisticFeatures(capsule);
                 await _builder.CalculateMetadata(capsule);
                 var summary = await _builder.GenerateSummary(capsule);
-
-                // Debug: Log the full capsule as JSON
-                var fullJson = System.Text.Json.JsonSerializer.Serialize(capsule, new System.Text.Json.JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-                _logger.LogInformation("Full capsule: {Json}", fullJson);
+                capsule.Summary = summary;
 
                 // Create response
                 var response = req.CreateResponse(HttpStatusCode.OK);
-
-                capsule.Summary = summary;  // Add this line
-
                 await response.WriteAsJsonAsync(new
                 {
                     success = true,
@@ -108,23 +110,19 @@ namespace ThreadClear.Functions.Functions
                     parsingMode = modeUsed
                 });
 
-                response.Headers.Add("Access-Control-Allow-Origin", "http://localhost:4200");
-                response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-                response.Headers.Add("Access-Control-Allow-Headers", "Content-Type");
-
                 return response;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing conversation");
-                return await CreateErrorResponse(req, HttpStatusCode.InternalServerError, 
+                return await CreateErrorResponse(req, HttpStatusCode.InternalServerError,
                     "An error occurred processing your request");
             }
         }
 
         private async Task<HttpResponseData> CreateErrorResponse(
-            HttpRequestData req, 
-            HttpStatusCode statusCode, 
+            HttpRequestData req,
+            HttpStatusCode statusCode,
             string message)
         {
             var response = req.CreateResponse(statusCode);

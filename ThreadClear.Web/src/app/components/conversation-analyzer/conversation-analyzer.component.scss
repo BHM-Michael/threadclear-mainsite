@@ -35,6 +35,15 @@
     .header-right {
         display: flex;
         gap: 10px;
+
+        .logged-in-user {
+            color: #666;
+            font-size: 14px;
+            margin-right: 15px;
+            padding: 6px 12px;
+            background: #f0f0f0;
+            border-radius: 16px;
+        }
     }
 }
 

@@ -51,6 +51,11 @@ export class ConversationAnalyzerComponent implements OnInit {
     return user?.permissions || user?.Permissions;
   }
 
+  get userEmail(): string {
+    const user = this.currentUser as any;
+    return user?.Email || user?.email || '';
+  }
+
   onAudioSelected(event: any) {
     const file = event.target.files[0];
     if (file) {

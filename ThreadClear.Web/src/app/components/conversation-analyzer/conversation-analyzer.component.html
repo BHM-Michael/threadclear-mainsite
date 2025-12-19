@@ -12,6 +12,7 @@
             <span class="user-email" *ngIf="currentUser">{{ currentUser.email }}</span>
         </div>
         <div class="header-right">
+            <span class="logged-in-user" *ngIf="currentUser">{{ userEmail }}</span>
             <button class="btn-admin" *ngIf="isAdmin" (click)="goToAdmin()">Admin Dashboard</button>
             <button class="btn-logout" (click)="logout()">Logout</button>
         </div>

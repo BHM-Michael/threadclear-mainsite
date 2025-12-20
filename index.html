@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Thread Clear - Coming Soon. Something great is on the way.">
-    <title>Thread Clear - Coming Soon</title>
+    <meta name="description" content="ThreadClear - AI conversation analysis, simplified. Find tension, gaps, and risks hiding in your conversations. Privacy-first, zero data retention.">
+    <title>ThreadClear - AI Conversation Analysis</title>
     <style>
         * {
             margin: 0;
@@ -14,6 +14,12 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Hero Section */
+        .hero {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -63,54 +69,328 @@
         }
 
         @keyframes float {
-            0%, 100% {
-                transform: translateY(0) translateX(0);
-            }
-            33% {
-                transform: translateY(-30px) translateX(20px);
-            }
-            66% {
-                transform: translateY(20px) translateX(-20px);
-            }
+            0%, 100% { transform: translateY(0) translateX(0); }
+            33% { transform: translateY(-30px) translateX(20px); }
+            66% { transform: translateY(20px) translateX(-20px); }
         }
 
-        .container {
+        .hero-content {
             position: relative;
             z-index: 1;
             text-align: center;
             padding: 40px 20px;
-            max-width: 600px;
+            max-width: 800px;
             width: 100%;
         }
 
         .logo {
             font-size: 3.5rem;
             font-weight: 700;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             letter-spacing: -1px;
             animation: fadeInDown 1s ease-out;
         }
 
         .tagline {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: 300;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.95;
             animation: fadeInUp 1s ease-out 0.2s both;
         }
 
-        .subtitle {
+        .hero-description {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2.5rem;
+            animation: fadeInUp 1s ease-out 0.4s both;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 18px 45px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            animation: fadeInUp 1s ease-out 0.6s both;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+            cursor: pointer;
+        }
+
+        .scroll-hint svg {
+            width: 30px;
+            height: 30px;
+            fill: white;
+            opacity: 0.7;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(10px); }
+        }
+
+        /* Problem Section */
+        .problem-section {
+            padding: 100px 20px;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .section-subtitle {
+            font-size: 1.1rem;
+            text-align: center;
+            color: #666;
+            margin-bottom: 3rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .problems-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .problem-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            text-align: center;
+        }
+
+        .problem-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .problem-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .problem-card p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 100px 20px;
+            background: white;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .feature-card {
+            padding: 30px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #667eea08 0%, #764ba208 100%);
+            border: 1px solid #667eea20;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-card h3 span {
+            font-size: 1.5rem;
+        }
+
+        .feature-card p {
+            color: #555;
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        /* How It Works */
+        .how-section {
+            padding: 100px 20px;
+            background: #f8f9fa;
+        }
+
+        .steps {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .step {
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+            position: relative;
+        }
+
+        .step-number {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 auto 20px;
+        }
+
+        .step h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .step p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Privacy Section */
+        .privacy-section {
+            padding: 100px 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+        }
+
+        .privacy-section .section-title {
+            color: white;
+        }
+
+        .privacy-section .section-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .privacy-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .privacy-point {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .privacy-point .icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .privacy-point h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .privacy-point p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+
+        /* Use Cases */
+        .usecases-section {
+            padding: 100px 20px;
+            background: white;
+        }
+
+        .usecases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+        }
+
+        .usecase {
+            padding: 25px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            text-align: center;
+        }
+
+        .usecase-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .usecase h3 {
+            font-size: 1rem;
+            color: #333;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 100px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            text-align: center;
+            color: white;
+        }
+
+        .cta-section h2 {
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .cta-section p {
             font-size: 1.1rem;
             opacity: 0.9;
-            margin-bottom: 3rem;
-            animation: fadeInUp 1s ease-out 0.4s both;
+            margin-bottom: 2rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .email-form {
             display: flex;
             gap: 10px;
             max-width: 500px;
-            margin: 0 auto 3rem;
-            animation: fadeInUp 1s ease-out 0.6s both;
+            margin: 0 auto;
             flex-wrap: wrap;
             justify-content: center;
         }
@@ -118,12 +398,12 @@
         .email-input {
             flex: 1;
             min-width: 250px;
-            padding: 15px 20px;
+            padding: 16px 24px;
             border: none;
             border-radius: 50px;
             font-size: 1rem;
             outline: none;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             color: #333;
         }
 
@@ -132,7 +412,7 @@
         }
 
         .submit-btn {
-            padding: 15px 35px;
+            padding: 16px 35px;
             border: none;
             border-radius: 50px;
             font-size: 1rem;
@@ -149,33 +429,6 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
         }
 
-        .social-links {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            animation: fadeInUp 1s ease-out 0.8s both;
-        }
-
-        .social-link {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            color: white;
-            font-size: 1.5rem;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .social-link:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: translateY(-5px);
-        }
-
         .success-message {
             display: none;
             background: rgba(76, 175, 80, 0.9);
@@ -183,100 +436,282 @@
             border-radius: 50px;
             margin: 20px auto;
             max-width: 400px;
-            animation: fadeInUp 0.5s ease-out;
         }
 
         .success-message.show {
             display: block;
         }
 
+        /* Footer */
+        footer {
+            padding: 40px 20px;
+            background: #1a1a2e;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+        }
+
+        footer a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            color: white;
+        }
+
+        /* Animations */
         @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        @media (max-width: 600px) {
-            .logo {
-                font-size: 2.5rem;
-            }
-            .tagline {
-                font-size: 1.5rem;
-            }
-            .subtitle {
-                font-size: 1rem;
-            }
-            .email-form {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .email-input {
-                min-width: 100%;
-            }
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo { font-size: 2.5rem; }
+            .tagline { font-size: 1.2rem; }
+            .hero-description { font-size: 1rem; }
+            .section-title { font-size: 1.8rem; }
+            .steps { flex-direction: column; }
+            .email-form { flex-direction: column; align-items: stretch; }
+            .email-input { min-width: 100%; }
         }
     </style>
 </head>
 <body>
-    <div class="background-animation">
-        <div class="circle"></div>
-        <div class="circle"></div>
-        <div class="circle"></div>
-    </div>
-
-    <div class="container">
-        <h1 class="logo">ThreadClear</h1>
-        <h2 class="tagline">Coming Soon</h2>
-        <p class="subtitle">Something great is on the way.</p>
-
-        <form class="email-form" id="emailForm">
-            <input 
-                type="email" 
-                class="email-input" 
-                placeholder="Enter your email" 
-                required
-                id="emailInput"
-            >
-            <button type="submit" class="submit-btn">Notify Me</button>
-        </form>
-
-        <div class="success-message" id="successMessage">
-            Thanks! We'll be in touch soon.
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="background-animation">
+            <div class="circle"></div>
+            <div class="circle"></div>
+            <div class="circle"></div>
         </div>
 
-        <div class="social-links">
-            <a href="#" class="social-link" title="Twitter">
-                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                </svg>
-            </a>
-            <a href="#" class="social-link" title="LinkedIn">
-                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-            </a>
-            <a href="#" class="social-link" title="GitHub">
-                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                </svg>
-            </a>
+        <div class="hero-content">
+            <h1 class="logo">ThreadClear</h1>
+            <p class="tagline">AI conversation analysis, simplified.</p>
+            <p class="hero-description">
+                Find the tension, gaps, and risks hiding in your conversations. 
+                Analyze emails, Slack threads, and messages instantly — with complete privacy.
+            </p>
+            <a href="#early-access" class="cta-button">Request Early Access</a>
         </div>
-    </div>
+
+        <div class="scroll-hint" onclick="document.querySelector('.problem-section').scrollIntoView({behavior: 'smooth'})">
+            <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem-section">
+        <div class="container">
+            <h2 class="section-title">Conversations are messy. Critical details get lost.</h2>
+            <p class="section-subtitle">
+                Important questions go unanswered. Tension builds unnoticed. Misalignments derail projects. Sound familiar?
+            </p>
+
+            <div class="problems-grid">
+                <div class="problem-card">
+                    <div class="problem-icon">❓</div>
+                    <h3>Unanswered Questions</h3>
+                    <p>Questions get buried in long threads. Decisions stall while waiting for answers that never come.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">⚡</div>
+                    <h3>Hidden Tension</h3>
+                    <p>Frustration builds through passive-aggressive messages and ignored requests until relationships break down.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="problem-icon">🎯</div>
+                    <h3>Misaligned Expectations</h3>
+                    <p>People leave conversations thinking they agree, only to discover they had completely different understandings.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="container">
+            <h2 class="section-title">AI-powered conversation intelligence</h2>
+            <p class="section-subtitle">
+                ThreadClear analyzes your conversations and surfaces what matters most.
+            </p>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3><span>🔍</span> Unanswered Questions</h3>
+                    <p>Automatically detect questions that were asked but never answered. Never let important asks fall through the cracks again.</p>
+                </div>
+                <div class="feature-card">
+                    <h3><span>🌡️</span> Tension Detection</h3>
+                    <p>Identify frustration, urgency, and conflict before they escalate. See where communication is breaking down.</p>
+                </div>
+                <div class="feature-card">
+                    <h3><span>⚖️</span> Misalignment Analysis</h3>
+                    <p>Spot where participants have different expectations or understandings. Prevent costly miscommunications.</p>
+                </div>
+                <div class="feature-card">
+                    <h3><span>📊</span> Conversation Health Score</h3>
+                    <p>Get an instant health assessment of any conversation. Understand clarity, responsiveness, and risk at a glance.</p>
+                </div>
+                <div class="feature-card">
+                    <h3><span>✅</span> Suggested Actions</h3>
+                    <p>Receive AI-powered recommendations for what to do next. Clear action items to move conversations forward.</p>
+                </div>
+                <div class="feature-card">
+                    <h3><span>📱</span> Multi-Platform Support</h3>
+                    <p>Works with email threads, Slack, Teams, text messages, and more. Paste text, upload screenshots, or even audio.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+	
+	<!-- Why ThreadClear -->
+    <section style="padding: 80px 20px; background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);">
+        <div class="container" style="text-align: center;">
+            <h2 class="section-title">Not just another AI tool</h2>
+            <p class="section-subtitle" style="max-width: 800px;">
+                ThreadClear uses purpose-built analysis algorithms designed specifically for conversation dynamics — 
+                not generic AI. Our technology understands the nuances of how people communicate, 
+                detecting patterns that off-the-shelf tools miss.
+            </p>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-section">
+        <div class="container">
+            <h2 class="section-title">How it works</h2>
+            <p class="section-subtitle">Get insights in seconds, not hours.</p>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Paste or Upload</h3>
+                    <p>Copy your conversation text, upload screenshots, or even audio recordings.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>AI Analysis</h3>
+                    <p>Our AI instantly analyzes for questions, tension, misalignments, and health.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Get Insights</h3>
+                    <p>Review clear, actionable insights and recommendations in seconds.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>Take Action</h3>
+                    <p>Address issues before they become problems. Keep conversations on track.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Privacy Section -->
+    <section class="privacy-section">
+        <div class="container">
+            <h2 class="section-title">Privacy-first. Always.</h2>
+            <p class="section-subtitle">
+                Your conversations are sensitive. We treat them that way.
+            </p>
+
+            <div class="privacy-points">
+                <div class="privacy-point">
+                    <div class="icon">🗑️</div>
+                    <h3>Zero Data Retention</h3>
+                    <p>Your conversations are analyzed and immediately discarded. We never store your data.</p>
+                </div>
+                <div class="privacy-point">
+                    <div class="icon">🚫</div>
+                    <h3>No AI Training</h3>
+                    <p>Your data is never used to train AI models. Your conversations stay yours.</p>
+                </div>
+                <div class="privacy-point">
+                    <div class="icon">⚡</div>
+                    <h3>Ephemeral Processing</h3>
+                    <p>Analysis happens in real-time. Nothing persists after you close the window.</p>
+                </div>
+                <div class="privacy-point">
+                    <div class="icon">🏢</div>
+                    <h3>Self-Hosted Option</h3>
+                    <p>For maximum security, deploy ThreadClear in your own environment. Perfect for regulated industries.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases -->
+    <section class="usecases-section">
+        <div class="container">
+            <h2 class="section-title">Built for teams who can't afford miscommunication</h2>
+            <p class="section-subtitle">From legal teams to healthcare providers, ThreadClear helps where clarity is critical.</p>
+
+            <div class="usecases-grid">
+                <div class="usecase">
+                    <div class="usecase-icon">⚖️</div>
+                    <h3>Legal</h3>
+                </div>
+                <div class="usecase">
+                    <div class="usecase-icon">🏥</div>
+                    <h3>Healthcare</h3>
+                </div>
+                <div class="usecase">
+                    <div class="usecase-icon">💼</div>
+                    <h3>Finance</h3>
+                </div>
+                <div class="usecase">
+                    <div class="usecase-icon">🛡️</div>
+                    <h3>Defense</h3>
+                </div>
+                <div class="usecase">
+                    <div class="usecase-icon">👥</div>
+                    <h3>HR & People Ops</h3>
+                </div>
+                <div class="usecase">
+                    <div class="usecase-icon">🚀</div>
+                    <h3>Project Management</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section" id="early-access">
+        <div class="container">
+            <h2>Get early access</h2>
+            <p>Join our beta program and be the first to experience ThreadClear.</p>
+
+            <form class="email-form" id="emailForm">
+                <input 
+                    type="email" 
+                    class="email-input" 
+                    placeholder="Enter your email" 
+                    required
+                    id="emailInput"
+                >
+                <button type="submit" class="submit-btn">Request Access</button>
+            </form>
+
+            <div class="success-message" id="successMessage">
+                Thanks! We'll be in touch soon.
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 ThreadClear. All rights reserved.</p>
+        <p style="margin-top: 10px;">
+            <a href="mailto:michael@threadclear.com">Contact</a>
+        </p>
+    </footer>
 
     <script>
         const form = document.getElementById('emailForm');
@@ -287,19 +722,26 @@
             e.preventDefault();
             
             const email = emailInput.value;
-            const mailtoLink = `mailto:michael@threadclear.com?subject=ThreadClear - Notify Me&body=Please notify me when ThreadClear launches.%0D%0A%0D%0AMy email: ${encodeURIComponent(email)}`;
+            const mailtoLink = `mailto:michael@threadclear.com?subject=ThreadClear Early Access Request&body=I'd like to request early access to ThreadClear.%0D%0A%0D%0AMy email: ${encodeURIComponent(email)}`;
             
-            // Open email client
             window.location.href = mailtoLink;
             
-            // Show success message
             successMessage.classList.add('show');
             emailInput.value = '';
             
-            // Hide success message after 5 seconds
             setTimeout(() => {
                 successMessage.classList.remove('show');
             }, 5000);
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
         });
     </script>
 </body>

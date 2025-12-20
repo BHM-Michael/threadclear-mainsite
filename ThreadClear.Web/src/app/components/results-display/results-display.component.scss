@@ -925,6 +925,220 @@
     }
 }
 
+// Clickable stats
+.stat.clickable {
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+
+    &:hover {
+        transform: translateY(-2px);
+        background-color: #f0f4ff;
+    }
+
+    .value.link {
+        color: #667eea;
+        text-decoration: underline;
+    }
+}
+
+// Message details hover effect
+.message {
+    transition: background-color 0.2s;
+
+    &:hover {
+        background-color: #f8f9fa;
+
+        .message-details {
+            max-height: 500px;
+            opacity: 1;
+            padding-top: 12px;
+            margin-top: 12px;
+            border-top: 1px dashed #e0e0e0;
+        }
+    }
+}
+
+.message-details {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.message-issues {
+    margin-top: 10px;
+    padding: 10px;
+    background: #fff3cd;
+    border-radius: 6px;
+    font-size: 13px;
+
+    .issues-label {
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: #856404;
+    }
+
+    ul {
+        margin: 0;
+        padding-left: 20px;
+
+        li {
+            color: #856404;
+            margin-bottom: 4px;
+        }
+    }
+}
+
+.badge.politeness {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+// Smooth scroll offset for fixed headers
+[id] {
+    scroll-margin-top: 20px;
+}
+
+// Collapsible sections
+.section-card.collapsible {
+    .collapsible-header {
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        user-select: none;
+        margin: 0;
+        padding: 15px 0;
+
+        &:hover {
+            color: #667eea;
+        }
+    }
+
+    .collapse-icon {
+        font-size: 12px;
+        color: #888;
+        transition: transform 0.2s;
+    }
+
+    .collapsible-content {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+
+        &.expanded {
+            max-height: 5000px;
+            opacity: 1;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+    }
+}
+
+// Reasoning & Evidence sections
+.reasoning-section {
+    margin-top: 12px;
+
+    details {
+        background: #f8f9fa;
+        border-radius: 8px;
+        overflow: hidden;
+
+        summary {
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #667eea;
+            font-size: 13px;
+            user-select: none;
+
+            &:hover {
+                background: #f0f4ff;
+            }
+
+            &::marker {
+                color: #667eea;
+            }
+        }
+    }
+
+    .reasoning-content {
+        padding: 15px;
+        border-top: 1px solid #e9ecef;
+        background: white;
+    }
+
+    .reasoning-text {
+        margin: 0 0 12px;
+        color: #444;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .evidence-list {
+        strong {
+            font-size: 13px;
+            color: #555;
+        }
+
+        ul {
+            margin: 8px 0 0;
+            padding-left: 20px;
+
+            li {
+                color: #666;
+                font-size: 13px;
+                margin-bottom: 6px;
+                font-style: italic;
+
+                &::before {
+                    content: '"';
+                }
+
+                &::after {
+                    content: '"';
+                }
+            }
+        }
+    }
+}
+
+// Priority badges for suggested actions
+.badge.priority-high {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.badge.priority-medium {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.badge.priority-low {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+// Action item styling updates
+.actions-list {
+    li {
+        margin-bottom: 16px;
+
+        .action-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .action-text {
+            flex: 1;
+            min-width: 200px;
+        }
+    }
+}
+
 // Extra small phones
 @media (max-width: 360px) {
     .results-container {

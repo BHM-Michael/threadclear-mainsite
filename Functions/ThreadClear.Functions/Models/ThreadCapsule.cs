@@ -20,7 +20,7 @@ namespace ThreadClear.Functions.Models
         public ThreadMetadata ThreadMetadata { get; set; } = new ThreadMetadata();
         public ConversationAnalysis? Analysis { get; set; }
         public ConversationGraph ConversationGraph { get; set; } = new ConversationGraph();
-        public List<string> SuggestedActions { get; set; } = new List<string>();
+        public List<SuggestedActionItem> SuggestedActions { get; set; } = new List<SuggestedActionItem>();
         public string Summary { get; set; } = string.Empty;
         public List<string> KeyPoints { get; set; } = new List<string>();
     }
@@ -140,6 +140,8 @@ namespace ThreadClear.Functions.Models
         public DateTime Timestamp { get; set; }
         public DateTime DetectedAt { get; set; }
         public List<string> Participants { get; set; } = new List<string>();
+        public string? Reasoning { get; set; }
+        public List<string> Evidence { get; set; } = new List<string>();
     }
 
     /// <summary>
@@ -152,6 +154,8 @@ namespace ThreadClear.Functions.Models
         public string? Description { get; set; }
         public List<string> ParticipantsInvolved { get; set; } = new List<string>();
         public string? SuggestedResolution { get; set; }
+        public string? Reasoning { get; set; }
+        public List<string> Evidence { get; set; } = new List<string>();
     }
 
     /// <summary>
@@ -167,6 +171,8 @@ namespace ThreadClear.Functions.Models
         public List<string?> Issues { get; set; } = new List<string?>();
         public List<string?> Strengths { get; set; } = new List<string?>();
         public List<string?> Recommendations { get; set; } = new List<string?>();
+        public string? Reasoning { get; set; }
+        public List<string> Evidence { get; set; } = new List<string>();
     }
 
     /// <summary>
@@ -178,6 +184,14 @@ namespace ThreadClear.Functions.Models
         public string DecidedBy { get; set; } = string.Empty;
         public DateTime Timestamp { get; set; }
         public string MessageId { get; set; } = string.Empty;
+    }
+
+    public class SuggestedActionItem
+    {
+        public string Action { get; set; } = string.Empty;
+        public string? Priority { get; set; }
+        public string? Reasoning { get; set; }
+        public List<string> Evidence { get; set; } = new List<string>();
     }
 
     /// <summary>

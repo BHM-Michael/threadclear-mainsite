@@ -49,9 +49,23 @@ namespace ThreadClear.Tests
             return Task.FromResult("{}");
         }
 
-        public Task<List<string>> GenerateSuggestedActions(ThreadCapsule capsule)
+        public Task<List<SuggestedActionItem>> GenerateSuggestedActions(ThreadCapsule capsule)
         {
-            return Task.FromResult(new List<string> { "Review conversation", "Follow up on items" });
+            return Task.FromResult(new List<SuggestedActionItem>
+    {
+        new SuggestedActionItem
+        {
+            Action = "Review conversation",
+            Priority = "Medium",
+            Reasoning = "Test recommendation"
+        },
+        new SuggestedActionItem
+        {
+            Action = "Follow up on items",
+            Priority = "High",
+            Reasoning = "Test recommendation"
+        }
+    });
         }
 
         public Task<string> ExtractTextFromImage(string base64Image, string mimeType)

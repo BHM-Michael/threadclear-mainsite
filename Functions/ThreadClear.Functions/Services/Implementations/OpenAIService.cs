@@ -109,16 +109,23 @@ Return a JSON object with:
             return await GenerateResponseAsync(prompt);
         }
 
-        public async Task<List<string>> GenerateSuggestedActions(ThreadCapsule capsule)
+        public async Task<List<SuggestedActionItem>> GenerateSuggestedActions(ThreadCapsule capsule)
         {
             var prompt = $@"Based on this conversation, suggest 3-5 actionable next steps.
 
 Participants: {string.Join(", ", capsule.Participants.Select(p => p.Name))}
 Messages: {capsule.Messages.Count}
 
-Return suggestions as a JSON object:
+Return suggestions as a JSON array:
 {{
-  ""suggestions"": [""suggestion 1"", ""suggestion 2"", ...]
+  ""suggestions"": [
+    {{
+      ""action"": ""suggestion text"",
+      ""priority"": ""Low|Medium|High"",
+      ""reasoning"": ""why this action is recommended"",
+      ""evidence"": [""quote or observation supporting this""]
+    }}
+  ]
 }}";
 
             var response = await GenerateStructuredResponseAsync(prompt);
@@ -126,16 +133,31 @@ Return suggestions as a JSON object:
             try
             {
                 using var doc = JsonDocument.Parse(JsonHelper.CleanJsonResponse(response));
-                var suggestions = new List<string>();
+                var suggestions = new List<SuggestedActionItem>();
 
                 if (doc.RootElement.TryGetProperty("suggestions", out var suggestionsArray))
                 {
-                    foreach (var suggestion in suggestionsArray.EnumerateArray())
+                    foreach (var item in suggestionsArray.EnumerateArray())
                     {
-                        var text = suggestion.GetString();
-                        if (!string.IsNullOrEmpty(text))
+                        var action = new SuggestedActionItem
                         {
-                            suggestions.Add(text);
+                            Action = item.TryGetProperty("action", out var a) ? a.GetString() ?? "" : "",
+                            Priority = item.TryGetProperty("priority", out var p) ? p.GetString() : "Medium",
+                            Reasoning = item.TryGetProperty("reasoning", out var r) ? r.GetString() : null,
+                            Evidence = new List<string>()
+                        };
+
+                        if (item.TryGetProperty("evidence", out var evidence))
+                        {
+                            action.Evidence = evidence.EnumerateArray()
+                                .Select(e => e.GetString() ?? "")
+                                .Where(e => !string.IsNullOrEmpty(e))
+                                .ToList();
+                        }
+
+                        if (!string.IsNullOrEmpty(action.Action))
+                        {
+                            suggestions.Add(action);
                         }
                     }
                 }
@@ -144,7 +166,15 @@ Return suggestions as a JSON object:
             }
             catch
             {
-                return new List<string> { "Review conversation for communication improvements" };
+                return new List<SuggestedActionItem>
+        {
+            new SuggestedActionItem
+            {
+                Action = "Review conversation for communication improvements",
+                Priority = "Medium",
+                Reasoning = "General recommendation based on conversation analysis"
+            }
+        };
             }
         }
 

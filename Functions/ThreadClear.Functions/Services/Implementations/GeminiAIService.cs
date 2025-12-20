@@ -87,25 +87,72 @@ Return ONLY the JSON object.";
             return await GenerateStructuredResponseAsync(prompt);
         }
 
-        public async Task<List<string>> GenerateSuggestedActions(ThreadCapsule capsule)
+        public async Task<List<SuggestedActionItem>> GenerateSuggestedActions(ThreadCapsule capsule)
         {
-            var prompt = $@"Based on this conversation, suggest 3-5 action items.
+            var prompt = $@"Based on this conversation, suggest 3-5 actionable next steps.
 
-Conversation has {capsule.Messages.Count} messages between {capsule.Participants.Count} participants.
+Participants: {string.Join(", ", capsule.Participants.Select(p => p.Name))}
+Messages: {capsule.Messages.Count}
 
-Return a JSON array of strings: [""action 1"", ""action 2"", ""action 3""]
-
-Return ONLY the JSON array.";
+Return suggestions as a JSON array:
+{{
+  ""suggestions"": [
+    {{
+      ""action"": ""suggestion text"",
+      ""priority"": ""Low|Medium|High"",
+      ""reasoning"": ""why this action is recommended"",
+      ""evidence"": [""quote or observation supporting this""]
+    }}
+  ]
+}}";
 
             var response = await GenerateStructuredResponseAsync(prompt);
 
             try
             {
-                return System.Text.Json.JsonSerializer.Deserialize<List<string>>(response) ?? new List<string>();
+                using var doc = JsonDocument.Parse(JsonHelper.CleanJsonResponse(response));
+                var suggestions = new List<SuggestedActionItem>();
+
+                if (doc.RootElement.TryGetProperty("suggestions", out var suggestionsArray))
+                {
+                    foreach (var item in suggestionsArray.EnumerateArray())
+                    {
+                        var action = new SuggestedActionItem
+                        {
+                            Action = item.TryGetProperty("action", out var a) ? a.GetString() ?? "" : "",
+                            Priority = item.TryGetProperty("priority", out var p) ? p.GetString() : "Medium",
+                            Reasoning = item.TryGetProperty("reasoning", out var r) ? r.GetString() : null,
+                            Evidence = new List<string>()
+                        };
+
+                        if (item.TryGetProperty("evidence", out var evidence))
+                        {
+                            action.Evidence = evidence.EnumerateArray()
+                                .Select(e => e.GetString() ?? "")
+                                .Where(e => !string.IsNullOrEmpty(e))
+                                .ToList();
+                        }
+
+                        if (!string.IsNullOrEmpty(action.Action))
+                        {
+                            suggestions.Add(action);
+                        }
+                    }
+                }
+
+                return suggestions;
             }
             catch
             {
-                return new List<string>();
+                return new List<SuggestedActionItem>
+        {
+            new SuggestedActionItem
+            {
+                Action = "Review conversation for communication improvements",
+                Priority = "Medium",
+                Reasoning = "General recommendation based on conversation analysis"
+            }
+        };
             }
         }
 

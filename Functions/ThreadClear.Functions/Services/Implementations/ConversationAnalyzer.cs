@@ -93,6 +93,7 @@ namespace ThreadClear.Functions.Services.Implementations
 
             var sb = new StringBuilder();
             sb.AppendLine("Analyze the following conversation and provide a JSON response with the requested analyses.");
+            sb.AppendLine("For each finding, include 'reasoning' (explain WHY you identified this) and 'evidence' (cite specific quotes or message references).");
             sb.AppendLine();
             sb.AppendLine("CONVERSATION:");
             sb.AppendLine(conversationText);
@@ -112,14 +113,28 @@ namespace ThreadClear.Functions.Services.Implementations
             if (options.EnableTensionPoints)
             {
                 sections.Add(@"  ""tensionPoints"": [
-    { ""description"": ""description of tension"", ""severity"": ""Low|Medium|High"", ""participants"": [""name1"", ""name2""], ""messageIndices"": [0, 1], ""suggestedResolution"": ""how to resolve"" }
+    { 
+      ""description"": ""description of tension"", 
+      ""severity"": ""Low|Medium|High"", 
+      ""participants"": [""name1"", ""name2""], 
+      ""messageIndices"": [0, 1], 
+      ""reasoning"": ""Explain why this was identified as tension - what language, tone, or patterns indicate this"",
+      ""evidence"": [""Direct quote from message #X"", ""Another quote from message #Y""]
+    }
   ]");
             }
 
             if (options.EnableMisalignments)
             {
                 sections.Add(@"  ""misalignments"": [
-    { ""topic"": ""topic of misalignment"", ""perspectives"": [{""participant"": ""name"", ""position"": ""their view""}], ""severity"": ""Low|Medium|High"", ""potentialImpact"": ""impact description"" }
+    { 
+      ""topic"": ""topic of misalignment"", 
+      ""perspectives"": [{""participant"": ""name"", ""position"": ""their view""}], 
+      ""severity"": ""Low|Medium|High"", 
+      ""potentialImpact"": ""impact description"",
+      ""reasoning"": ""Explain why these perspectives are misaligned and how you detected it"",
+      ""evidence"": [""Quote showing position A"", ""Quote showing conflicting position B""]
+    }
   ]");
             }
 
@@ -133,14 +148,21 @@ namespace ThreadClear.Functions.Services.Implementations
     ""riskLevel"": ""Low|Medium|High"",
     ""issues"": [""issue1"", ""issue2""],
     ""strengths"": [""strength1"", ""strength2""],
-    ""recommendations"": [""recommendation1""]
+    ""recommendations"": [""recommendation1""],
+    ""reasoning"": ""Explain how you determined these scores - what factors contributed to each score"",
+    ""evidence"": [""Quote or observation supporting the health assessment"", ""Another supporting observation""]
   }");
             }
 
             if (options.EnableSuggestedActions)
             {
                 sections.Add(@"  ""suggestedActions"": [
-    { ""action"": ""action description"", ""priority"": ""Low|Medium|High"", ""assignee"": ""person name or null"", ""reasoning"": ""why this action"" }
+    { 
+      ""action"": ""action description"", 
+      ""priority"": ""Low|Medium|High"", 
+      ""reasoning"": ""Explain why this action is recommended based on the conversation analysis"",
+      ""evidence"": [""Quote or finding that led to this recommendation""]
+    }
   ]");
             }
 
@@ -202,7 +224,7 @@ namespace ThreadClear.Functions.Services.Implementations
                 }
                 else
                 {
-                    capsule.SuggestedActions = new List<string>();
+                    capsule.SuggestedActions = new List<SuggestedActionItem>();
                 }
 
                 // Always set empty for non-requested features
@@ -217,7 +239,7 @@ namespace ThreadClear.Functions.Services.Implementations
                 capsule.Analysis.TensionPoints = new List<TensionPoint>();
                 capsule.Analysis.Misalignments = new List<Misalignment>();
                 capsule.Analysis.ConversationHealth = null;
-                capsule.SuggestedActions = new List<string>();
+                capsule.SuggestedActions = new List<SuggestedActionItem>();
                 capsule.Analysis.Decisions = new List<DecisionPoint>();
                 capsule.Analysis.ActionItems = new List<ActionItem>();
             }
@@ -251,12 +273,19 @@ namespace ThreadClear.Functions.Services.Implementations
                     Severity = item.TryGetProperty("severity", out var s) ? s.GetString() ?? "Low" : "Low",
                     Type = "Conflict",
                     Timestamp = DateTime.UtcNow,
-                    DetectedAt = DateTime.UtcNow
+                    DetectedAt = DateTime.UtcNow,
+                    Reasoning = item.TryGetProperty("reasoning", out var r) ? r.GetString() : null,
+                    Evidence = new List<string>()
                 };
 
                 if (item.TryGetProperty("participants", out var participants))
                 {
                     tp.Participants = participants.EnumerateArray().Select(p => p.GetString() ?? "").ToList();
+                }
+
+                if (item.TryGetProperty("evidence", out var evidence))
+                {
+                    tp.Evidence = evidence.EnumerateArray().Select(e => e.GetString() ?? "").ToList();
                 }
 
                 result.Add(tp);
@@ -274,7 +303,9 @@ namespace ThreadClear.Functions.Services.Implementations
                     Type = item.TryGetProperty("topic", out var t) ? t.GetString() ?? "" : "",
                     Severity = item.TryGetProperty("severity", out var s) ? s.GetString() ?? "Low" : "Low",
                     Description = item.TryGetProperty("potentialImpact", out var pi) ? pi.GetString() ?? "" : "",
-                    SuggestedResolution = item.TryGetProperty("suggestedResolution", out var sr) ? sr.GetString() : null
+                    SuggestedResolution = item.TryGetProperty("suggestedResolution", out var sr) ? sr.GetString() : null,
+                    Reasoning = item.TryGetProperty("reasoning", out var r) ? r.GetString() : null,
+                    Evidence = new List<string>()
                 };
 
                 if (item.TryGetProperty("perspectives", out var perspectives))
@@ -284,6 +315,11 @@ namespace ThreadClear.Functions.Services.Implementations
                         .ToList();
                 }
 
+                if (item.TryGetProperty("evidence", out var evidence))
+                {
+                    ma.Evidence = evidence.EnumerateArray().Select(e => e.GetString() ?? "").ToList();
+                }
+
                 result.Add(ma);
             }
             return result;
@@ -291,7 +327,7 @@ namespace ThreadClear.Functions.Services.Implementations
 
         private ConversationHealth ParseConversationHealthCombined(JsonElement element)
         {
-            return new ConversationHealth
+            var health = new ConversationHealth
             {
                 HealthScore = element.TryGetProperty("overallScore", out var os) ? os.GetInt32() / 100.0 : 0.5,
                 ClarityScore = element.TryGetProperty("clarityScore", out var cs) ? cs.GetInt32() / 100.0 : 0.5,
@@ -306,17 +342,38 @@ namespace ThreadClear.Functions.Services.Implementations
                     : new List<string?>(),
                 Recommendations = element.TryGetProperty("recommendations", out var recs)
                     ? recs.EnumerateArray().Select(r => r.GetString()).ToList()
-                    : new List<string?>()
+                    : new List<string?>(),
+                Reasoning = element.TryGetProperty("reasoning", out var reasoning) ? reasoning.GetString() : null,
+                Evidence = new List<string>()
             };
+
+            if (element.TryGetProperty("evidence", out var evidence))
+            {
+                health.Evidence = evidence.EnumerateArray().Select(e => e.GetString() ?? "").ToList();
+            }
+
+            return health;
         }
 
-        private List<string> ParseSuggestedActionsCombined(JsonElement element)
+        private List<SuggestedActionItem> ParseSuggestedActionsCombined(JsonElement element)
         {
-            var result = new List<string>();
+            var result = new List<SuggestedActionItem>();
             foreach (var item in element.EnumerateArray())
             {
-                var action = item.TryGetProperty("action", out var a) ? a.GetString() ?? "" : "";
-                if (!string.IsNullOrEmpty(action))
+                var action = new SuggestedActionItem
+                {
+                    Action = item.TryGetProperty("action", out var a) ? a.GetString() ?? "" : "",
+                    Priority = item.TryGetProperty("priority", out var p) ? p.GetString() : "Medium",
+                    Reasoning = item.TryGetProperty("reasoning", out var r) ? r.GetString() : null,
+                    Evidence = new List<string>()
+                };
+
+                if (item.TryGetProperty("evidence", out var evidence))
+                {
+                    action.Evidence = evidence.EnumerateArray().Select(e => e.GetString() ?? "").ToList();
+                }
+
+                if (!string.IsNullOrEmpty(action.Action))
                 {
                     result.Add(action);
                 }

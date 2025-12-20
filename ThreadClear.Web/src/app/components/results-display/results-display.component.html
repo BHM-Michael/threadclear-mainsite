@@ -1,7 +1,7 @@
 <div class="results-container">
     <h2>Analysis Results</h2>
 
-    <!-- Summary Stats -->
+    <!-- 0. Quick Stats with Jump Links -->
     <div class="summary-stats">
         <div class="stat">
             <span class="label">ID</span>
@@ -15,13 +15,13 @@
             <span class="label">Parsing Mode</span>
             <span class="value">{{ getMetadataValue('ParsingMode') }}</span>
         </div>
-        <div class="stat">
+        <div class="stat clickable" (click)="scrollTo('participants')">
             <span class="label">Participants</span>
-            <span class="value">{{ results.Participants?.length }}</span>
+            <span class="value link">{{ results.Participants?.length }} ↓</span>
         </div>
-        <div class="stat">
+        <div class="stat clickable" (click)="scrollTo('messages')">
             <span class="label">Messages</span>
-            <span class="value">{{ results.Messages?.length }}</span>
+            <span class="value link">{{ results.Messages?.length }} ↓</span>
         </div>
         <div class="stat">
             <span class="label">Duration</span>
@@ -29,194 +29,8 @@
         </div>
     </div>
 
-    <!-- AI Summary -->
-    <div class="summary-text" *ngIf="results.Summary">
-        <h3>📝 Summary</h3>
-        <p>{{ results.Summary }}</p>
-    </div>
-
-    <!-- Conversation Health -->
-    <div class="health-card" *ngIf="hasConversationHealth()">
-        <h3>🏥 Conversation Health</h3>
-        <div class="health-overview">
-            <div class="risk-badge risk-{{ getRiskClass(results.Analysis.ConversationHealth.RiskLevel) }}">
-                Risk: {{ results.Analysis.ConversationHealth.RiskLevel }}
-            </div>
-        </div>
-        <div class="health-scores">
-            <div class="score-item">
-                <span class="score-label">Overall Health</span>
-                <div class="score-bar">
-                    <div class="score-fill {{ getScoreClass(results.Analysis.ConversationHealth.HealthScore) }}"
-                        [style.width.%]="formatScore(results.Analysis.ConversationHealth.HealthScore)"></div>
-                </div>
-                <span class="score-value">{{ formatScore(results.Analysis.ConversationHealth.HealthScore) }}%</span>
-            </div>
-            <div class="score-item">
-                <span class="score-label">Responsiveness</span>
-                <div class="score-bar">
-                    <div class="score-fill {{ getScoreClass(results.Analysis.ConversationHealth.ResponsivenessScore) }}"
-                        [style.width.%]="formatScore(results.Analysis.ConversationHealth.ResponsivenessScore)"></div>
-                </div>
-                <span class="score-value">{{ formatScore(results.Analysis.ConversationHealth.ResponsivenessScore)
-                    }}%</span>
-            </div>
-            <div class="score-item">
-                <span class="score-label">Clarity</span>
-                <div class="score-bar">
-                    <div class="score-fill {{ getScoreClass(results.Analysis.ConversationHealth.ClarityScore) }}"
-                        [style.width.%]="formatScore(results.Analysis.ConversationHealth.ClarityScore)"></div>
-                </div>
-                <span class="score-value">{{ formatScore(results.Analysis.ConversationHealth.ClarityScore) }}%</span>
-            </div>
-            <div class="score-item">
-                <span class="score-label">Alignment</span>
-                <div class="score-bar">
-                    <div class="score-fill {{ getScoreClass(results.Analysis.ConversationHealth.AlignmentScore) }}"
-                        [style.width.%]="formatScore(results.Analysis.ConversationHealth.AlignmentScore)"></div>
-                </div>
-                <span class="score-value">{{ formatScore(results.Analysis.ConversationHealth.AlignmentScore) }}%</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Unanswered Questions - HERO FEATURE -->
-    <div class="alert-card unanswered" *ngIf="hasUnansweredQuestions()">
-        <h3>❓ Unanswered Questions</h3>
-        <div class="alert-list">
-            <div class="alert-item" *ngFor="let uq of results.Analysis.UnansweredQuestions">
-                <div class="alert-header">
-                    <span class="question-text">"{{ uq.Question }}"</span>
-                </div>
-                <div class="alert-meta">
-                    <span>Asked by: <strong>{{ uq.AskedBy }}</strong></span>
-                    <span>Times asked: <strong>{{ uq.TimesAsked }}</strong></span>
-                    <span *ngIf="uq.DaysUnanswered > 0" class="days-warning">
-                        ⚠️ {{ uq.DaysUnanswered }} day(s) unanswered
-                    </span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tension Points - HERO FEATURE -->
-    <div class="alert-card tension" *ngIf="hasTensionPoints()">
-        <h3>⚡ Tension Points</h3>
-        <div class="alert-list">
-            <div class="alert-item" *ngFor="let tp of results.Analysis.TensionPoints">
-                <div class="alert-header">
-                    <span class="badge type-badge">{{ tp.Type }}</span>
-                    <span class="badge severity-{{ getSeverityClass(tp.Severity) }}">{{ tp.Severity }}</span>
-                </div>
-                <div class="alert-description">{{ tp.Description }}</div>
-                <div class="alert-meta">
-                    <span>Message: {{ tp.MessageId }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Misalignments - HERO FEATURE -->
-    <div class="alert-card misalignment" *ngIf="hasMisalignments()">
-        <h3>🔀 Misalignments</h3>
-        <div class="alert-list">
-            <div class="alert-item" *ngFor="let ma of results.Analysis.Misalignments">
-                <div class="alert-header">
-                    <span class="badge type-badge">{{ ma.Type }}</span>
-                    <span class="badge severity-{{ getSeverityClass(ma.Severity) }}">{{ ma.Severity }}</span>
-                </div>
-                <div class="alert-description">{{ ma.Description }}</div>
-                <div class="resolution" *ngIf="ma.SuggestedResolution">
-                    <strong>💡 Suggested Resolution:</strong>
-                    <p>{{ ma.SuggestedResolution }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Suggested Actions -->
-    <div class="actions-card" *ngIf="hasSuggestedActions()">
-        <h3>✅ Suggested Actions</h3>
-        <ul class="actions-list">
-            <li *ngFor="let action of results.SuggestedActions; let i = index">
-                <span class="action-number">{{ i + 1 }}</span>
-                {{ action }}
-            </li>
-        </ul>
-    </div>
-
-    <!-- Participants -->
-    <div class="section-card">
-        <h3>👥 Participants</h3>
-        <div class="participant-list">
-            <div class="participant" *ngFor="let p of results.Participants">
-                <div class="participant-name">
-                    <strong>{{ p.Name }}</strong>
-                    <span class="participant-id">({{ p.Id }})</span>
-                </div>
-                <div class="participant-details">
-                    <span *ngIf="p.Email" class="email">📧 {{ p.Email }}</span>
-                    <span class="role">Role: {{ getRoleName(p.InferredRole) }}</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Participant Activity -->
-        <div class="activity-breakdown" *ngIf="parseParticipantActivity().length > 0">
-            <h4>Activity Breakdown</h4>
-            <div class="activity-bars">
-                <div class="activity-item" *ngFor="let pa of parseParticipantActivity()">
-                    <span class="activity-name">{{ pa.name }}</span>
-                    <span class="activity-count">{{ pa.count }} messages</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Messages -->
-    <div class="section-card">
-        <h3>💬 Messages ({{ results.Messages?.length }})</h3>
-        <div class="messages-list">
-            <div class="message" *ngFor="let m of results.Messages; let i = index">
-                <div class="message-header">
-                    <div class="message-sender">
-                        <strong>{{ getParticipantName(m.ParticipantId) }}</strong>
-                        <span class="message-id">#{{ i + 1 }}</span>
-                    </div>
-                    <span class="timestamp">{{ m.Timestamp | date:'medium' }}</span>
-                </div>
-
-                <div class="message-content">{{ m.Content }}</div>
-
-                <!-- Linguistic Features -->
-                <div class="message-features">
-                    <span class="badge sentiment">
-                        {{ getSentimentIcon(m.LinguisticFeatures.Sentiment) }} {{ m.LinguisticFeatures.Sentiment }}
-                    </span>
-                    <span class="badge urgency urgency-{{ getUrgencyClass(m.LinguisticFeatures.Urgency) }}">
-                        ⚡ {{ m.LinguisticFeatures.Urgency }}
-                    </span>
-                    <span class="badge" *ngIf="hasQuestions(m)">
-                        ❓ Question
-                    </span>
-                    <span class="badge stats">
-                        {{ m.LinguisticFeatures.WordCount }}w / {{ m.LinguisticFeatures.SentenceCount }}s
-                    </span>
-                </div>
-
-                <!-- Questions Detected -->
-                <div class="questions-detected" *ngIf="getQuestionsFromMessage(m).length > 0">
-                    <div class="questions-label">Questions in this message:</div>
-                    <ul>
-                        <li *ngFor="let q of getQuestionsFromMessage(m)">{{ q }}</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Thread Metadata -->
-    <div class="section-card metadata">
+    <!-- 1. Thread Metadata -->
+    <div class="section-card metadata" id="metadata">
         <h3>📊 Thread Metadata</h3>
         <div class="metadata-grid">
             <div class="metadata-item">
@@ -236,5 +50,287 @@
                 <span class="value">{{ getParticipantName(getMetadataValue('ThreadInitiator')) }}</span>
             </div>
         </div>
+    </div>
+
+    <!-- 2. AI Summary -->
+    <div class="summary-text" *ngIf="results.Summary" id="summary">
+        <h3>📝 Summary</h3>
+        <p>{{ results.Summary }}</p>
+    </div>
+
+    <!-- 3. Participants with Activity Breakdown -->
+    <div class="section-card collapsible" id="participants">
+        <h3 class="collapsible-header" (click)="toggleSection('participants')">
+            <span>👥 Participants</span>
+            <span class="collapse-icon">{{ participantsExpanded ? '▼' : '▶' }}</span>
+        </h3>
+        <div class="collapsible-content" [class.expanded]="participantsExpanded">
+            <div class="participant-list">
+                <div class="participant" *ngFor="let p of results.Participants">
+                    <div class="participant-name">
+                        <strong>{{ p.Name }}</strong>
+                        <span class="participant-id">({{ p.Id }})</span>
+                    </div>
+                    <div class="participant-details">
+                        <span *ngIf="p.Email" class="email">📧 {{ p.Email }}</span>
+                        <span class="role">Role: {{ getRoleName(p.InferredRole) }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Participant Activity -->
+            <div class="activity-breakdown" *ngIf="parseParticipantActivity().length > 0">
+                <h4>Activity Breakdown</h4>
+                <div class="activity-bars">
+                    <div class="activity-item" *ngFor="let pa of parseParticipantActivity()">
+                        <span class="activity-name">{{ pa.name }}</span>
+                        <span class="activity-count">{{ pa.count }} messages</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Messages with Details -->
+    <div class="section-card collapsible" id="messages">
+        <h3 class="collapsible-header" (click)="toggleSection('messages')">
+            <span>💬 Messages ({{ results.Messages?.length }})</span>
+            <span class="collapse-icon">{{ messagesExpanded ? '▼' : '▶' }}</span>
+        </h3>
+        <div class="collapsible-content" [class.expanded]="messagesExpanded">
+            <div class="messages-list">
+                <div class="message" *ngFor="let m of results.Messages; let i = index">
+                    <div class="message-header">
+                        <div class="message-sender">
+                            <strong>{{ getParticipantName(m.ParticipantId) }}</strong>
+                            <span class="message-id">#{{ i + 1 }}</span>
+                        </div>
+                        <span class="timestamp">{{ m.Timestamp | date:'medium' }}</span>
+                    </div>
+
+                    <div class="message-content">{{ m.Content }}</div>
+
+                    <!-- Message Details - Shows on Hover -->
+                    <div class="message-details">
+                        <div class="message-features">
+                            <span class="badge sentiment" [title]="'Sentiment analysis of this message'">
+                                {{ getSentimentIcon(m.LinguisticFeatures?.Sentiment) }} {{
+                                m.LinguisticFeatures?.Sentiment || 'Unknown' }}
+                            </span>
+                            <span class="badge urgency urgency-{{ getUrgencyClass(m.LinguisticFeatures?.Urgency) }}"
+                                [title]="'Urgency level detected'">
+                                ⚡ {{ m.LinguisticFeatures?.Urgency || 'Normal' }}
+                            </span>
+                            <span class="badge" *ngIf="hasQuestions(m)" [title]="'This message contains a question'">
+                                ❓ Question
+                            </span>
+                            <span class="badge politeness" *ngIf="m.LinguisticFeatures?.Politeness"
+                                [title]="'Politeness score: ' + formatPoliteness(m.LinguisticFeatures?.Politeness)">
+                                🤝 {{ formatPoliteness(m.LinguisticFeatures?.Politeness) }}%
+                            </span>
+                            <span class="badge stats" [title]="'Word and sentence count'">
+                                {{ m.LinguisticFeatures?.WordCount || 0 }}w / {{ m.LinguisticFeatures?.SentenceCount ||
+                                0 }}s
+                            </span>
+                        </div>
+
+                        <!-- Questions Detected -->
+                        <div class="questions-detected" *ngIf="getQuestionsFromMessage(m).length > 0">
+                            <div class="questions-label">Questions in this message:</div>
+                            <ul>
+                                <li *ngFor="let q of getQuestionsFromMessage(m)">{{ q }}</li>
+                            </ul>
+                        </div>
+
+                        <!-- Tension/Issues linked to this message -->
+                        <div class="message-issues" *ngIf="getIssuesForMessage(m, i).length > 0">
+                            <div class="issues-label">⚠️ Issues detected:</div>
+                            <ul>
+                                <li *ngFor="let issue of getIssuesForMessage(m, i)">{{ issue }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Conversation Health -->
+    <div class="health-card" *ngIf="hasConversationHealth()" id="health">
+        <h3>🏥 Conversation Health</h3>
+        <div class="health-overview">
+            <div class="risk-badge risk-{{ getRiskClass(results.Analysis?.ConversationHealth?.RiskLevel) }}">
+                Risk: {{ results.Analysis?.ConversationHealth?.RiskLevel }}
+            </div>
+        </div>
+        <div class="health-scores">
+            <div class="score-item">
+                <span class="score-label">Overall Health</span>
+                <div class="score-bar">
+                    <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.HealthScore) }}"
+                        [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.HealthScore)"></div>
+                </div>
+                <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.HealthScore) }}%</span>
+            </div>
+            <div class="score-item">
+                <span class="score-label">Responsiveness</span>
+                <div class="score-bar">
+                    <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.ResponsivenessScore) }}"
+                        [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.ResponsivenessScore)"></div>
+                </div>
+                <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.ResponsivenessScore)
+                    }}%</span>
+            </div>
+            <div class="score-item">
+                <span class="score-label">Clarity</span>
+                <div class="score-bar">
+                    <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.ClarityScore) }}"
+                        [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.ClarityScore)"></div>
+                </div>
+                <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.ClarityScore) }}%</span>
+            </div>
+            <div class="score-item">
+                <span class="score-label">Alignment</span>
+                <div class="score-bar">
+                    <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.AlignmentScore) }}"
+                        [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.AlignmentScore)"></div>
+                </div>
+                <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.AlignmentScore)
+                    }}%</span>
+            </div>
+        </div>
+        <!-- Reasoning & Evidence -->
+        <div class="reasoning-section"
+            *ngIf="results.Analysis?.ConversationHealth?.Reasoning || results.Analysis?.ConversationHealth?.Evidence?.length > 0">
+            <details>
+                <summary>How were these scores determined?</summary>
+                <div class="reasoning-content">
+                    <p *ngIf="results.Analysis?.ConversationHealth?.Reasoning" class="reasoning-text">{{
+                        results.Analysis?.ConversationHealth?.Reasoning }}</p>
+                    <div *ngIf="results.Analysis?.ConversationHealth?.Evidence?.length > 0" class="evidence-list">
+                        <strong>Evidence:</strong>
+                        <ul>
+                            <li *ngFor="let e of results.Analysis?.ConversationHealth?.Evidence">{{ e }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <!-- 6. Unanswered Questions - HERO FEATURE -->
+    <div class="alert-card unanswered" *ngIf="hasUnansweredQuestions()" id="unanswered">
+        <h3>❓ Unanswered Questions</h3>
+        <div class="alert-list">
+            <div class="alert-item" *ngFor="let uq of results.Analysis?.UnansweredQuestions">
+                <div class="alert-header">
+                    <span class="question-text">"{{ uq.Question }}"</span>
+                </div>
+                <div class="alert-meta">
+                    <span>Asked by: <strong>{{ uq.AskedBy }}</strong></span>
+                    <span>Times asked: <strong>{{ uq.TimesAsked }}</strong></span>
+                    <span *ngIf="uq.DaysUnanswered > 0" class="days-warning">
+                        ⚠️ {{ uq.DaysUnanswered }} day(s) unanswered
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. Tension Points - HERO FEATURE -->
+    <div class="alert-card tension" *ngIf="hasTensionPoints()" id="tension">
+        <h3>⚡ Tension Points</h3>
+        <div class="alert-list">
+            <div class="alert-item" *ngFor="let tp of results.Analysis?.TensionPoints">
+                <div class="alert-header">
+                    <span class="badge type-badge">{{ tp.Type }}</span>
+                    <span class="badge severity-{{ getSeverityClass(tp.Severity) }}">{{ tp.Severity }}</span>
+                </div>
+                <div class="alert-description">{{ tp.Description }}</div>
+                <div class="alert-meta">
+                    <span *ngIf="tp.MessageId">Message: {{ tp.MessageId }}</span>
+                </div>
+                <!-- Reasoning & Evidence -->
+                <div class="reasoning-section" *ngIf="tp.Reasoning || tp.Evidence?.length > 0">
+                    <details>
+                        <summary>Why was this identified?</summary>
+                        <div class="reasoning-content">
+                            <p *ngIf="tp.Reasoning" class="reasoning-text">{{ tp.Reasoning }}</p>
+                            <div *ngIf="tp.Evidence?.length > 0" class="evidence-list">
+                                <strong>Evidence:</strong>
+                                <ul>
+                                    <li *ngFor="let e of tp.Evidence">{{ e }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. Misalignments - HERO FEATURE -->
+    <div class="alert-card misalignment" *ngIf="hasMisalignments()" id="misalignments">
+        <h3>🔀 Misalignments</h3>
+        <div class="alert-list">
+            <div class="alert-item" *ngFor="let ma of results.Analysis?.Misalignments">
+                <div class="alert-header">
+                    <span class="badge type-badge">{{ ma.Type }}</span>
+                    <span class="badge severity-{{ getSeverityClass(ma.Severity) }}">{{ ma.Severity }}</span>
+                </div>
+                <div class="alert-description">{{ ma.Description }}</div>
+                <div class="resolution" *ngIf="ma.SuggestedResolution">
+                    <strong>💡 Suggested Resolution:</strong>
+                    <p>{{ ma.SuggestedResolution }}</p>
+                </div>
+                <!-- Reasoning & Evidence -->
+                <div class="reasoning-section" *ngIf="ma.Reasoning || ma.Evidence?.length > 0">
+                    <details>
+                        <summary>Why was this identified?</summary>
+                        <div class="reasoning-content">
+                            <p *ngIf="ma.Reasoning" class="reasoning-text">{{ ma.Reasoning }}</p>
+                            <div *ngIf="ma.Evidence?.length > 0" class="evidence-list">
+                                <strong>Evidence:</strong>
+                                <ul>
+                                    <li *ngFor="let e of ma.Evidence">{{ e }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. Suggested Actions -->
+    <div class="actions-card" *ngIf="hasSuggestedActions()" id="actions">
+        <h3>✅ Suggested Actions</h3>
+        <ul class="actions-list">
+            <li *ngFor="let action of results.SuggestedActions; let i = index">
+                <div class="action-header">
+                    <span class="action-number">{{ i + 1 }}</span>
+                    <span class="action-text">{{ action.Action || action }}</span>
+                    <span class="badge priority-{{ action.Priority?.toLowerCase() || 'medium' }}"
+                        *ngIf="action.Priority">
+                        {{ action.Priority }}
+                    </span>
+                </div>
+                <!-- Reasoning & Evidence -->
+                <div class="reasoning-section" *ngIf="action.Reasoning || action.Evidence?.length > 0">
+                    <details>
+                        <summary>Why is this recommended?</summary>
+                        <div class="reasoning-content">
+                            <p *ngIf="action.Reasoning" class="reasoning-text">{{ action.Reasoning }}</p>
+                            <div *ngIf="action.Evidence?.length > 0" class="evidence-list">
+                                <strong>Evidence:</strong>
+                                <ul>
+                                    <li *ngFor="let e of action.Evidence">{{ e }}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </li>
+        </ul>
     </div>
 </div>

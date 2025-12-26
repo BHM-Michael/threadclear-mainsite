@@ -712,3 +712,419 @@
         }
     }
 }
+
+// =============================================
+// DRAFT MESSAGE INPUT STYLES
+// =============================================
+
+.draft-input-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px dashed #ddd;
+
+    .draft-label {
+        display: block;
+        font-weight: 600;
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 8px;
+    }
+
+    .draft-textarea {
+        min-height: 120px !important;
+        background: #fffef5;
+        border-color: #e8e0c0 !important;
+
+        &:focus {
+            border-color: #c9a227 !important;
+            background: #fffef0;
+        }
+    }
+
+    .draft-hint {
+        margin: 8px 0 0;
+        font-size: 12px;
+        color: #888;
+        font-style: italic;
+    }
+}
+
+// =============================================
+// DRAFT ANALYSIS RESULTS STYLES
+// =============================================
+
+.draft-analysis-section {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    border-left: 4px solid #667eea;
+
+    h2 {
+        margin: 0 0 20px;
+        font-size: 22px;
+        color: #333;
+    }
+
+    h3 {
+        margin: 20px 0 12px;
+        font-size: 16px;
+        color: #555;
+        font-weight: 600;
+    }
+}
+
+.ready-indicator {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 15px;
+
+    &.ready {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        color: #155724;
+    }
+
+    &.needs-work {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+        color: #856404;
+    }
+}
+
+.overall-assessment {
+    font-size: 16px;
+    color: #444;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+// Completeness Score
+.completeness-section {
+    margin-bottom: 20px;
+
+    .score-bar-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .score-bar {
+        flex: 1;
+        height: 12px;
+        background: #e9ecef;
+        border-radius: 6px;
+        overflow: hidden;
+
+        .score-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 6px;
+            transition: width 0.5s ease;
+        }
+    }
+
+    .score-label {
+        font-weight: 700;
+        font-size: 16px;
+        color: #333;
+        min-width: 50px;
+    }
+}
+
+// Tone Section
+.tone-section {
+    .tone-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .tone-badge {
+        padding: 6px 14px;
+        background: #e9ecef;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #495057;
+        text-transform: capitalize;
+    }
+
+    .match-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 500;
+
+        &.matches {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        &.no-match {
+            background: #fff3cd;
+            color: #856404;
+        }
+    }
+
+    .escalation-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+
+        &.low {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        &.medium {
+            background: #ffe5d0;
+            color: #b35900;
+        }
+
+        &.high {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    }
+
+    .tone-explanation {
+        font-size: 14px;
+        color: #666;
+        margin: 10px 0 0;
+        line-height: 1.5;
+    }
+}
+
+// Questions Section
+.questions-section {
+    .questions-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+
+        li {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 10px;
+
+            &.addressed {
+                background: #d4edda;
+            }
+
+            &.not-addressed {
+                background: #f8d7da;
+            }
+
+            .question-status {
+                font-weight: bold;
+                font-size: 16px;
+            }
+
+            .question-text {
+                flex: 1;
+                font-size: 14px;
+                color: #333;
+            }
+
+            .how-addressed {
+                width: 100%;
+                font-size: 13px;
+                color: #666;
+                font-style: italic;
+                padding-left: 26px;
+            }
+        }
+    }
+}
+
+// Warning Section (Questions Ignored)
+.warning-section {
+    background: #fff8e6;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #ffc107;
+
+    h3 {
+        margin-top: 0;
+        color: #856404;
+    }
+
+    .ignored-list {
+        margin: 0;
+        padding-left: 20px;
+
+        li {
+            padding: 5px 0;
+            color: #664d03;
+            font-size: 14px;
+        }
+    }
+}
+
+// New Questions Section
+.new-questions-section {
+    background: #e7f3ff;
+    padding: 15px;
+    border-radius: 8px;
+
+    h3 {
+        margin-top: 0;
+        color: #004085;
+    }
+
+    .new-questions-list {
+        margin: 0;
+        padding-left: 20px;
+
+        li {
+            padding: 5px 0;
+            color: #004085;
+            font-size: 14px;
+        }
+    }
+}
+
+// Risk Flags Section
+.risks-section {
+    .risk-item {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+
+        &.low {
+            background: #fff8e6;
+            border-left: 4px solid #ffc107;
+        }
+
+        &.medium {
+            background: #fff0e0;
+            border-left: 4px solid #fd7e14;
+        }
+
+        &.high {
+            background: #fdecea;
+            border-left: 4px solid #dc3545;
+        }
+
+        .risk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+
+            .risk-type {
+                font-weight: 600;
+                font-size: 14px;
+                text-transform: capitalize;
+                color: #333;
+            }
+
+            .risk-severity {
+                padding: 3px 10px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                background: rgba(0, 0, 0, 0.1);
+            }
+        }
+
+        .risk-description {
+            margin: 0 0 10px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .risk-suggestion {
+            margin: 0;
+            font-size: 13px;
+            color: #666;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+    }
+}
+
+// Suggestions Section
+.suggestions-section {
+    background: #f0f7ff;
+    padding: 15px;
+    border-radius: 8px;
+
+    h3 {
+        margin-top: 0;
+        color: #0056b3;
+    }
+
+    .suggestions-list {
+        margin: 0;
+        padding-left: 20px;
+
+        li {
+            padding: 6px 0;
+            color: #333;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+    }
+}
+
+// =============================================
+// DRAFT ANALYSIS MOBILE RESPONSIVE
+// =============================================
+
+@media (max-width: 600px) {
+    .draft-analysis-section {
+        padding: 20px 15px;
+
+        h2 {
+            font-size: 20px;
+        }
+    }
+
+    .ready-indicator {
+        display: block;
+        text-align: center;
+        font-size: 16px;
+        padding: 12px;
+    }
+
+    .tone-section .tone-badges {
+        flex-direction: column;
+
+        .tone-badge,
+        .match-badge,
+        .escalation-badge {
+            text-align: center;
+        }
+    }
+
+    .completeness-section .score-bar-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+
+        .score-label {
+            text-align: center;
+        }
+    }
+
+    .risks-section .risk-item .risk-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+}

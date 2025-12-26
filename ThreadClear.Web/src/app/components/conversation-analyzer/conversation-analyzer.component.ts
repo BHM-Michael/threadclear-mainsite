@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
@@ -8,13 +8,16 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './conversation-analyzer.component.html',
   styleUrls: ['./conversation-analyzer.component.scss']
 })
-export class ConversationAnalyzerComponent implements OnInit {
+export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   conversationText = '';
+  draftMessage = '';  // NEW: Draft message input
   sourceType = 'simple';
   parsingMode = 2;
   loading = false;
   results: any = null;
+  draftAnalysis: any = null;  // NEW: Draft analysis results
   error = '';
+  loadingMessage = 'Analyzing conversation...';
 
   // Image upload - supports multiple
   inputMode: 'text' | 'image' | 'audio' = 'text';
@@ -36,6 +39,54 @@ export class ConversationAnalyzerComponent implements OnInit {
     if (!this.authService.isLoggedIn) {
       this.router.navigate(['/login']);
     }
+
+    // Listen for paste events
+    document.addEventListener('paste', this.onPaste.bind(this));
+  }
+
+  ngOnDestroy() {
+    // Clean up paste listener
+    document.removeEventListener('paste', this.onPaste.bind(this));
+  }
+
+  onPaste(event: ClipboardEvent) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        event.preventDefault();
+        const file = items[i].getAsFile();
+        if (file) {
+          // Switch to image mode and add the pasted image
+          this.inputMode = 'image';
+          this.addImages([file]);
+          console.log('Image pasted from clipboard');
+        }
+        break;
+      }
+    }
+  }
+
+  startProgressMessages() {
+    const messages = [
+      { text: 'Parsing conversation...', delay: 0 },
+      { text: 'Identifying participants...', delay: 1500 },
+      { text: 'Detecting unanswered questions...', delay: 3000 },
+      { text: 'Analyzing tension points...', delay: 5000 },
+      { text: 'Assessing conversation health...', delay: 7000 },
+      { text: 'Generating insights...', delay: 9000 },
+      { text: 'Analyzing your draft...', delay: 11000 },
+      { text: 'Finalizing results...', delay: 13000 }
+    ];
+
+    messages.forEach(msg => {
+      setTimeout(() => {
+        if (this.loading) {
+          this.loadingMessage = msg.text;
+        }
+      }, msg.delay);
+    });
   }
 
   get currentUser() {
@@ -162,8 +213,11 @@ export class ConversationAnalyzerComponent implements OnInit {
 
   analyzeText() {
     this.loading = true;
+    this.loadingMessage = 'Parsing conversation...';
+    this.startProgressMessages();
     this.error = '';
     this.results = null;
+    this.draftAnalysis = null;  // Reset draft analysis
 
     const perms = this.permissions;
     const isAdmin = this.isAdmin;
@@ -172,7 +226,8 @@ export class ConversationAnalyzerComponent implements OnInit {
     const request: any = {
       conversationText: this.conversationText,
       sourceType: this.sourceType,
-      parsingMode: this.parsingMode
+      parsingMode: this.parsingMode,
+      draftMessage: this.draftMessage || null  // NEW: Include draft message
     };
 
     // If not admin, include permission flags
@@ -187,6 +242,7 @@ export class ConversationAnalyzerComponent implements OnInit {
     this.apiService.analyzeConversation(request).subscribe({
       next: (response) => {
         this.results = this.filterResultsByPermissions(response.capsule);
+        this.draftAnalysis = this.normalizeDraftAnalysis(response.draftAnalysis);
         this.loading = false;
       },
       error: (err) => {
@@ -198,9 +254,11 @@ export class ConversationAnalyzerComponent implements OnInit {
   }
 
   analyzeImages() {
-    this.loading = true;
+    this.loadingMessage = 'Parsing conversation...';
+    this.startProgressMessages();
     this.error = '';
     this.results = null;
+    this.draftAnalysis = null;
 
     const perms = this.permissions;
     const isAdmin = this.isAdmin;
@@ -221,6 +279,7 @@ export class ConversationAnalyzerComponent implements OnInit {
       .subscribe({
         next: (response) => {
           this.results = this.filterResultsByPermissions(response.capsule);
+          this.draftAnalysis = this.normalizeDraftAnalysis(response.draftAnalysis);
           this.loading = false;
         },
         error: (err) => {
@@ -234,9 +293,11 @@ export class ConversationAnalyzerComponent implements OnInit {
   analyzeAudio() {
     if (!this.selectedAudio) return;
 
-    this.loading = true;
+    this.loadingMessage = 'Parsing conversation...';
+    this.startProgressMessages();
     this.error = '';
     this.results = null;
+    this.draftAnalysis = null;
 
     const perms = this.permissions;
     const isAdmin = this.isAdmin;
@@ -256,6 +317,7 @@ export class ConversationAnalyzerComponent implements OnInit {
       .subscribe({
         next: (response) => {
           this.results = this.filterResultsByPermissions(response.capsule);
+          this.draftAnalysis = this.normalizeDraftAnalysis(response.draftAnalysis);
           this.loading = false;
         },
         error: (err) => {
@@ -332,9 +394,55 @@ export class ConversationAnalyzerComponent implements OnInit {
     return capsule;
   }
 
+  // Normalize draft analysis to handle PascalCase from API
+  // Normalize draft analysis to handle PascalCase from API
+  normalizeDraftAnalysis(draft: any): any {
+    if (!draft) return null;
+
+    // Normalize tone object
+    const toneRaw = draft.Tone || draft.tone;
+    const tone = toneRaw ? {
+      tone: toneRaw.Tone || toneRaw.tone || '',
+      matchesConversationTone: toneRaw.MatchesConversationTone ?? toneRaw.matchesConversationTone ?? true,
+      escalationRisk: toneRaw.EscalationRisk || toneRaw.escalationRisk || 'none',
+      explanation: toneRaw.Explanation || toneRaw.explanation || ''
+    } : null;
+
+    // Normalize questions covered
+    const questionsCoveredRaw = draft.QuestionsCovered || draft.questionsCovered || [];
+    const questionsCovered = questionsCoveredRaw.map((q: any) => ({
+      question: q.Question || q.question || '',
+      addressed: q.Addressed ?? q.addressed ?? false,
+      howAddressed: q.HowAddressed || q.howAddressed || null
+    }));
+
+    // Normalize risk flags
+    const riskFlagsRaw = draft.RiskFlags || draft.riskFlags || [];
+    const riskFlags = riskFlagsRaw.map((r: any) => ({
+      type: r.Type || r.type || '',
+      description: r.Description || r.description || '',
+      severity: r.Severity || r.severity || 'low',
+      suggestion: r.Suggestion || r.suggestion || ''
+    }));
+
+    return {
+      tone: tone,
+      questionsCovered: questionsCovered,
+      questionsIgnored: draft.QuestionsIgnored || draft.questionsIgnored || [],
+      newQuestionsIntroduced: draft.NewQuestionsIntroduced || draft.newQuestionsIntroduced || [],
+      riskFlags: riskFlags,
+      completenessScore: draft.CompletenessScore ?? draft.completenessScore ?? 0,
+      suggestions: draft.Suggestions || draft.suggestions || [],
+      overallAssessment: draft.OverallAssessment || draft.overallAssessment || '',
+      readyToSend: draft.ReadyToSend ?? draft.readyToSend ?? false
+    };
+  }
+
   clear() {
     this.conversationText = '';
+    this.draftMessage = '';  // NEW: Clear draft message
     this.results = null;
+    this.draftAnalysis = null;  // NEW: Clear draft analysis
     this.error = '';
     this.selectedImages = [];
     this.imagePreviews = [];

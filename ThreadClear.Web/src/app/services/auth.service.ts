@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, retry } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface User {
@@ -68,6 +68,7 @@ export class AuthService {
     login(email: string, password: string): Observable<any> {
         return this.http.post<any>(`${this.apiUrl}/auth/login`, { email, password })
             .pipe(
+                retry({ count: 2, delay: 1000 }), // Retry up to 2 times with 1 second delay
                 tap((response: any) => {
                     const success = response.success || response.Success;
                     const user = response.user || response.User;

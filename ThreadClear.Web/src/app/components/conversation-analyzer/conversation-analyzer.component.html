@@ -2,7 +2,7 @@
     <div class="loading-overlay" *ngIf="loading">
         <div class="loading-spinner">
             <div class="spinner"></div>
-            <p>Analyzing conversation...</p>
+            <p>{{ loadingMessage }}</p>
         </div>
     </div>
     <!-- Header -->
@@ -37,7 +37,17 @@
                 <textarea [(ngModel)]="conversationText"
                     placeholder="Paste your conversation here...&#10;&#10;Example:&#10;John: Can you send the proposal?&#10;Jane: I'll send it today."
                     rows="10">
-        </textarea>
+                </textarea>
+
+                <!-- NEW: Draft Message Input -->
+                <div class="draft-input-section">
+                    <label class="draft-label">Your Draft Reply (optional)</label>
+                    <textarea [(ngModel)]="draftMessage"
+                        placeholder="Paste your draft response to analyze before sending...&#10;&#10;Leave empty to analyze conversation only."
+                        rows="5" class="draft-textarea">
+                    </textarea>
+                    <p class="draft-hint">Get feedback on your reply before you send it</p>
+                </div>
             </div>
 
             <!-- Image Upload -->
@@ -48,6 +58,7 @@
                     <div *ngIf="selectedImages.length === 0">
                         <span class="upload-icon">📷</span>
                         <p>Click or drag to upload screenshots</p>
+                        <p class="hint"><strong>Or press Ctrl+V to paste from clipboard</strong></p>
                         <p class="hint">Supports: PNG, JPG, JPEG, GIF, WebP</p>
                         <p class="hint">Upload multiple images in order to reconstruct a conversation</p>
                         <p class="hint">Maximum 10 images, 10MB each</p>
@@ -96,6 +107,7 @@
                         <option value="simple">Simple</option>
                         <option value="email">Email</option>
                         <option value="slack">Slack</option>
+                        <option value="teams">Teams</option>
                     </select>
                 </label>
 
@@ -110,14 +122,13 @@
 
                 <button (click)="analyze()"
                     [disabled]="loading || (!conversationText && selectedImages.length === 0 && !selectedAudio)">
-                    {{ loading ? 'Analyzing...' : 'Analyze' }}
+                    {{ loading ? 'Analyzing...' : (draftMessage ? 'Analyze with Draft' : 'Analyze') }}
                 </button>
                 <button (click)="clear()" [disabled]="loading" class="clear-btn">
                     Clear
                 </button>
             </div>
 
-            <!-- Permission Info -->
             <!-- Permission Info -->
             <div class="permissions-info" *ngIf="permissions && !isAdmin">
                 <p>Your enabled features:</p>
@@ -140,6 +151,103 @@
         </div>
 
         <div class="error" *ngIf="error">{{ error }}</div>
+
+        <!-- NEW: Draft Analysis Results -->
+        <div class="draft-analysis-section" *ngIf="draftAnalysis">
+            <h2>Draft Analysis</h2>
+
+            <!-- Ready to Send Indicator -->
+            <div class="ready-indicator" [class.ready]="draftAnalysis.readyToSend"
+                [class.needs-work]="!draftAnalysis.readyToSend">
+                {{ draftAnalysis.readyToSend ? '✓ Ready to Send' : '⚠ Needs Work' }}
+            </div>
+
+            <!-- Overall Assessment -->
+            <p class="overall-assessment">{{ draftAnalysis.overallAssessment }}</p>
+
+            <!-- Completeness Score -->
+            <div class="completeness-section">
+                <h3>Completeness</h3>
+                <div class="score-bar-container">
+                    <div class="score-bar">
+                        <div class="score-fill" [style.width.%]="draftAnalysis.completenessScore * 10"></div>
+                    </div>
+                    <span class="score-label">{{ draftAnalysis.completenessScore }}/10</span>
+                </div>
+            </div>
+
+            <!-- Tone Assessment -->
+            <div class="tone-section" *ngIf="draftAnalysis.tone">
+                <h3>Tone Assessment</h3>
+                <div class="tone-badges">
+                    <span class="tone-badge">{{ draftAnalysis.tone.tone }}</span>
+                    <span class="match-badge" [class.matches]="draftAnalysis.tone.matchesConversationTone"
+                        [class.no-match]="!draftAnalysis.tone.matchesConversationTone">
+                        {{ draftAnalysis.tone.matchesConversationTone ? '✓ Matches conversation tone' : '⚠ Different
+                        tone than conversation' }}
+                    </span>
+                    <span class="escalation-badge" *ngIf="draftAnalysis.tone.escalationRisk !== 'none'"
+                        [class.low]="draftAnalysis.tone.escalationRisk === 'low'"
+                        [class.medium]="draftAnalysis.tone.escalationRisk === 'medium'"
+                        [class.high]="draftAnalysis.tone.escalationRisk === 'high'">
+                        Escalation Risk: {{ draftAnalysis.tone.escalationRisk }}
+                    </span>
+                </div>
+                <p class="tone-explanation">{{ draftAnalysis.tone.explanation }}</p>
+            </div>
+
+            <!-- Questions Covered -->
+            <div class="questions-section" *ngIf="draftAnalysis.questionsCovered?.length">
+                <h3>Questions Addressed</h3>
+                <ul class="questions-list">
+                    <li *ngFor="let q of draftAnalysis.questionsCovered" [class.addressed]="q.addressed"
+                        [class.not-addressed]="!q.addressed">
+                        <span class="question-status">{{ q.addressed ? '✓' : '✗' }}</span>
+                        <span class="question-text">{{ q.question }}</span>
+                        <span class="how-addressed" *ngIf="q.addressed && q.howAddressed">{{ q.howAddressed }}</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Questions Ignored -->
+            <div class="warning-section" *ngIf="draftAnalysis.questionsIgnored?.length">
+                <h3>⚠ Questions Not Addressed</h3>
+                <ul class="ignored-list">
+                    <li *ngFor="let q of draftAnalysis.questionsIgnored">{{ q }}</li>
+                </ul>
+            </div>
+
+            <!-- New Questions Introduced -->
+            <div class="new-questions-section" *ngIf="draftAnalysis.newQuestionsIntroduced?.length">
+                <h3>New Questions You're Asking</h3>
+                <ul class="new-questions-list">
+                    <li *ngFor="let q of draftAnalysis.newQuestionsIntroduced">{{ q }}</li>
+                </ul>
+            </div>
+
+            <!-- Risk Flags -->
+            <div class="risks-section" *ngIf="draftAnalysis.riskFlags?.length">
+                <h3>Risk Flags</h3>
+                <div class="risk-item" *ngFor="let risk of draftAnalysis.riskFlags"
+                    [class.low]="risk.severity === 'low'" [class.medium]="risk.severity === 'medium'"
+                    [class.high]="risk.severity === 'high'">
+                    <div class="risk-header">
+                        <span class="risk-type">{{ risk.type }}</span>
+                        <span class="risk-severity">{{ risk.severity }}</span>
+                    </div>
+                    <p class="risk-description">{{ risk.description }}</p>
+                    <p class="risk-suggestion">💡 {{ risk.suggestion }}</p>
+                </div>
+            </div>
+
+            <!-- Suggestions -->
+            <div class="suggestions-section" *ngIf="draftAnalysis.suggestions?.length">
+                <h3>Suggestions</h3>
+                <ul class="suggestions-list">
+                    <li *ngFor="let s of draftAnalysis.suggestions">{{ s }}</li>
+                </ul>
+            </div>
+        </div>
 
         <app-results-display *ngIf="results" [results]="results"></app-results-display>
     </div>

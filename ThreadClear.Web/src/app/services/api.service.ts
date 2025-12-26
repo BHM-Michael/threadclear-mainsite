@@ -7,12 +7,14 @@ export interface AnalysisRequest {
   conversationText: string;
   sourceType: string;
   parsingMode?: number;
+  draftMessage?: string;
 }
 
 export interface AnalysisResponse {
   success: boolean;
   capsule: any;
   parsingMode: string;
+  draftAnalysis?: any;
 }
 
 @Injectable({

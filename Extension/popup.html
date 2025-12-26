@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThreadClear</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧵 ThreadClear</h1>
+    </header>
+
+    <!-- Input Section -->
+    <div id="inputSection">
+      <div class="input-group">
+        <label for="conversationText">Conversation</label>
+        <textarea id="conversationText" placeholder="Select text on the page, or paste conversation here..."></textarea>
+        <button id="getSelectionBtn" class="btn-secondary">📋 Get Selected Text</button>
+      </div>
+
+      <div class="input-group">
+        <label for="draftText">Your Draft Reply (optional)</label>
+        <textarea id="draftText" placeholder="Paste your draft response to analyze before sending..."></textarea>
+      </div>
+
+      <div class="input-group">
+        <label for="sourceType">Source Type</label>
+        <select id="sourceType">
+          <option value="auto">Auto Detect</option>
+          <option value="simple">Simple</option>
+          <option value="email">Email</option>
+          <option value="slack">Slack</option>
+          <option value="teams">Teams</option>
+        </select>
+      </div>
+
+      <button id="analyzeBtn" class="btn-primary">Analyze</button>
+    </div>
+
+    <!-- Loading -->
+    <div id="loadingSection" class="hidden">
+      <div class="spinner"></div>
+      <p id="loadingMessage">Analyzing conversation...</p>
+    </div>
+
+    <!-- Error -->
+    <div id="errorSection" class="hidden">
+      <p id="errorMessage"></p>
+      <button id="retryBtn" class="btn-secondary">Try Again</button>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="hidden">
+      <button id="backBtn" class="btn-back">← New Analysis</button>
+
+      <!-- Draft Analysis (if present) -->
+      <div id="draftAnalysis" class="hidden">
+        <h2>Draft Analysis</h2>
+        <div id="readyIndicator" class="ready-indicator"></div>
+        <p id="overallAssessment" class="assessment"></p>
+        
+        <div class="score-section">
+          <label>Completeness</label>
+          <div class="score-bar">
+            <div id="completenessBar" class="score-fill"></div>
+          </div>
+          <span id="completenessScore">0/10</span>
+        </div>
+
+        <div id="toneSection" class="section">
+          <h3>Tone</h3>
+          <div id="toneBadges" class="badges"></div>
+          <p id="toneExplanation"></p>
+        </div>
+
+        <div id="questionsIgnoredSection" class="section hidden">
+          <h3>⚠️ Questions Not Addressed</h3>
+          <ul id="questionsIgnoredList"></ul>
+        </div>
+
+        <div id="riskFlagsSection" class="section hidden">
+          <h3>Risk Flags</h3>
+          <div id="riskFlagsList"></div>
+        </div>
+
+        <div id="suggestionsSection" class="section hidden">
+          <h3>Suggestions</h3>
+          <ul id="suggestionsList"></ul>
+        </div>
+      </div>
+
+      <!-- Conversation Analysis -->
+      <div id="conversationAnalysis">
+        <h2>Conversation Analysis</h2>
+        
+        <div class="health-score">
+          <div id="healthScoreCircle" class="score-circle">
+            <span id="healthScoreValue">--</span>
+          </div>
+          <div class="health-details">
+            <span id="riskLevel" class="risk-badge">--</span>
+            <p id="healthSummary"></p>
+          </div>
+        </div>
+
+        <div id="unansweredSection" class="section hidden">
+          <h3>❓ Unanswered Questions</h3>
+          <ul id="unansweredList"></ul>
+        </div>
+
+        <div id="tensionSection" class="section hidden">
+          <h3>⚡ Tension Points</h3>
+          <div id="tensionList"></div>
+        </div>
+
+        <div id="actionsSection" class="section hidden">
+          <h3>✅ Suggested Actions</h3>
+          <div id="actionsList"></div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <a href="https://app.threadclear.com" target="_blank">Open Full App →</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

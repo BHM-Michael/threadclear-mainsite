@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "ThreadClear",
+  "version": "1.0.0",
+  "description": "Analyze conversations for unanswered questions, tension points, and more. Check your draft replies before sending.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://threadclear-functions-fsewbzcsd8fuegdj.eastus-01.azurewebsites.net/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

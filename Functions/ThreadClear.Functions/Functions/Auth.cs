@@ -55,7 +55,8 @@ namespace ThreadClear.Functions.Functions
                     return unauthorized;
                 }
 
-                var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) + Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+                // Create and store token
+                var token = await _userService.CreateUserToken(user.Id, "web-app");
 
                 var response = req.CreateResponse(HttpStatusCode.OK);
                 await response.WriteAsJsonAsync(new LoginResponse
@@ -123,6 +124,63 @@ namespace ThreadClear.Functions.Functions
                 _logger.LogError(ex, "Admin setup error");
                 var error = req.CreateResponse(HttpStatusCode.InternalServerError);
                 await error.WriteAsJsonAsync(new { error = "Setup failed", details = ex.Message });
+                return error;
+            }
+        }
+
+        [Function("ExtensionLogin")]
+        public async Task<HttpResponseData> ExtensionLogin(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/extension-login")] HttpRequestData req)
+        {
+            _logger.LogInformation("Extension login attempt");
+
+            try
+            {
+                var body = await req.ReadAsStringAsync();
+                var loginRequest = JsonSerializer.Deserialize<LoginRequest>(body, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (loginRequest == null || string.IsNullOrEmpty(loginRequest.Email) || string.IsNullOrEmpty(loginRequest.Password))
+                {
+                    var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badRequest.WriteAsJsonAsync(new LoginResponse { Success = false, Error = "Email and password required" });
+                    return badRequest;
+                }
+
+                var user = await _userService.ValidateLogin(loginRequest.Email, loginRequest.Password);
+
+                if (user == null)
+                {
+                    var unauthorized = req.CreateResponse(HttpStatusCode.Unauthorized);
+                    await unauthorized.WriteAsJsonAsync(new LoginResponse { Success = false, Error = "Invalid email or password" });
+                    return unauthorized;
+                }
+
+                // Create token specifically for extension (longer expiration)
+                var token = await _userService.CreateUserToken(user.Id, "browser-extension", 90);
+
+                var response = req.CreateResponse(HttpStatusCode.OK);
+                await response.WriteAsJsonAsync(new LoginResponse
+                {
+                    Success = true,
+                    Token = token,
+                    User = user
+                });
+
+                _logger.LogInformation("Extension login successful: {Email}", user.Email);
+                return response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Extension login error: {Message}", ex.Message);
+                var error = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await error.WriteAsJsonAsync(new LoginResponse
+                {
+                    Success = false,
+                    Error = "Login failed"
+                });
                 return error;
             }
         }

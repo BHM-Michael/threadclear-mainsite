@@ -12,8 +12,40 @@
       <h1>🧵 ThreadClear</h1>
     </header>
 
+    <!-- Login Section -->
+    <div id="loginSection">
+      <p class="login-message">Sign in to analyze conversations</p>
+      
+      <div class="input-group">
+        <label for="emailInput">Email</label>
+        <input type="email" id="emailInput" placeholder="your@email.com">
+      </div>
+
+      <div class="input-group">
+        <label for="passwordInput">Password</label>
+        <input type="password" id="passwordInput" placeholder="Password">
+      </div>
+
+      <button id="loginBtn" class="btn-primary">Sign In</button>
+      
+      <p id="loginError" class="error-text hidden"></p>
+
+      <div class="signup-link">
+        <p>Don't have an account?</p>
+        <a href="https://app.threadclear.com" target="_blank">Sign up at ThreadClear →</a>
+      </div>
+    </div>
+
+    <!-- Logged In Header (shown when authenticated) -->
+    <div id="userHeader" class="hidden">
+      <div class="user-info">
+        <span id="userEmail"></span>
+        <button id="logoutBtn" class="btn-link">Logout</button>
+      </div>
+    </div>
+
     <!-- Input Section -->
-    <div id="inputSection">
+    <div id="inputSection" class="hidden">
       <div class="input-group">
         <label for="conversationText">Conversation</label>
         <textarea id="conversationText" placeholder="Select text on the page, or paste conversation here..."></textarea>
@@ -121,8 +153,16 @@
         </div>
       </div>
 
+      <div class="upgrade-banner">
+        <p>🚀 <strong>Want more?</strong></p>
+        <p>Upload screenshots, audio files, and get detailed reports</p>
+        <a href="https://app.threadclear.com" target="_blank" class="upgrade-btn">Try Full App Free →</a>
+      </div>
+
       <div class="footer">
-        <a href="https://app.threadclear.com" target="_blank">Open Full App →</a>
+        <a href="https://app.threadclear.com" target="_blank">Open Full App</a>
+        <span class="separator">|</span>
+        <a href="https://threadclear.com/privacy" target="_blank">Privacy</a>
       </div>
     </div>
   </div>

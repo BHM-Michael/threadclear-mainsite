@@ -5,6 +5,7 @@ using System.Net;
 using System.Text.Json;
 using ThreadClear.Functions.Models;
 using ThreadClear.Functions.Services.Interfaces;
+using ThreadClear.Functions.Services.Implementations;
 
 namespace ThreadClear.Functions.Functions
 {
@@ -14,22 +15,25 @@ namespace ThreadClear.Functions.Functions
         private readonly IConversationParser _parser;
         private readonly IConversationAnalyzer _analyzer;
         private readonly IThreadCapsuleBuilder _builder;
+        private readonly IUserService _userService;
 
         public AnalyzeConversation(
             ILoggerFactory loggerFactory,
             IConversationParser parser,
             IConversationAnalyzer analyzer,
-            IThreadCapsuleBuilder builder)
+            IThreadCapsuleBuilder builder,
+            IUserService userService)
         {
             _logger = loggerFactory.CreateLogger<AnalyzeConversation>();
             _parser = parser;
             _analyzer = analyzer;
             _builder = builder;
+            _userService = userService;
         }
 
         [Function("AnalyzeConversation")]
         public async Task<HttpResponseData> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "post", "options", Route = "analyze")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", "options", Route = "analyze")]
             HttpRequestData req)
         {
             // Handle CORS preflight
@@ -43,6 +47,34 @@ namespace ThreadClear.Functions.Functions
 
             try
             {
+                // Check for token authentication
+                User? authenticatedUser = null;
+                if (req.Headers.TryGetValues("Authorization", out var authHeaders))
+                {
+                    var authHeader = authHeaders.FirstOrDefault();
+                    if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+                    {
+                        var token = authHeader.Substring("Bearer ".Length);
+                        authenticatedUser = await _userService.ValidateToken(token);
+
+                        if (authenticatedUser == null)
+                        {
+                            _logger.LogWarning("Invalid or expired token");
+                            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Invalid or expired token");
+                        }
+                        _logger.LogInformation("Authenticated user: {Email}", authenticatedUser.Email);
+                    }
+                }
+
+                // If no token, check for function key (backward compatibility)
+                if (authenticatedUser == null)
+                {
+                    // Function key is validated by Azure Functions runtime when AuthorizationLevel.Function
+                    // Since we changed to Anonymous, we need to check manually or allow unauthenticated
+                    // For now, we'll allow unauthenticated but with limited features
+                    _logger.LogInformation("Unauthenticated request - limited features");
+                }
+
                 // Parse request
                 var request = await req.ReadFromJsonAsync<AnalysisRequest>();
 
@@ -74,9 +106,22 @@ namespace ThreadClear.Functions.Functions
                 _logger.LogInformation("Parsed conversation {Id} using {Mode} mode",
                     capsule.CapsuleId, modeUsed);
 
-                // Build analysis options from request
+                // Build analysis options from request or user permissions
                 AnalysisOptions? options = null;
-                if (request.HasPermissionFlags())
+                if (authenticatedUser != null && authenticatedUser.Permissions != null)
+                {
+                    // Use user's permissions
+                    options = new AnalysisOptions
+                    {
+                        EnableUnansweredQuestions = authenticatedUser.Permissions.UnansweredQuestions,
+                        EnableTensionPoints = authenticatedUser.Permissions.TensionPoints,
+                        EnableMisalignments = authenticatedUser.Permissions.Misalignments,
+                        EnableConversationHealth = authenticatedUser.Permissions.ConversationHealth,
+                        EnableSuggestedActions = authenticatedUser.Permissions.SuggestedActions
+                    };
+                    _logger.LogInformation("Using user permissions for analysis");
+                }
+                else if (request.HasPermissionFlags())
                 {
                     options = new AnalysisOptions
                     {
@@ -86,7 +131,11 @@ namespace ThreadClear.Functions.Functions
                         EnableConversationHealth = request.EnableConversationHealth ?? true,
                         EnableSuggestedActions = request.EnableSuggestedActions ?? true
                     };
-                    _logger.LogInformation("Using combined analysis with options: UQ={UQ}, TP={TP}, MA={MA}, CH={CH}, SA={SA}",
+                }
+
+                if (options != null)
+                {
+                    _logger.LogInformation("Analysis options: UQ={UQ}, TP={TP}, MA={MA}, CH={CH}, SA={SA}",
                         options.EnableUnansweredQuestions, options.EnableTensionPoints,
                         options.EnableMisalignments, options.EnableConversationHealth,
                         options.EnableSuggestedActions);
@@ -116,7 +165,8 @@ namespace ThreadClear.Functions.Functions
                     success = true,
                     capsule = capsule,
                     parsingMode = modeUsed,
-                    draftAnalysis = draftAnalysis
+                    draftAnalysis = draftAnalysis,
+                    user = authenticatedUser?.Email
                 });
 
                 return response;

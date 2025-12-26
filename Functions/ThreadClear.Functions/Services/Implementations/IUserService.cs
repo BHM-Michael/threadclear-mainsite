@@ -17,6 +17,11 @@ namespace ThreadClear.Functions.Services.Implementations
         Task<bool> DeleteUser(Guid userId);
         Task<List<FeaturePricing>> GetFeaturePricing();
         Task UpdateFeaturePricing(string featureName, decimal price, Guid updatedBy);
+
+        Task<string> CreateUserToken(Guid userId, string? deviceInfo = null, int expirationDays = 30);
+        Task<User?> ValidateToken(string token);
+        Task RevokeToken(string token);
+        Task RevokeAllUserTokens(Guid userId);
     }
 
     public class UserService : IUserService
@@ -375,6 +380,84 @@ namespace ThreadClear.Functions.Services.Implementations
             }
 
             return user;
+        }
+
+        // Token management for extension
+        public async Task<string> CreateUserToken(Guid userId, string? deviceInfo = null, int expirationDays = 30)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()) +
+                        Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+            var expiresAt = DateTime.UtcNow.AddDays(expirationDays);
+
+            var sql = @"
+                INSERT INTO UserTokens (UserId, Token, DeviceInfo, ExpiresAt)
+                VALUES (@UserId, @Token, @DeviceInfo, @ExpiresAt)";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            cmd.Parameters.AddWithValue("@Token", token);
+            cmd.Parameters.AddWithValue("@DeviceInfo", (object?)deviceInfo ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@ExpiresAt", expiresAt);
+
+            await cmd.ExecuteNonQueryAsync();
+            _logger.LogInformation("Created token for user {UserId}, expires {ExpiresAt}", userId, expiresAt);
+
+            return token;
+        }
+
+        public async Task<User?> ValidateToken(string token)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                       p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
+                       p.ConversationHealth, p.SuggestedActions
+                FROM UserTokens t
+                INNER JOIN Users u ON t.UserId = u.Id
+                LEFT JOIN UserPermissions p ON u.Id = p.UserId
+                WHERE t.Token = @Token 
+                  AND t.IsRevoked = 0 
+                  AND t.ExpiresAt > GETUTCDATE()
+                  AND u.IsActive = 1";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@Token", token);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                var user = MapUserFromReader(reader);
+                user.PasswordHash = ""; // Don't return hash
+                return user;
+            }
+            return null;
+        }
+
+        public async Task RevokeToken(string token)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = "UPDATE UserTokens SET IsRevoked = 1 WHERE Token = @Token";
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@Token", token);
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        public async Task RevokeAllUserTokens(Guid userId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = "UPDATE UserTokens SET IsRevoked = 1 WHERE UserId = @UserId";
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            await cmd.ExecuteNonQueryAsync();
         }
     }
 }

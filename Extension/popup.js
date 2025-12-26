@@ -2,13 +2,25 @@
 
 // Configuration
 const API_URL = 'https://threadclear-functions-fsewbzcsd8fuegdj.eastus-01.azurewebsites.net/api';
-const FUNCTION_KEY = '';
+
+// State
+let authToken = null;
+let currentUser = null;
 
 // DOM Elements
+const loginSection = document.getElementById('loginSection');
+const userHeader = document.getElementById('userHeader');
 const inputSection = document.getElementById('inputSection');
 const loadingSection = document.getElementById('loadingSection');
 const errorSection = document.getElementById('errorSection');
 const resultsSection = document.getElementById('resultsSection');
+
+const emailInput = document.getElementById('emailInput');
+const passwordInput = document.getElementById('passwordInput');
+const loginBtn = document.getElementById('loginBtn');
+const loginError = document.getElementById('loginError');
+const userEmail = document.getElementById('userEmail');
+const logoutBtn = document.getElementById('logoutBtn');
 
 const conversationText = document.getElementById('conversationText');
 const draftText = document.getElementById('draftText');
@@ -36,17 +48,124 @@ const progressMessages = [
 
 let progressTimeouts = [];
 
-// Event Listeners
+// Initialize
 document.addEventListener('DOMContentLoaded', init);
 
-function init() {
+async function init() {
+  // Load stored auth
+  const stored = await chrome.storage.local.get(['authToken', 'userEmail']);
+  if (stored.authToken && stored.userEmail) {
+    authToken = stored.authToken;
+    currentUser = { email: stored.userEmail };
+    showLoggedInState();
+  } else {
+    showLoginState();
+  }
+
+  // Event listeners
+  loginBtn.addEventListener('click', login);
+  logoutBtn.addEventListener('click', logout);
   analyzeBtn.addEventListener('click', analyze);
   getSelectionBtn.addEventListener('click', getSelectedText);
   backBtn.addEventListener('click', showInput);
   retryBtn.addEventListener('click', showInput);
 
-  // Try to get selected text on popup open
-  getSelectedText();
+  // Enter key for login
+  passwordInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') login();
+  });
+  emailInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') passwordInput.focus();
+  });
+}
+
+// Authentication
+async function login() {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!email || !password) {
+    showLoginError('Please enter email and password');
+    return;
+  }
+
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Signing in...';
+  hideLoginError();
+
+  try {
+    const response = await fetch(`${API_URL}/auth/extension-login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await response.json();
+
+    if (data.Success || data.success) {
+      authToken = data.Token || data.token;
+      currentUser = data.User || data.user;
+
+      // Store in chrome.storage
+      await chrome.storage.local.set({
+        authToken: authToken,
+        userEmail: currentUser.Email || currentUser.email
+      });
+
+      showLoggedInState();
+      getSelectedText(); // Try to get selected text
+    } else {
+      showLoginError(data.Error || data.error || 'Login failed');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    showLoginError('Connection failed. Please try again.');
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Sign In';
+  }
+}
+
+async function logout() {
+  authToken = null;
+  currentUser = null;
+  await chrome.storage.local.remove(['authToken', 'userEmail']);
+  showLoginState();
+}
+
+function showLoginState() {
+  loginSection.classList.remove('hidden');
+  userHeader.classList.add('hidden');
+  inputSection.classList.add('hidden');
+  loadingSection.classList.add('hidden');
+  errorSection.classList.add('hidden');
+  resultsSection.classList.add('hidden');
+  
+  emailInput.value = '';
+  passwordInput.value = '';
+  hideLoginError();
+}
+
+function showLoggedInState() {
+  loginSection.classList.add('hidden');
+  userHeader.classList.remove('hidden');
+  inputSection.classList.remove('hidden');
+  loadingSection.classList.add('hidden');
+  errorSection.classList.add('hidden');
+  resultsSection.classList.add('hidden');
+
+  userEmail.textContent = currentUser.Email || currentUser.email;
+}
+
+function showLoginError(message) {
+  loginError.textContent = message;
+  loginError.classList.remove('hidden');
+}
+
+function hideLoginError() {
+  loginError.classList.add('hidden');
 }
 
 // Get selected text from active tab
@@ -68,13 +187,14 @@ async function getSelectedText() {
       conversationText.value = results[0].result.trim();
     }
   } catch (error) {
-    // Silently fail - user can paste manually
     console.log('Could not get selection (may be a restricted page):', error.message);
   }
 }
 
 // Show/hide sections
 function showInput() {
+  loginSection.classList.add('hidden');
+  userHeader.classList.remove('hidden');
   inputSection.classList.remove('hidden');
   loadingSection.classList.add('hidden');
   errorSection.classList.add('hidden');
@@ -83,6 +203,8 @@ function showInput() {
 }
 
 function showLoading() {
+  loginSection.classList.add('hidden');
+  userHeader.classList.remove('hidden');
   inputSection.classList.add('hidden');
   loadingSection.classList.remove('hidden');
   errorSection.classList.add('hidden');
@@ -91,6 +213,8 @@ function showLoading() {
 }
 
 function showError(message) {
+  loginSection.classList.add('hidden');
+  userHeader.classList.remove('hidden');
   inputSection.classList.add('hidden');
   loadingSection.classList.add('hidden');
   errorSection.classList.remove('hidden');
@@ -100,6 +224,8 @@ function showError(message) {
 }
 
 function showResults() {
+  loginSection.classList.add('hidden');
+  userHeader.classList.remove('hidden');
   inputSection.classList.add('hidden');
   loadingSection.classList.add('hidden');
   errorSection.classList.add('hidden');
@@ -132,6 +258,12 @@ async function analyze() {
     return;
   }
 
+  if (!authToken) {
+    showLoginState();
+    showLoginError('Please sign in to analyze conversations');
+    return;
+  }
+
   showLoading();
 
   try {
@@ -142,18 +274,21 @@ async function analyze() {
       draftMessage: draftText.value.trim() || null
     };
 
-    let url = `${API_URL}/analyze`;
-    if (FUNCTION_KEY) {
-      url += `?code=${FUNCTION_KEY}`;
-    }
-
-    const response = await fetch(url, {
+    const response = await fetch(`${API_URL}/analyze`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
       },
       body: JSON.stringify(requestBody)
     });
+
+    if (response.status === 401) {
+      // Token expired
+      await logout();
+      showLoginError('Session expired. Please sign in again.');
+      return;
+    }
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);

@@ -4,6 +4,96 @@
   padding: 0;
 }
 
+/* Login Section */
+#loginSection {
+  padding: 10px 0;
+}
+
+.login-message {
+  text-align: center;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+input[type="email"]:focus,
+input[type="password"]:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.error-text {
+  color: #dc3545;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.signup-link {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.signup-link p {
+  color: #888;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.signup-link a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.signup-link a:hover {
+  text-decoration: underline;
+}
+
+/* User Header */
+#userHeader {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.user-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#userEmail {
+  font-size: 13px;
+  color: #333;
+  font-weight: 500;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #667eea;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
 body {
   width: 380px;
   min-height: 200px;

@@ -10,6 +10,11 @@ namespace ThreadClear.Functions.Models
         public string? PriorityLevel { get; set; }
         public ParsingMode? ParsingMode { get; set; }
 
+        /// <summary>
+        /// Optional draft reply to analyze in context of the conversation
+        /// </summary>
+        public string? DraftMessage { get; set; }
+
         // Permission flags for combined analysis
         public bool? EnableUnansweredQuestions { get; set; }
         public bool? EnableTensionPoints { get; set; }

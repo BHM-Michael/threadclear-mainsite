@@ -94,6 +94,24 @@ namespace ThreadClear.Functions.Helpers
         }
 
         /// <summary>
+        /// Tries to get a bool property, returns default if not found
+        /// </summary>
+        public static bool GetBoolSafe(this JsonElement element, string propertyName, bool defaultValue = false)
+        {
+            if (element.TryGetProperty(propertyName, out var prop))
+            {
+                if (prop.ValueKind == JsonValueKind.True)
+                    return true;
+                if (prop.ValueKind == JsonValueKind.False)
+                    return false;
+                // Handle string "true"/"false"
+                if (prop.ValueKind == JsonValueKind.String)
+                    return bool.TryParse(prop.GetString(), out var result) && result;
+            }
+            return defaultValue;
+        }
+
+        /// <summary>
         /// Tries to get a DateTime property, returns default if not found or invalid
         /// </summary>
         public static DateTime GetDateTimeSafe(this JsonElement element, string propertyName, DateTime? defaultValue = null)

@@ -101,13 +101,22 @@ namespace ThreadClear.Functions.Functions
                 var summary = await _builder.GenerateSummary(capsule);
                 capsule.Summary = summary;
 
+                // Analyze draft if provided
+                DraftAnalysis? draftAnalysis = null;
+                if (!string.IsNullOrWhiteSpace(request.DraftMessage))
+                {
+                    _logger.LogInformation("Analyzing draft message");
+                    draftAnalysis = await _analyzer.AnalyzeDraft(capsule, request.DraftMessage);
+                }
+
                 // Create response
                 var response = req.CreateResponse(HttpStatusCode.OK);
                 await response.WriteAsJsonAsync(new
                 {
                     success = true,
                     capsule = capsule,
-                    parsingMode = modeUsed
+                    parsingMode = modeUsed,
+                    draftAnalysis = draftAnalysis
                 });
 
                 return response;

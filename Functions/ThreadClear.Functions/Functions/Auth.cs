@@ -21,13 +21,15 @@ namespace ThreadClear.Functions.Functions
 
         [Function("Login")]
         public async Task<HttpResponseData> Login(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/login")] HttpRequestData req)
+    [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/login")] HttpRequestData req)
         {
-            _logger.LogInformation("Login attempt");
+            _logger.LogInformation("Login attempt started");
 
             try
             {
                 var body = await req.ReadAsStringAsync();
+                _logger.LogInformation("Request body received");
+
                 var loginRequest = JsonSerializer.Deserialize<LoginRequest>(body, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
@@ -35,15 +37,19 @@ namespace ThreadClear.Functions.Functions
 
                 if (loginRequest == null || string.IsNullOrEmpty(loginRequest.Email) || string.IsNullOrEmpty(loginRequest.Password))
                 {
+                    _logger.LogWarning("Login failed: missing credentials");
                     var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
                     await badRequest.WriteAsJsonAsync(new LoginResponse { Success = false, Error = "Email and password required" });
                     return badRequest;
                 }
 
+                _logger.LogInformation("Validating login for: {Email}", loginRequest.Email);
+
                 var user = await _userService.ValidateLogin(loginRequest.Email, loginRequest.Password);
 
                 if (user == null)
                 {
+                    _logger.LogWarning("Login failed: invalid credentials for {Email}", loginRequest.Email);
                     var unauthorized = req.CreateResponse(HttpStatusCode.Unauthorized);
                     await unauthorized.WriteAsJsonAsync(new LoginResponse { Success = false, Error = "Invalid email or password" });
                     return unauthorized;
@@ -59,14 +65,18 @@ namespace ThreadClear.Functions.Functions
                     User = user
                 });
 
-                _logger.LogInformation("User logged in: {Email}", user.Email);
+                _logger.LogInformation("User logged in successfully: {Email}", user.Email);
                 return response;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Login error");
+                _logger.LogError(ex, "Login error: {Message}", ex.Message);
                 var error = req.CreateResponse(HttpStatusCode.InternalServerError);
-                await error.WriteAsJsonAsync(new LoginResponse { Success = false, Error = "Login failed" });
+                await error.WriteAsJsonAsync(new LoginResponse
+                {
+                    Success = false,
+                    Error = $"Login failed: {ex.Message}"
+                });
                 return error;
             }
         }

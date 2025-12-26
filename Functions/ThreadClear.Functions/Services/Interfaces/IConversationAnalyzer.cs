@@ -15,6 +15,11 @@ namespace ThreadClear.Functions.Services.Interfaces
         Task AnalyzeConversation(ThreadCapsule capsule, AnalysisOptions? options = null);
 
         /// <summary>
+        /// ⭐ HERO: Analyze a draft reply in context of the conversation
+        /// </summary>
+        Task<DraftAnalysis> AnalyzeDraft(ThreadCapsule capsule, string draftMessage);
+
+        /// <summary>
         /// ⭐ HERO: Detect unanswered questions with persistence tracking
         /// </summary>
         Task<List<UnansweredQuestion>> DetectUnansweredQuestions(ThreadCapsule capsule);

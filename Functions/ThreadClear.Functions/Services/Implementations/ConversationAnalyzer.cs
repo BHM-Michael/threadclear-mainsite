@@ -448,6 +448,167 @@ namespace ThreadClear.Functions.Services.Implementations
             return ParseHealthAssessmentResponse(result);
         }
 
+        /// <summary>
+        /// ⭐ HERO: Analyze a draft reply in context of the conversation
+        /// </summary>
+        public async Task<DraftAnalysis> AnalyzeDraft(ThreadCapsule capsule, string draftMessage)
+        {
+            var prompt = BuildDraftAnalysisPrompt(capsule, draftMessage);
+            var result = await _aiService.AnalyzeConversation(prompt, capsule);
+            return ParseDraftAnalysisResponse(result);
+        }
+
+        private string BuildDraftAnalysisPrompt(ThreadCapsule capsule, string draftMessage)
+        {
+            // Get unanswered questions if already analyzed
+            var unansweredQuestions = capsule.Analysis?.UnansweredQuestions ?? new List<UnansweredQuestion>();
+            var questionsSection = unansweredQuestions.Any()
+                ? "UNANSWERED QUESTIONS FROM CONVERSATION:\n" + string.Join("\n", unansweredQuestions.Select(q => $"- {q.Question} (asked by {q.AskedBy})"))
+                : "UNANSWERED QUESTIONS FROM CONVERSATION:\n(None identified yet - analyze the conversation for questions that need addressing)";
+
+            return @$"You are analyzing a draft reply in the context of an ongoing conversation.
+
+{FormatConversationForAI(capsule)}
+
+{questionsSection}
+
+DRAFT REPLY TO ANALYZE:
+---
+{draftMessage}
+---
+
+Analyze the draft and respond ONLY with valid JSON (no markdown, no explanation):
+
+{{
+  ""tone"": {{
+    ""tone"": ""friendly|neutral|formal|defensive|aggressive|dismissive"",
+    ""matchesConversationTone"": true/false,
+    ""escalationRisk"": ""none|low|medium|high"",
+    ""explanation"": ""brief explanation of tone assessment""
+  }},
+  ""questionsCovered"": [
+    {{
+      ""question"": ""the original question from conversation"",
+      ""addressed"": true/false,
+      ""howAddressed"": ""explanation of how draft addresses it, or null if not addressed""
+    }}
+  ],
+  ""questionsIgnored"": [""list of unanswered questions NOT addressed by draft""],
+  ""newQuestionsIntroduced"": [""any new questions the draft asks""],
+  ""riskFlags"": [
+    {{
+      ""type"": ""ambiguity|tension|legal|commitment|deadline"",
+      ""description"": ""what the risk is"",
+      ""severity"": ""low|medium|high"",
+      ""suggestion"": ""how to mitigate""
+    }}
+  ],
+  ""completenessScore"": 7,
+  ""suggestions"": [
+    ""Consider acknowledging their concern about X"",
+    ""You might want to clarify the timeline""
+  ],
+  ""overallAssessment"": ""Brief 1-2 sentence summary of whether this draft is ready to send"",
+  ""readyToSend"": true/false
+}}";
+        }
+
+        private DraftAnalysis ParseDraftAnalysisResponse(string response)
+        {
+            try
+            {
+                var cleanJson = JsonHelper.CleanJsonResponse(response);
+                using var doc = JsonDocument.Parse(cleanJson);
+                var root = doc.RootElement;
+
+                var analysis = new DraftAnalysis();
+
+                // Parse tone
+                if (root.TryGetProperty("tone", out var toneElement))
+                {
+                    analysis.Tone = new ToneAssessment
+                    {
+                        Tone = toneElement.GetStringSafe("tone"),
+                        MatchesConversationTone = toneElement.GetBoolSafe("matchesConversationTone", true),
+                        EscalationRisk = toneElement.GetStringSafe("escalationRisk", "none"),
+                        Explanation = toneElement.GetStringSafe("explanation")
+                    };
+                }
+
+                // Parse questions covered
+                if (root.TryGetProperty("questionsCovered", out var coveredArray))
+                {
+                    foreach (var q in coveredArray.EnumerateArray())
+                    {
+                        analysis.QuestionsCovered.Add(new QuestionCoverage
+                        {
+                            Question = q.GetStringSafe("question"),
+                            Addressed = q.GetBoolSafe("addressed", false),
+                            HowAddressed = q.GetStringSafe("howAddressed", null)
+                        });
+                    }
+                }
+
+                // Parse questions ignored
+                if (root.TryGetProperty("questionsIgnored", out var ignoredArray))
+                {
+                    foreach (var q in ignoredArray.EnumerateArray())
+                    {
+                        analysis.QuestionsIgnored.Add(q.GetString() ?? "");
+                    }
+                }
+
+                // Parse new questions introduced
+                if (root.TryGetProperty("newQuestionsIntroduced", out var newQArray))
+                {
+                    foreach (var q in newQArray.EnumerateArray())
+                    {
+                        analysis.NewQuestionsIntroduced.Add(q.GetString() ?? "");
+                    }
+                }
+
+                // Parse risk flags
+                if (root.TryGetProperty("riskFlags", out var risksArray))
+                {
+                    foreach (var r in risksArray.EnumerateArray())
+                    {
+                        analysis.RiskFlags.Add(new RiskFlag
+                        {
+                            Type = r.GetStringSafe("type"),
+                            Description = r.GetStringSafe("description"),
+                            Severity = r.GetStringSafe("severity", "low"),
+                            Suggestion = r.GetStringSafe("suggestion")
+                        });
+                    }
+                }
+
+                // Parse simple fields
+                analysis.CompletenessScore = root.GetInt32Safe("completenessScore", 5);
+                analysis.OverallAssessment = root.GetStringSafe("overallAssessment");
+                analysis.ReadyToSend = root.GetBoolSafe("readyToSend", false);
+
+                // Parse suggestions
+                if (root.TryGetProperty("suggestions", out var suggestionsArray))
+                {
+                    foreach (var s in suggestionsArray.EnumerateArray())
+                    {
+                        analysis.Suggestions.Add(s.GetString() ?? "");
+                    }
+                }
+
+                return analysis;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing draft analysis: {Response}", response);
+                return new DraftAnalysis
+                {
+                    OverallAssessment = "Unable to analyze draft",
+                    ReadyToSend = false
+                };
+            }
+        }
+
         #region Prompt Builders
 
         private string BuildUnansweredQuestionsPrompt(ThreadCapsule capsule)

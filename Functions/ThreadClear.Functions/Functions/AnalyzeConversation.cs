@@ -16,19 +16,25 @@ namespace ThreadClear.Functions.Functions
         private readonly IConversationAnalyzer _analyzer;
         private readonly IThreadCapsuleBuilder _builder;
         private readonly IUserService _userService;
+        private readonly IOrganizationService _organizationService;
+        private readonly IInsightService _insightService;
 
         public AnalyzeConversation(
             ILoggerFactory loggerFactory,
             IConversationParser parser,
             IConversationAnalyzer analyzer,
             IThreadCapsuleBuilder builder,
-            IUserService userService)
+            IUserService userService,
+            IOrganizationService organizationService,
+            IInsightService insightService)
         {
             _logger = loggerFactory.CreateLogger<AnalyzeConversation>();
             _parser = parser;
             _analyzer = analyzer;
             _builder = builder;
             _userService = userService;
+            _organizationService = organizationService;
+            _insightService = insightService;
         }
 
         [Function("AnalyzeConversation")]
@@ -57,22 +63,33 @@ namespace ThreadClear.Functions.Functions
                         var token = authHeader.Substring("Bearer ".Length);
                         authenticatedUser = await _userService.ValidateToken(token);
 
-                        if (authenticatedUser == null)
+                        if (authenticatedUser != null)
                         {
-                            _logger.LogWarning("Invalid or expired token");
-                            return await CreateErrorResponse(req, HttpStatusCode.Unauthorized, "Invalid or expired token");
+                            _logger.LogInformation("Authenticated user via token: {Email}", authenticatedUser.Email);
                         }
-                        _logger.LogInformation("Authenticated user: {Email}", authenticatedUser.Email);
                     }
                 }
 
-                // If no token, check for function key (backward compatibility)
+                // If no Bearer token, check for email/password headers (backward compatibility)
                 if (authenticatedUser == null)
                 {
-                    // Function key is validated by Azure Functions runtime when AuthorizationLevel.Function
-                    // Since we changed to Anonymous, we need to check manually or allow unauthenticated
-                    // For now, we'll allow unauthenticated but with limited features
-                    _logger.LogInformation("Unauthenticated request - limited features");
+                    var email = req.Headers.TryGetValues("X-User-Email", out var emailValues) ? emailValues.FirstOrDefault() : null;
+                    var password = req.Headers.TryGetValues("X-User-Password", out var passValues) ? passValues.FirstOrDefault() : null;
+
+                    if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(password))
+                    {
+                        authenticatedUser = await _userService.ValidateLogin(email, password);
+                        if (authenticatedUser != null)
+                        {
+                            _logger.LogInformation("Authenticated user via headers: {Email}", authenticatedUser.Email);
+                        }
+                    }
+                }
+
+                // If still no auth, allow unauthenticated but with limited features
+                if (authenticatedUser == null)
+                {
+                    _logger.LogInformation("Unauthenticated request - limited features, no insight storage");
                 }
 
                 // Parse request
@@ -158,6 +175,11 @@ namespace ThreadClear.Functions.Functions
                     draftAnalysis = await _analyzer.AnalyzeDraft(capsule, request.DraftMessage);
                 }
 
+                // ============================================
+                // STORE INSIGHT (if authenticated user with org)
+                // ============================================
+                await StoreInsightAsync(authenticatedUser, capsule, request.SourceType ?? "simple");
+
                 // Create response
                 var response = req.CreateResponse(HttpStatusCode.OK);
                 await response.WriteAsJsonAsync(new
@@ -176,6 +198,41 @@ namespace ThreadClear.Functions.Functions
                 _logger.LogError(ex, "Error processing conversation");
                 return await CreateErrorResponse(req, HttpStatusCode.InternalServerError,
                     "An error occurred processing your request");
+            }
+        }
+
+        /// <summary>
+        /// Stores privacy-safe insight from analysis results
+        /// </summary>
+        private async Task StoreInsightAsync(User? user, ThreadCapsule capsule, string sourceType)
+        {
+            if (user == null)
+            {
+                _logger.LogDebug("Skipping insight storage - no authenticated user");
+                return;
+            }
+
+            try
+            {
+                // Get user's default organization
+                var userOrgs = await _organizationService.GetUserOrganizations(user.Id);
+                if (userOrgs == null || userOrgs.Count == 0)
+                {
+                    _logger.LogDebug("Skipping insight storage - user has no organization");
+                    return;
+                }
+
+                var orgId = userOrgs[0].Id; // Use default (first) organization
+
+                // Store the insight (InsightService handles the transformation)
+                await _insightService.StoreInsight(orgId, user.Id, capsule);
+
+                _logger.LogInformation("Stored insight for user {UserId} in org {OrgId}", user.Id, orgId);
+            }
+            catch (Exception ex)
+            {
+                // Log but don't fail the request - insight storage is secondary
+                _logger.LogError(ex, "Failed to store insight for user {UserId}", user?.Id);
             }
         }
 

@@ -5,6 +5,7 @@ using System.Net;
 using System.Text.Json;
 using ThreadClear.Functions.Models;
 using ThreadClear.Functions.Services.Implementations;
+using ThreadClear.Functions.Services.Interfaces;
 
 namespace ThreadClear.Functions.Functions
 {

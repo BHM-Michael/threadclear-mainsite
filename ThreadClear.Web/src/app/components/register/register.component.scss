@@ -1,0 +1,247 @@
+.register-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  padding: 24px;
+}
+
+.register-card {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.logo {
+  text-align: center;
+  margin-bottom: 24px;
+
+  h1 {
+    margin: 0;
+    font-size: 32px;
+    color: #1a1a2e;
+    font-weight: 700;
+  }
+}
+
+.subtitle {
+  text-align: center;
+  color: #666;
+  margin: 0 0 24px;
+}
+
+// Validating State
+.validating {
+  text-align: center;
+  padding: 40px 0;
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #4a90a4;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  p {
+    color: #666;
+    font-size: 14px;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// No Invite / Invalid Token States
+.no-invite, .invalid-token {
+  text-align: center;
+  padding: 20px 0;
+
+  .lock-icon, .error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+
+  h2 {
+    margin: 0 0 16px;
+    color: #1a1a2e;
+    font-size: 24px;
+  }
+
+  p {
+    color: #666;
+    margin: 0 0 12px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 24px;
+  }
+}
+
+// Buttons
+.btn-primary {
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #4a90a4, #3d7a8c);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  width: 100%;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 144, 164, 0.4);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-secondary {
+  padding: 14px 28px;
+  background: white;
+  color: #4a90a4;
+  border: 2px solid #4a90a4;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #f0f7fa;
+  }
+}
+
+.actions {
+  .btn-primary, .btn-secondary {
+    width: auto;
+  }
+}
+
+// Registration Form
+.registration-form {
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+.invite-notice {
+  background: #e8f5e9;
+  border: 1px solid #4caf50;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  text-align: center;
+
+  p {
+    margin: 0;
+    color: #2e7d32;
+    font-size: 14px;
+  }
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+
+  .form-group {
+    flex: 1;
+  }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+  }
+
+  input {
+    padding: 14px 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: #4a90a4;
+      box-shadow: 0 0 0 3px rgba(74, 144, 164, 0.1);
+    }
+
+    &::placeholder {
+      color: #aaa;
+    }
+
+    &.locked {
+      background: #f5f5f5;
+      color: #666;
+      cursor: not-allowed;
+    }
+  }
+
+  .help-text {
+    font-size: 12px;
+    color: #888;
+
+    &.error {
+      color: #e74c3c;
+    }
+  }
+}
+
+.error-message {
+  background: #ffe6e6;
+  color: #e74c3c;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid #ffcccc;
+}
+
+.login-link {
+  text-align: center;
+  margin-top: 24px;
+  color: #666;
+  font-size: 14px;
+
+  a {
+    color: #4a90a4;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

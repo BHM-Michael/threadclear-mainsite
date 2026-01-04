@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -26,12 +26,28 @@ export class ApiService {
 
   constructor(private http: HttpClient) { }
 
+  private getAuthHeaders(): HttpHeaders {
+    const credentials = localStorage.getItem('userCredentials');
+    if (!credentials) {
+      return new HttpHeaders({
+        'Content-Type': 'application/json'
+      });
+    }
+
+    const [email, password] = atob(credentials).split(':');
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'X-User-Email': email,
+      'X-User-Password': password
+    });
+  }
+
   analyzeConversation(data: any): Observable<AnalysisResponse> {
     const url = this.functionKey
       ? `${this.apiUrl}/analyze?code=${this.functionKey}`
       : `${this.apiUrl}/analyze`;
 
-    return this.http.post<AnalysisResponse>(url, data);
+    return this.http.post<AnalysisResponse>(url, data, { headers: this.getAuthHeaders() });
   }
 
   analyzeImage(file: File, sourceType: string, parsingMode: number): Observable<AnalysisResponse> {
@@ -44,16 +60,16 @@ export class ApiService {
       ? `${this.apiUrl}/analyze-image?code=${this.functionKey}`
       : `${this.apiUrl}/analyze-image`;
 
-    return this.http.post<AnalysisResponse>(url, formData);
+    // For FormData, we need different headers (no Content-Type, browser sets it with boundary)
+    const headers = this.getFormDataAuthHeaders();
+    return this.http.post<AnalysisResponse>(url, formData, { headers });
   }
 
   analyzeImages(files: File[], sourceType: string, parsingMode: number, enableFlags: any = {}): Observable<AnalysisResponse> {
     const formData = new FormData();
-
     files.forEach((file, index) => {
       formData.append('images', file);
     });
-
     formData.append('sourceType', sourceType);
     formData.append('parsingMode', parsingMode.toString());
 
@@ -66,7 +82,8 @@ export class ApiService {
       ? `${this.apiUrl}/analyze-images?code=${this.functionKey}`
       : `${this.apiUrl}/analyze-images`;
 
-    return this.http.post<AnalysisResponse>(url, formData);
+    const headers = this.getFormDataAuthHeaders();
+    return this.http.post<AnalysisResponse>(url, formData, { headers });
   }
 
   analyzeAudio(file: File, sourceType: string, parsingMode: number, enableFlags: any = {}): Observable<AnalysisResponse> {
@@ -84,13 +101,26 @@ export class ApiService {
       ? `${this.apiUrl}/analyze-audio?code=${this.functionKey}`
       : `${this.apiUrl}/analyze-audio`;
 
-    return this.http.post<AnalysisResponse>(url, formData);
+    const headers = this.getFormDataAuthHeaders();
+    return this.http.post<AnalysisResponse>(url, formData, { headers });
+  }
+
+  private getFormDataAuthHeaders(): HttpHeaders {
+    const credentials = localStorage.getItem('userCredentials');
+    if (!credentials) {
+      return new HttpHeaders();
+    }
+
+    const [email, password] = atob(credentials).split(':');
+    return new HttpHeaders({
+      'X-User-Email': email,
+      'X-User-Password': password
+    });
   }
 
   healthCheck(): Observable<any> {
     return this.http.get(`${this.apiUrl}/health`);
   }
-
 
   detectSourceType(text: string): string {
     // Email detection

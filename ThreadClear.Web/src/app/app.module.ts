@@ -9,6 +9,15 @@ import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { LoginComponent } from './components/login/login.component';
 import { AdminComponent } from './components/admin/admin.component';
+import { RegisterComponent } from './components/register/register.component';
+import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { OrganizationSettingsComponent } from './components/organization-settings/organization-settings.component';
+
+import { OrganizationService } from './services/organization.service';
+import { TaxonomyService } from './services/taxonomy.service';
+import { InsightsService } from './services/insights.service';
+import { RegistrationService } from './services/registration.service';
+import { AdminService } from './services/admin.service';
 
 @NgModule({
   declarations: [
@@ -16,7 +25,10 @@ import { AdminComponent } from './components/admin/admin.component';
     ConversationAnalyzerComponent,
     ResultsDisplayComponent,
     LoginComponent,
-    AdminComponent
+    AdminComponent,
+    RegisterComponent,
+    DashboardComponent,
+    OrganizationSettingsComponent
   ],
   imports: [
     BrowserModule,
@@ -24,7 +36,13 @@ import { AdminComponent } from './components/admin/admin.component';
     HttpClientModule,
     FormsModule
   ],
-  providers: [],
+  providers: [
+    OrganizationService,
+    TaxonomyService,
+    InsightsService,
+    RegistrationService,
+    AdminService
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

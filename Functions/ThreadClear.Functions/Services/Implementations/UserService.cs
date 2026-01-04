@@ -1,29 +1,11 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using ThreadClear.Functions.Models;
+using ThreadClear.Functions.Services.Interfaces;
 using BCrypt.Net;
 
 namespace ThreadClear.Functions.Services.Implementations
 {
-    public interface IUserService
-    {
-        Task<User?> GetUserByEmail(string email);
-        Task<User?> GetUserById(Guid id);
-        Task<User?> ValidateLogin(string email, string password);
-        Task<User> CreateUser(CreateUserRequest request, Guid? createdBy = null);
-        Task<User> CreateAdminUser(string email, string password);
-        Task<List<User>> GetAllUsers();
-        Task UpdateUserPermissions(Guid userId, UserPermissions permissions);
-        Task<bool> DeleteUser(Guid userId);
-        Task<List<FeaturePricing>> GetFeaturePricing();
-        Task UpdateFeaturePricing(string featureName, decimal price, Guid updatedBy);
-
-        Task<string> CreateUserToken(Guid userId, string? deviceInfo = null, int expirationDays = 30);
-        Task<User?> ValidateToken(string token);
-        Task RevokeToken(string token);
-        Task RevokeAllUserTokens(Guid userId);
-    }
-
     public class UserService : IUserService
     {
         private readonly string _connectionString;
@@ -34,6 +16,8 @@ namespace ThreadClear.Functions.Services.Implementations
             _connectionString = connectionString;
             _logger = logger;
         }
+
+        #region User Retrieval
 
         public async Task<User?> GetUserByEmail(string email)
         {
@@ -97,6 +81,36 @@ namespace ThreadClear.Functions.Services.Implementations
             return null;
         }
 
+        public async Task<List<User>> GetAllUsers()
+        {
+            var users = new List<User>();
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                       p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
+                       p.ConversationHealth, p.SuggestedActions
+                FROM Users u
+                LEFT JOIN UserPermissions p ON u.Id = p.UserId
+                ORDER BY u.CreatedAt DESC";
+
+            using var cmd = new SqlCommand(sql, connection);
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                var user = MapUserFromReader(reader);
+                user.PasswordHash = ""; // Don't return hash
+                users.Add(user);
+            }
+            return users;
+        }
+
+        #endregion
+
+        #region User Creation
+
         public async Task<User> CreateAdminUser(string email, string password)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -108,7 +122,6 @@ namespace ThreadClear.Functions.Services.Implementations
             using var transaction = connection.BeginTransaction();
             try
             {
-                // Insert user
                 var userSql = @"
                     INSERT INTO Users (Id, Email, PasswordHash, Role, IsActive, CreatedAt)
                     VALUES (@Id, @Email, @PasswordHash, 'admin', 1, GETUTCDATE())";
@@ -121,7 +134,6 @@ namespace ThreadClear.Functions.Services.Implementations
                     await cmd.ExecuteNonQueryAsync();
                 }
 
-                // Insert permissions (all enabled for admin)
                 var permSql = @"
                     INSERT INTO UserPermissions (Id, UserId, UnansweredQuestions, TensionPoints, Misalignments, ConversationHealth, SuggestedActions)
                     VALUES (NEWID(), @UserId, 1, 1, 1, 1, 1)";
@@ -170,7 +182,6 @@ namespace ThreadClear.Functions.Services.Implementations
             using var transaction = connection.BeginTransaction();
             try
             {
-                // Insert user
                 var userSql = @"
                     INSERT INTO Users (Id, Email, PasswordHash, Role, IsActive, CreatedAt, CreatedBy)
                     VALUES (@Id, @Email, @PasswordHash, 'user', 1, GETUTCDATE(), @CreatedBy)";
@@ -184,7 +195,6 @@ namespace ThreadClear.Functions.Services.Implementations
                     await cmd.ExecuteNonQueryAsync();
                 }
 
-                // Insert permissions
                 var permSql = @"
                     INSERT INTO UserPermissions (Id, UserId, UnansweredQuestions, TensionPoints, Misalignments, ConversationHealth, SuggestedActions)
                     VALUES (NEWID(), @UserId, @UQ, @TP, @MA, @CH, @SA)";
@@ -228,30 +238,89 @@ namespace ThreadClear.Functions.Services.Implementations
             }
         }
 
-        public async Task<List<User>> GetAllUsers()
+        public async Task<User> CreateUserDirect(User user)
         {
-            var users = new List<User>();
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
-                       p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
-                       p.ConversationHealth, p.SuggestedActions
-                FROM Users u
-                LEFT JOIN UserPermissions p ON u.Id = p.UserId
-                ORDER BY u.CreatedAt DESC";
+                INSERT INTO Users (Id, Email, PasswordHash, Role, IsActive, CreatedAt, CreatedBy,
+                                   DisplayName, FirstName, LastName, LastLoginAt, EmailVerifiedAt,
+                                   EmailVerificationToken, PasswordResetToken, PasswordResetExpires, Preferences)
+                VALUES (@Id, @Email, @PasswordHash, @Role, @IsActive, @CreatedAt, @CreatedBy,
+                        @DisplayName, @FirstName, @LastName, @LastLoginAt, @EmailVerifiedAt,
+                        @EmailVerificationToken, @PasswordResetToken, @PasswordResetExpires, @Preferences)";
 
             using var cmd = new SqlCommand(sql, connection);
-            using var reader = await cmd.ExecuteReaderAsync();
+            cmd.Parameters.AddWithValue("@Id", user.Id);
+            cmd.Parameters.AddWithValue("@Email", user.Email);
+            cmd.Parameters.AddWithValue("@PasswordHash", user.PasswordHash);
+            cmd.Parameters.AddWithValue("@Role", user.Role);
+            cmd.Parameters.AddWithValue("@IsActive", user.IsActive);
+            cmd.Parameters.AddWithValue("@CreatedAt", user.CreatedAt);
+            cmd.Parameters.AddWithValue("@CreatedBy", (object?)user.CreatedBy ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@DisplayName", (object?)user.DisplayName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@FirstName", (object?)user.FirstName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@LastName", (object?)user.LastName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@LastLoginAt", (object?)user.LastLoginAt ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@EmailVerifiedAt", (object?)user.EmailVerifiedAt ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@EmailVerificationToken", (object?)user.EmailVerificationToken ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@PasswordResetToken", (object?)user.PasswordResetToken ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@PasswordResetExpires", (object?)user.PasswordResetExpires ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Preferences", (object?)user.PreferencesJson ?? DBNull.Value);
 
-            while (await reader.ReadAsync())
-            {
-                var user = MapUserFromReader(reader);
-                user.PasswordHash = ""; // Don't return hash
-                users.Add(user);
-            }
-            return users;
+            await cmd.ExecuteNonQueryAsync();
+            _logger.LogInformation("Created user {UserId} - {Email}", user.Id, user.Email);
+
+            return user;
+        }
+
+        #endregion
+
+        #region User Management
+
+        public async Task<User> UpdateUser(User user)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                UPDATE Users SET
+                    Email = @Email,
+                    PasswordHash = @PasswordHash,
+                    Role = @Role,
+                    IsActive = @IsActive,
+                    DisplayName = @DisplayName,
+                    FirstName = @FirstName,
+                    LastName = @LastName,
+                    LastLoginAt = @LastLoginAt,
+                    EmailVerifiedAt = @EmailVerifiedAt,
+                    EmailVerificationToken = @EmailVerificationToken,
+                    PasswordResetToken = @PasswordResetToken,
+                    PasswordResetExpires = @PasswordResetExpires,
+                    Preferences = @Preferences
+                WHERE Id = @Id";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@Id", user.Id);
+            cmd.Parameters.AddWithValue("@Email", user.Email);
+            cmd.Parameters.AddWithValue("@PasswordHash", user.PasswordHash);
+            cmd.Parameters.AddWithValue("@Role", user.Role);
+            cmd.Parameters.AddWithValue("@IsActive", user.IsActive);
+            cmd.Parameters.AddWithValue("@DisplayName", (object?)user.DisplayName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@FirstName", (object?)user.FirstName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@LastName", (object?)user.LastName ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@LastLoginAt", (object?)user.LastLoginAt ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@EmailVerifiedAt", (object?)user.EmailVerifiedAt ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@EmailVerificationToken", (object?)user.EmailVerificationToken ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@PasswordResetToken", (object?)user.PasswordResetToken ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@PasswordResetExpires", (object?)user.PasswordResetExpires ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("@Preferences", (object?)user.PreferencesJson ?? DBNull.Value);
+
+            await cmd.ExecuteNonQueryAsync();
+            _logger.LogInformation("Updated user {UserId}", user.Id);
+
+            return user;
         }
 
         public async Task UpdateUserPermissions(Guid userId, UserPermissions permissions)
@@ -284,7 +353,6 @@ namespace ThreadClear.Functions.Services.Implementations
             using var transaction = connection.BeginTransaction();
             try
             {
-                // Delete permissions first
                 var permSql = "DELETE FROM UserPermissions WHERE UserId = @UserId";
                 using (var cmd = new SqlCommand(permSql, connection, transaction))
                 {
@@ -292,7 +360,6 @@ namespace ThreadClear.Functions.Services.Implementations
                     await cmd.ExecuteNonQueryAsync();
                 }
 
-                // Delete user
                 var userSql = "DELETE FROM Users WHERE Id = @UserId";
                 using (var cmd = new SqlCommand(userSql, connection, transaction))
                 {
@@ -308,6 +375,10 @@ namespace ThreadClear.Functions.Services.Implementations
                 throw;
             }
         }
+
+        #endregion
+
+        #region Feature Pricing
 
         public async Task<List<FeaturePricing>> GetFeaturePricing()
         {
@@ -352,37 +423,10 @@ namespace ThreadClear.Functions.Services.Implementations
             await cmd.ExecuteNonQueryAsync();
         }
 
-        private User MapUserFromReader(SqlDataReader reader)
-        {
-            var user = new User
-            {
-                Id = reader.GetGuid(0),
-                Email = reader.GetString(1),
-                PasswordHash = reader.GetString(2),
-                Role = reader.GetString(3),
-                IsActive = reader.GetBoolean(4),
-                CreatedAt = reader.GetDateTime(5),
-                CreatedBy = reader.IsDBNull(6) ? null : reader.GetGuid(6)
-            };
+        #endregion
 
-            if (!reader.IsDBNull(7))
-            {
-                user.Permissions = new UserPermissions
-                {
-                    Id = reader.GetGuid(7),
-                    UserId = user.Id,
-                    UnansweredQuestions = reader.GetBoolean(8),
-                    TensionPoints = reader.GetBoolean(9),
-                    Misalignments = reader.GetBoolean(10),
-                    ConversationHealth = reader.GetBoolean(11),
-                    SuggestedActions = reader.GetBoolean(12)
-                };
-            }
+        #region Token Management
 
-            return user;
-        }
-
-        // Token management for extension
         public async Task<string> CreateUserToken(Guid userId, string? deviceInfo = null, int expirationDays = 30)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -459,5 +503,149 @@ namespace ThreadClear.Functions.Services.Implementations
             cmd.Parameters.AddWithValue("@UserId", userId);
             await cmd.ExecuteNonQueryAsync();
         }
+
+        #endregion
+
+        #region Registration Flow
+
+        public async Task<User?> GetUserByVerificationToken(string token)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                       u.DisplayName, u.FirstName, u.LastName, u.LastLoginAt, u.EmailVerifiedAt,
+                       u.EmailVerificationToken, u.PasswordResetToken, u.PasswordResetExpires, u.Preferences,
+                       p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
+                       p.ConversationHealth, p.SuggestedActions
+                FROM Users u
+                LEFT JOIN UserPermissions p ON u.Id = p.UserId
+                WHERE u.EmailVerificationToken = @Token";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@Token", token);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return MapUserFromReaderExtended(reader);
+            }
+            return null;
+        }
+
+        public async Task<User?> GetUserByResetToken(string token)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                       u.DisplayName, u.FirstName, u.LastName, u.LastLoginAt, u.EmailVerifiedAt,
+                       u.EmailVerificationToken, u.PasswordResetToken, u.PasswordResetExpires, u.Preferences,
+                       p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
+                       p.ConversationHealth, p.SuggestedActions
+                FROM Users u
+                LEFT JOIN UserPermissions p ON u.Id = p.UserId
+                WHERE u.PasswordResetToken = @Token AND u.PasswordResetExpires > @Now";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@Token", token);
+            cmd.Parameters.AddWithValue("@Now", DateTime.UtcNow);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return MapUserFromReaderExtended(reader);
+            }
+            return null;
+        }
+
+        #endregion
+
+        #region Mappers
+
+        private User MapUserFromReader(SqlDataReader reader)
+        {
+            var user = new User
+            {
+                Id = reader.GetGuid(0),
+                Email = reader.GetString(1),
+                PasswordHash = reader.GetString(2),
+                Role = reader.GetString(3),
+                IsActive = reader.GetBoolean(4),
+                CreatedAt = reader.GetDateTime(5),
+                CreatedBy = reader.IsDBNull(6) ? null : reader.GetGuid(6)
+            };
+
+            if (!reader.IsDBNull(7))
+            {
+                user.Permissions = new UserPermissions
+                {
+                    Id = reader.GetGuid(7),
+                    UserId = user.Id,
+                    UnansweredQuestions = reader.GetBoolean(8),
+                    TensionPoints = reader.GetBoolean(9),
+                    Misalignments = reader.GetBoolean(10),
+                    ConversationHealth = reader.GetBoolean(11),
+                    SuggestedActions = reader.GetBoolean(12)
+                };
+            }
+
+            return user;
+        }
+
+        private User MapUserFromReaderExtended(SqlDataReader reader)
+        {
+            var user = new User
+            {
+                Id = reader.GetGuid(reader.GetOrdinal("Id")),
+                Email = reader.GetString(reader.GetOrdinal("Email")),
+                PasswordHash = reader.GetString(reader.GetOrdinal("PasswordHash")),
+                Role = reader.GetString(reader.GetOrdinal("Role")),
+                IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
+                CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
+                CreatedBy = reader.IsDBNull(reader.GetOrdinal("CreatedBy")) ? null : reader.GetGuid(reader.GetOrdinal("CreatedBy"))
+            };
+
+            // Extended fields
+            if (!reader.IsDBNull(reader.GetOrdinal("DisplayName")))
+                user.DisplayName = reader.GetString(reader.GetOrdinal("DisplayName"));
+            if (!reader.IsDBNull(reader.GetOrdinal("FirstName")))
+                user.FirstName = reader.GetString(reader.GetOrdinal("FirstName"));
+            if (!reader.IsDBNull(reader.GetOrdinal("LastName")))
+                user.LastName = reader.GetString(reader.GetOrdinal("LastName"));
+            if (!reader.IsDBNull(reader.GetOrdinal("LastLoginAt")))
+                user.LastLoginAt = reader.GetDateTime(reader.GetOrdinal("LastLoginAt"));
+            if (!reader.IsDBNull(reader.GetOrdinal("EmailVerifiedAt")))
+                user.EmailVerifiedAt = reader.GetDateTime(reader.GetOrdinal("EmailVerifiedAt"));
+            if (!reader.IsDBNull(reader.GetOrdinal("EmailVerificationToken")))
+                user.EmailVerificationToken = reader.GetString(reader.GetOrdinal("EmailVerificationToken"));
+            if (!reader.IsDBNull(reader.GetOrdinal("PasswordResetToken")))
+                user.PasswordResetToken = reader.GetString(reader.GetOrdinal("PasswordResetToken"));
+            if (!reader.IsDBNull(reader.GetOrdinal("PasswordResetExpires")))
+                user.PasswordResetExpires = reader.GetDateTime(reader.GetOrdinal("PasswordResetExpires"));
+            if (!reader.IsDBNull(reader.GetOrdinal("Preferences")))
+                user.PreferencesJson = reader.GetString(reader.GetOrdinal("Preferences"));
+
+            // Permissions
+            if (!reader.IsDBNull(reader.GetOrdinal("PermId")))
+            {
+                user.Permissions = new UserPermissions
+                {
+                    Id = reader.GetGuid(reader.GetOrdinal("PermId")),
+                    UserId = user.Id,
+                    UnansweredQuestions = reader.GetBoolean(reader.GetOrdinal("UnansweredQuestions")),
+                    TensionPoints = reader.GetBoolean(reader.GetOrdinal("TensionPoints")),
+                    Misalignments = reader.GetBoolean(reader.GetOrdinal("Misalignments")),
+                    ConversationHealth = reader.GetBoolean(reader.GetOrdinal("ConversationHealth")),
+                    SuggestedActions = reader.GetBoolean(reader.GetOrdinal("SuggestedActions"))
+                };
+            }
+
+            return user;
+        }
+
+        #endregion
     }
 }

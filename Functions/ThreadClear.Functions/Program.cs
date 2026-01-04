@@ -13,11 +13,16 @@ var host = new HostBuilder()
     {
         var configuration = context.Configuration;
 
-        // ⭐ Register SQL Connection String and UserService
+        // ⭐ Get SQL Connection String
         var sqlConnectionString = configuration["SqlConnectionString"]
             ?? configuration.GetConnectionString("SqlConnectionString")
             ?? throw new InvalidOperationException("SqlConnectionString is required");
 
+        // ============================================
+        // EXISTING SERVICES (your original code)
+        // ============================================
+
+        // ⭐ Register UserService
         services.AddSingleton<IUserService>(sp =>
             new UserService(sqlConnectionString, sp.GetRequiredService<ILogger<UserService>>()));
 
@@ -85,7 +90,53 @@ var host = new HostBuilder()
         services.AddScoped<IThreadCapsuleBuilder, ThreadCapsuleBuilder>();
         services.AddScoped<IConversationAnalyzer, ConversationAnalyzer>();
 
-        // Application Insights
+        // ============================================
+        // NEW SERVICES (Phase 3-7)
+        // ============================================
+
+        // ⭐ Register Repositories
+        services.AddSingleton<IOrganizationRepository>(sp =>
+            new OrganizationRepository(sqlConnectionString, sp.GetRequiredService<ILogger<OrganizationRepository>>()));
+
+        services.AddSingleton<ITaxonomyRepository>(sp =>
+            new TaxonomyRepository(sqlConnectionString, sp.GetRequiredService<ILogger<TaxonomyRepository>>()));
+
+        services.AddSingleton<IInsightRepository>(sp =>
+            new InsightRepository(sqlConnectionString, sp.GetRequiredService<ILogger<InsightRepository>>()));
+
+        // ⭐ Register Organization Service
+        services.AddSingleton<IOrganizationService>(sp =>
+            new OrganizationService(
+                sp.GetRequiredService<IOrganizationRepository>(),
+                sp.GetRequiredService<IUserService>(),
+                sp.GetRequiredService<ILogger<OrganizationService>>()));
+
+        // ⭐ Register Taxonomy Service
+        services.AddSingleton<ITaxonomyService>(sp =>
+            new TaxonomyService(
+                sp.GetRequiredService<ITaxonomyRepository>(),
+                sp.GetRequiredService<IOrganizationRepository>(),
+                sp.GetRequiredService<ILogger<TaxonomyService>>()));
+
+        // ⭐ Register Insight Service
+        services.AddSingleton<IInsightService>(sp =>
+            new InsightService(
+                sp.GetRequiredService<IInsightRepository>(),
+                sp.GetRequiredService<ITaxonomyService>(),
+                sp.GetRequiredService<IOrganizationRepository>(),
+                sp.GetRequiredService<ILogger<InsightService>>()));
+
+        // ⭐ Register Registration Service
+        services.AddSingleton<IRegistrationService>(sp =>
+            new RegistrationService(
+                sp.GetRequiredService<IUserService>(),
+                sp.GetRequiredService<IOrganizationService>(),
+                sp.GetRequiredService<IOrganizationRepository>(),
+                sp.GetRequiredService<ILogger<RegistrationService>>()));
+
+        // ============================================
+        // APPLICATION INSIGHTS
+        // ============================================
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
     })

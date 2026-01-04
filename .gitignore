@@ -15,7 +15,7 @@ dist/
 *.suo
 
 # Environment files
-.env
+*.env
 local.settings.json
 appsettings.Development.json
 

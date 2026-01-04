@@ -1,0 +1,102 @@
+<div class="register-container">
+  <div class="register-card">
+    <div class="logo">
+      <h1>ThreadClear</h1>
+    </div>
+
+    <!-- Loading/Validating State -->
+    <div class="validating" *ngIf="isValidatingToken">
+      <div class="spinner"></div>
+      <p>Validating your invitation...</p>
+    </div>
+
+    <!-- No Invite Token - Invitation Only Message -->
+    <div class="no-invite" *ngIf="!isValidatingToken && !inviteToken">
+      <div class="lock-icon">🔒</div>
+      <h2>Invitation Only</h2>
+      <p>ThreadClear registration is by invitation only.</p>
+      <p>If your organization uses ThreadClear, please contact your administrator for an invitation.</p>
+      
+      <div class="actions">
+        <button class="btn-secondary" (click)="goToLogin()">Sign In</button>
+        <button class="btn-primary" (click)="contactSales()">Contact Sales</button>
+      </div>
+    </div>
+
+    <!-- Invalid Token Message -->
+    <div class="invalid-token" *ngIf="!isValidatingToken && inviteToken && !tokenValid">
+      <div class="error-icon">⚠️</div>
+      <h2>Invalid Invitation</h2>
+      <p>{{ error || 'This invitation link is invalid or has expired.' }}</p>
+      <p>Please contact your administrator for a new invitation.</p>
+      
+      <div class="actions">
+        <button class="btn-secondary" (click)="goToLogin()">Sign In</button>
+      </div>
+    </div>
+
+    <!-- Valid Token - Show Registration Form -->
+    <div class="registration-form" *ngIf="!isValidatingToken && tokenValid">
+      <p class="subtitle">Complete your registration</p>
+
+      <div class="invite-notice">
+        <p>🎉 You've been invited to join ThreadClear!</p>
+      </div>
+
+      <form (ngSubmit)="register()">
+        <div class="form-row">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" [(ngModel)]="firstName" name="firstName" placeholder="John">
+          </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" [(ngModel)]="lastName" name="lastName" placeholder="Doe">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" 
+                 [(ngModel)]="email" 
+                 name="email" 
+                 [readonly]="isEmailLocked"
+                 [class.locked]="isEmailLocked"
+                 placeholder="you@company.com" 
+                 required>
+          <span class="help-text" *ngIf="isEmailLocked">
+            Email is set by your invitation
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" [(ngModel)]="password" name="password" placeholder="Min 8 characters" required>
+          <span class="help-text error" *ngIf="password && password.length < 8">
+            Password must be at least 8 characters
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" placeholder="Confirm password" required>
+          <span class="help-text error" *ngIf="confirmPassword && password !== confirmPassword">
+            Passwords do not match
+          </span>
+        </div>
+
+        <div class="error-message" *ngIf="error">
+          {{ error }}
+        </div>
+
+        <button type="submit" class="btn-primary" [disabled]="!isValid || isLoading">
+          {{ isLoading ? 'Creating Account...' : 'Create Account' }}
+        </button>
+      </form>
+
+      <div class="login-link">
+        Already have an account? <a (click)="goToLogin()">Sign in</a>
+      </div>
+    </div>
+  </div>
+</div>

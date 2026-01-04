@@ -7,13 +7,20 @@
         </div>
     </header>
 
+    <!-- Tabs -->
+    <div class="tabs">
+        <button [class.active]="activeTab === 'users'" (click)="setTab('users')">Users</button>
+        <button [class.active]="activeTab === 'organizations'" (click)="setTab('organizations')">Organizations</button>
+        <button [class.active]="activeTab === 'pricing'" (click)="setTab('pricing')">Pricing</button>
+    </div>
+
     <div class="messages">
         <div class="error" *ngIf="error">{{ error }}</div>
         <div class="success" *ngIf="success">{{ success }}</div>
     </div>
 
-    <!-- Users Section -->
-    <section class="section">
+    <!-- ==================== USERS TAB ==================== -->
+    <section class="section" *ngIf="activeTab === 'users'">
         <div class="section-header">
             <h2>Users</h2>
             <button class="btn-primary" (click)="showNewUserForm = !showNewUserForm">
@@ -141,8 +148,198 @@
         </div>
     </div>
 
-    <!-- Pricing Section -->
-    <section class="section">
+    <!-- ==================== ORGANIZATIONS TAB ==================== -->
+    <section class="section" *ngIf="activeTab === 'organizations'">
+        <div class="section-header">
+            <h2>Organizations</h2>
+            <button class="btn-primary" (click)="showNewOrgForm = !showNewOrgForm">
+                {{ showNewOrgForm ? 'Cancel' : '+ New Organization' }}
+            </button>
+        </div>
+
+        <!-- New Organization Form -->
+        <div class="new-org-form" *ngIf="showNewOrgForm">
+            <h3>Create New Organization</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Organization Name</label>
+                    <input type="text" [(ngModel)]="newOrg.name" placeholder="Acme Corp">
+                </div>
+                <div class="form-group">
+                    <label>Owner Email</label>
+                    <input type="email" [(ngModel)]="newOrg.ownerEmail" placeholder="owner@acme.com">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Industry</label>
+                    <select [(ngModel)]="newOrg.industryType">
+                        <option *ngFor="let ind of industries" [value]="ind.key">{{ ind.name }}</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Plan</label>
+                    <select [(ngModel)]="newOrg.plan">
+                        <option *ngFor="let p of plans" [value]="p.key">{{ p.name }}</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn-primary" (click)="createOrganization()" [disabled]="loading">
+                {{ loading ? 'Creating...' : 'Create Organization' }}
+            </button>
+        </div>
+
+        <!-- Organizations Table -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Industry</th>
+                        <th>Plan</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let org of organizations">
+                        <td>
+                            <strong>{{ org.name }}</strong>
+                            <small class="slug">{{ org.slug }}</small>
+                        </td>
+                        <td>{{ org.industryType }}</td>
+                        <td><span class="plan-badge" [class]="org.plan">{{ org.plan }}</span></td>
+                        <td>
+                            <span class="status-badge" [class.active]="org.isActive">
+                                {{ org.isActive ? 'Active' : 'Inactive' }}
+                            </span>
+                        </td>
+                        <td>{{ org.createdAt | date:'short' }}</td>
+                        <td>
+                            <button class="btn-small" (click)="viewOrganization(org)">View</button>
+                        </td>
+                    </tr>
+                    <tr *ngIf="organizations.length === 0">
+                        <td colspan="6" class="empty-row">No organizations yet</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Organization Details Modal -->
+    <div class="modal-overlay" *ngIf="selectedOrg" (click)="closeOrgDetails()">
+        <div class="modal modal-large" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3>{{ selectedOrg.name }}</h3>
+                <button class="btn-close" (click)="closeOrgDetails()">×</button>
+            </div>
+
+            <div class="org-info">
+                <span><strong>Slug:</strong> {{ selectedOrg.slug }}</span>
+                <span><strong>Industry:</strong> {{ selectedOrg.industryType }}</span>
+                <span><strong>Plan:</strong> {{ selectedOrg.plan }}</span>
+            </div>
+
+            <div class="section-header">
+                <h4>Members ({{ selectedOrgMembers.length }})</h4>
+                <div class="header-buttons">
+                    <button class="btn-small btn-primary" (click)="showInviteForm = !showInviteForm">
+                        {{ showInviteForm ? 'Cancel' : '+ Invite' }}
+                    </button>
+                    <button class="btn-small btn-secondary" (click)="showBulkInviteForm = !showBulkInviteForm">
+                        {{ showBulkInviteForm ? 'Cancel' : 'Bulk Invite' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Single Invite Form -->
+            <div class="invite-form" *ngIf="showInviteForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" [(ngModel)]="inviteRequest.email" placeholder="user@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Role</label>
+                        <select [(ngModel)]="inviteRequest.role">
+                            <option value="Member">Member</option>
+                            <option value="Analyst">Analyst</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" (click)="inviteUser()" [disabled]="loading">
+                        {{ loading ? 'Inviting...' : 'Send Invite' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bulk Invite Form -->
+            <div class="bulk-invite-form" *ngIf="showBulkInviteForm">
+                <div class="form-group">
+                    <label>Emails (one per line, or comma/semicolon separated)</label>
+                    <textarea [(ngModel)]="bulkEmails" rows="5" placeholder="user1@example.com&#10;user2@example.com&#10;user3@example.com"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Default Role</label>
+                        <select [(ngModel)]="bulkDefaultRole">
+                            <option value="Member">Member</option>
+                            <option value="Analyst">Analyst</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" (click)="bulkInvite()" [disabled]="loading">
+                        {{ loading ? 'Processing...' : 'Send Invites' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Members Table -->
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let member of selectedOrgMembers">
+                            <td>{{ member.email || 'Pending' }}</td>
+                            <td><span class="role-badge">{{ member.role }}</span></td>
+                            <td>
+                                <span class="status-badge" [ngClass]="getMemberStatusClass(member.status)">
+                                    {{ member.status }}
+                                </span>
+                            </td>
+                            <td>{{ member.joinedAt ? (member.joinedAt | date:'short') : '-' }}</td>
+                            <td>
+                                <button class="btn-small" *ngIf="member.status === 'Invited' && member.inviteToken" 
+                                        (click)="copyInviteUrl(member.inviteToken)">
+                                    Copy Link
+                                </button>
+                                <button class="btn-small" *ngIf="member.status === 'Invited'" 
+                                        (click)="resendInvite(member)">
+                                    Resend
+                                </button>
+                            </td>
+                        </tr>
+                        <tr *ngIf="selectedOrgMembers.length === 0">
+                            <td colspan="5" class="empty-row">No members yet</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== PRICING TAB ==================== -->
+    <section class="section" *ngIf="activeTab === 'pricing'">
         <h2>Feature Pricing</h2>
         <div class="pricing-grid">
             <div class="pricing-card" *ngFor="let feature of pricing">

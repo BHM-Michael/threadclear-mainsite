@@ -33,6 +33,7 @@
   </ItemGroup>
   
   <ItemGroup>
+    <Folder Include="Data\" />
     <Folder Include="Properties\PublishProfiles\" />
   </ItemGroup>
 </Project>

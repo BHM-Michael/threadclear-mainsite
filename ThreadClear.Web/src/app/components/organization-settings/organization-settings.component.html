@@ -1,0 +1,160 @@
+<div class="settings-container">
+  <div class="settings-header">
+    <h1>Organization Settings</h1>
+    <p class="org-name" *ngIf="currentOrg">{{ currentOrg.name }}</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button [class.active]="activeTab === 'general'" (click)="setTab('general')">General</button>
+    <button [class.active]="activeTab === 'members'" (click)="setTab('members')">Members</button>
+    <button [class.active]="activeTab === 'taxonomy'" (click)="setTab('taxonomy')">Taxonomy</button>
+  </div>
+
+  <!-- Messages -->
+  <div class="message success" *ngIf="successMessage">{{ successMessage }}</div>
+  <div class="message error" *ngIf="error">{{ error }}</div>
+
+  <!-- Loading -->
+  <div class="loading" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+
+  <!-- General Tab -->
+  <div class="tab-content" *ngIf="!isLoading && activeTab === 'general'">
+    <div class="form-section">
+      <h3>Organization Details</h3>
+      
+      <div class="form-group">
+        <label>Organization Name</label>
+        <input type="text" [(ngModel)]="orgName" placeholder="Enter organization name">
+      </div>
+
+      <div class="form-group">
+        <label>Industry</label>
+        <select [(ngModel)]="orgIndustry">
+          <option *ngFor="let industry of industries" [value]="industry.key">
+            {{ industry.displayName }}
+          </option>
+        </select>
+        <p class="help-text">Changing industry will update your taxonomy templates</p>
+      </div>
+
+      <button class="btn-primary" (click)="saveGeneralSettings()" [disabled]="isSaving">
+        {{ isSaving ? 'Saving...' : 'Save Changes' }}
+      </button>
+    </div>
+
+    <div class="form-section">
+      <h3>Plan</h3>
+      <div class="plan-badge">{{ currentOrg?.plan | titlecase }}</div>
+    </div>
+  </div>
+
+  <!-- Members Tab -->
+  <div class="tab-content" *ngIf="!isLoading && activeTab === 'members'">
+    <div class="form-section">
+      <h3>Invite Member</h3>
+      <div class="invite-form">
+        <input type="email" [(ngModel)]="inviteEmail" placeholder="Email address">
+        <select [(ngModel)]="inviteRole">
+          <option value="Member">Member</option>
+          <option value="Analyst">Analyst</option>
+          <option value="Admin">Admin</option>
+        </select>
+        <button class="btn-primary" (click)="inviteMember()" [disabled]="isSaving || !inviteEmail">
+          Send Invite
+        </button>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>Members ({{ members.length }})</h3>
+      <div class="members-list">
+        <div class="member-item" *ngFor="let member of members">
+          <div class="member-info">
+            <span class="member-email">{{ member.email }}</span>
+            <span class="member-name" *ngIf="member.displayName">{{ member.displayName }}</span>
+          </div>
+          <div class="member-actions">
+            <span class="role-badge" [ngClass]="getRoleBadgeClass(member.role)">{{ member.role }}</span>
+            <select *ngIf="member.role !== 'Owner'" 
+                    [value]="member.role" 
+                    (change)="updateMemberRole(member, $any($event.target).value)">
+              <option value="Member">Member</option>
+              <option value="Analyst">Analyst</option>
+              <option value="Admin">Admin</option>
+            </select>
+            <button class="btn-danger" *ngIf="member.role !== 'Owner'" (click)="removeMember(member)">
+              Remove
+            </button>
+          </div>
+        </div>
+        <p class="empty-message" *ngIf="members.length === 0">No members yet</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Taxonomy Tab -->
+  <div class="tab-content" *ngIf="!isLoading && activeTab === 'taxonomy'">
+    <!-- Topics -->
+    <div class="form-section">
+      <h3>Custom Topics</h3>
+      <p class="help-text">Add topics specific to your organization's communication patterns</p>
+      
+      <div class="add-form">
+        <input type="text" [(ngModel)]="newTopicKey" placeholder="Key (e.g., escalation)">
+        <input type="text" [(ngModel)]="newTopicName" placeholder="Display Name">
+        <input type="text" [(ngModel)]="newTopicKeywords" placeholder="Keywords (comma-separated)">
+        <button class="btn-primary" (click)="addTopic()" [disabled]="isSaving || !newTopicKey || !newTopicName">
+          Add Topic
+        </button>
+      </div>
+
+      <div class="items-list" *ngIf="taxonomy">
+        <div class="item" *ngFor="let topic of taxonomy.topics" [class.custom]="topic.isCustom">
+          <div class="item-info">
+            <span class="item-name">{{ topic.displayName }}</span>
+            <span class="item-key">{{ topic.key }}</span>
+            <span class="item-keywords" *ngIf="topic.keywords?.length">
+              Keywords: {{ topic.keywords.join(', ') }}
+            </span>
+          </div>
+          <button class="btn-small btn-danger" *ngIf="topic.isCustom" (click)="removeTopic(topic)">
+            Remove
+          </button>
+          <span class="default-badge" *ngIf="!topic.isCustom">Default</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Roles -->
+    <div class="form-section">
+      <h3>Custom Roles</h3>
+      <p class="help-text">Add participant roles specific to your organization</p>
+      
+      <div class="add-form">
+        <input type="text" [(ngModel)]="newRoleKey" placeholder="Key (e.g., support_lead)">
+        <input type="text" [(ngModel)]="newRoleName" placeholder="Display Name">
+        <input type="text" [(ngModel)]="newRoleKeywords" placeholder="Keywords (comma-separated)">
+        <button class="btn-primary" (click)="addRole()" [disabled]="isSaving || !newRoleKey || !newRoleName">
+          Add Role
+        </button>
+      </div>
+
+      <div class="items-list" *ngIf="taxonomy">
+        <div class="item" *ngFor="let role of taxonomy.roles">
+          <div class="item-info">
+            <span class="item-name">{{ role.displayName }}</span>
+            <span class="item-key">{{ role.key }}</span>
+            <span class="item-keywords" *ngIf="role.keywords?.length">
+              Keywords: {{ role.keywords.join(', ') }}
+            </span>
+          </div>
+          <button class="btn-small btn-danger" (click)="removeRole(role)">Remove</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

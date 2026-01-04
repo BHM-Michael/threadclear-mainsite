@@ -1,0 +1,377 @@
+.settings-container {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.settings-header {
+  margin-bottom: 24px;
+
+  h1 {
+    margin: 0;
+    font-size: 28px;
+    color: #1a1a2e;
+  }
+
+  .org-name {
+    margin: 4px 0 0;
+    color: #666;
+    font-size: 14px;
+  }
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 8px;
+
+  button {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    &.active {
+      background: #4a90a4;
+      color: white;
+    }
+  }
+}
+
+.message {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+
+  &.success {
+    background: #e6f7e6;
+    color: #27ae60;
+    border: 1px solid #27ae60;
+  }
+
+  &.error {
+    background: #ffe6e6;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+  }
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #4a90a4;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  p {
+    margin-top: 12px;
+    color: #666;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.tab-content {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.form-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  h3 {
+    margin: 0 0 16px;
+    font-size: 18px;
+    color: #1a1a2e;
+  }
+
+  .help-text {
+    color: #666;
+    font-size: 13px;
+    margin: -8px 0 16px;
+  }
+}
+
+.form-group {
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+
+    &:focus {
+      outline: none;
+      border-color: #4a90a4;
+    }
+  }
+
+  .help-text {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #888;
+  }
+}
+
+.btn-primary {
+  padding: 12px 24px;
+  background: #4a90a4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #3d7a8c;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-danger {
+  padding: 8px 16px;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    background: #c0392b;
+  }
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.plan-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  background: #f0f0f0;
+  border-radius: 20px;
+  font-weight: 500;
+  color: #333;
+}
+
+// Members
+.invite-form {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  input {
+    flex: 2;
+    min-width: 200px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+
+  select {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+}
+
+.members-list {
+  margin-top: 16px;
+}
+
+.member-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 8px;
+
+  .member-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .member-email {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .member-name {
+      font-size: 13px;
+      color: #666;
+    }
+  }
+
+  .member-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    select {
+      padding: 6px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+  }
+}
+
+.role-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.badge-owner {
+    background: #9b59b6;
+    color: white;
+  }
+
+  &.badge-admin {
+    background: #e74c3c;
+    color: white;
+  }
+
+  &.badge-analyst {
+    background: #3498db;
+    color: white;
+  }
+
+  &.badge-member {
+    background: #95a5a6;
+    color: white;
+  }
+}
+
+.empty-message {
+  text-align: center;
+  color: #999;
+  padding: 20px;
+  font-style: italic;
+}
+
+// Taxonomy
+.add-form {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+
+  input {
+    flex: 1;
+    min-width: 150px;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+
+    &:focus {
+      outline: none;
+      border-color: #4a90a4;
+    }
+  }
+}
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #eee;
+
+  &.custom {
+    border-left: 3px solid #4a90a4;
+  }
+
+  .item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .item-name {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .item-key {
+      font-size: 12px;
+      color: #888;
+      font-family: monospace;
+    }
+
+    .item-keywords {
+      font-size: 12px;
+      color: #666;
+    }
+  }
+
+  .default-badge {
+    font-size: 11px;
+    color: #888;
+    background: #eee;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+}

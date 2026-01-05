@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThreadClear - Analyze Thread</title>
+    
+    <!-- Office.js library -->
+    <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 14px;
+            color: var(--gray-800);
+            background: var(--gray-50);
+            padding: 16px;
+            line-height: 1.5;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 12px;
+            margin: 16px 0;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        
+        .status.loading {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+        
+        .status.error {
+            background: #fef2f2;
+            color: var(--danger);
+        }
+        
+        .status.success {
+            background: #f0fdf4;
+            color: var(--success);
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--gray-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Results Section */
+        .results {
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+        }
+        
+        .health-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .health-card h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .health-score {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .score-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+        }
+        
+        .score-circle.high { background: var(--success); }
+        .score-circle.medium { background: var(--warning); }
+        .score-circle.low { background: var(--danger); }
+        
+        .score-details {
+            flex: 1;
+        }
+        
+        .score-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        
+        .score-bar label {
+            width: 90px;
+            color: var(--gray-600);
+        }
+        
+        .score-bar .bar {
+            flex: 1;
+            height: 6px;
+            background: var(--gray-200);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .score-bar .bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        .score-bar .bar-fill.high { background: var(--success); }
+        .score-bar .bar-fill.medium { background: var(--warning); }
+        .score-bar .bar-fill.low { background: var(--danger); }
+        
+        .risk-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .risk-badge.low { background: #dcfce7; color: #166534; }
+        .risk-badge.medium { background: #fef3c7; color: #92400e; }
+        .risk-badge.high { background: #fee2e2; color: #991b1b; }
+        
+        /* Issue Cards */
+        .issue-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .issue-card h3 {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .issue-item {
+            padding: 10px;
+            background: var(--gray-50);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .issue-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .issue-item .severity {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        
+        .severity.high { background: #fee2e2; color: #991b1b; }
+        .severity.medium { background: #fef3c7; color: #92400e; }
+        .severity.low { background: #e0e7ff; color: #3730a3; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray-600);
+            font-size: 13px;
+        }
+        
+        .view-full-link {
+            display: block;
+            text-align: center;
+            margin-top: 16px;
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .view-full-link:hover {
+            text-decoration: underline;
+        }
+        
+        /* Thread Info */
+        .thread-info {
+            background: var(--gray-100);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            font-size: 12px;
+        }
+        
+        .thread-info strong {
+            color: var(--gray-800);
+        }
+        
+        .thread-info span {
+            color: var(--gray-600);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">TC</div>
+        <h1>ThreadClear</h1>
+    </div>
+    
+    <div id="thread-info" class="thread-info" style="display: none;">
+        <strong id="thread-subject">Subject</strong><br>
+        <span id="thread-participants">Participants</span>
+    </div>
+    
+    <button id="analyze-btn" class="btn btn-primary" onclick="analyzeThread()">
+        <span>🔍</span> Analyze This Thread
+    </button>
+    
+    <div id="status" class="status" style="display: none;"></div>
+    
+    <div id="results" class="results">
+        <!-- Health Score Card -->
+        <div class="health-card">
+            <h2>📊 Conversation Health</h2>
+            <div class="health-score">
+                <div id="score-circle" class="score-circle high">--</div>
+                <div class="score-details">
+                    <div class="score-bar">
+                        <label>Responsiveness</label>
+                        <div class="bar"><div id="bar-responsiveness" class="bar-fill high" style="width: 0%"></div></div>
+                    </div>
+                    <div class="score-bar">
+                        <label>Clarity</label>
+                        <div class="bar"><div id="bar-clarity" class="bar-fill high" style="width: 0%"></div></div>
+                    </div>
+                    <div class="score-bar">
+                        <label>Alignment</label>
+                        <div class="bar"><div id="bar-alignment" class="bar-fill high" style="width: 0%"></div></div>
+                    </div>
+                </div>
+            </div>
+            <div>Risk Level: <span id="risk-badge" class="risk-badge low">Low</span></div>
+        </div>
+        
+        <!-- Unanswered Questions -->
+        <div id="unanswered-card" class="issue-card" style="display: none;">
+            <h3>❓ Unanswered Questions</h3>
+            <div id="unanswered-list"></div>
+        </div>
+        
+        <!-- Tension Points -->
+        <div id="tension-card" class="issue-card" style="display: none;">
+            <h3>⚡ Tension Points</h3>
+            <div id="tension-list"></div>
+        </div>
+        
+        <!-- Misalignments -->
+        <div id="misalignment-card" class="issue-card" style="display: none;">
+            <h3>🔀 Misalignments</h3>
+            <div id="misalignment-list"></div>
+        </div>
+        
+        <!-- Suggested Actions -->
+        <div id="actions-card" class="issue-card" style="display: none;">
+            <h3>💡 Suggested Actions</h3>
+            <div id="actions-list"></div>
+        </div>
+        
+        <a id="view-full" class="view-full-link" href="#" target="_blank">
+            View Full Analysis on Dashboard →
+        </a>
+    </div>
+    
+    <script>
+        // Global variables
+        let conversationId = null;
+        let userEmail = null;
+        
+        // Initialize Office.js
+        Office.onReady((info) => {
+            if (info.host === Office.HostType.Outlook) {
+                console.log('ThreadClear add-in loaded');
+                loadThreadInfo();
+            }
+        });
+        
+        // Load thread information
+        function loadThreadInfo() {
+            const item = Office.context.mailbox.item;
+            
+            // Get conversation ID
+            conversationId = item.conversationId;
+            
+            // Get user email
+            userEmail = Office.context.mailbox.userProfile.emailAddress;
+            
+            // Get subject
+            if (item.subject) {
+                document.getElementById('thread-subject').textContent = item.subject;
+            }
+            
+            // Get participants (from + to + cc)
+            const participants = new Set();
+            
+            if (item.from && item.from.emailAddress) {
+                participants.add(item.from.displayName || item.from.emailAddress);
+            }
+            
+            if (item.to) {
+                item.to.forEach(r => participants.add(r.displayName || r.emailAddress));
+            }
+            
+            if (item.cc) {
+                item.cc.forEach(r => participants.add(r.displayName || r.emailAddress));
+            }
+            
+            if (participants.size > 0) {
+                document.getElementById('thread-participants').textContent = 
+                    Array.from(participants).slice(0, 3).join(', ') + 
+                    (participants.size > 3 ? ` +${participants.size - 3} more` : '');
+            }
+            
+            document.getElementById('thread-info').style.display = 'block';
+        }
+        
+        // Analyze the current thread
+        async function analyzeThread() {
+            const btn = document.getElementById('analyze-btn');
+            const status = document.getElementById('status');
+            const results = document.getElementById('results');
+            
+            // Show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+            status.className = 'status loading';
+            status.innerHTML = '<span class="spinner"></span> Extracting email content...';
+            status.style.display = 'block';
+            results.classList.remove('show');
+            
+            try {
+                // Get email body
+                const bodyContent = await getEmailBody();
+                
+                status.innerHTML = '<span class="spinner"></span> Running analysis...';
+                
+                // Collect all email addresses for user lookup
+                const item = Office.context.mailbox.item;
+                const emails = await collectEmailAddresses(item);
+                
+                // Send to ThreadClear API
+                const response = await fetch('https://threadclear-functions-fsewbzcsd8fuegdj.eastus-01.azurewebsites.net/api/analyze-outlook', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        conversationId: conversationId,
+                        subject: item.subject,
+                        body: bodyContent,
+                        emails: emails,
+                        userEmail: userEmail,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Analysis failed');
+                }
+                
+                const data = await response.json();
+                
+                // Display results
+                displayResults(data);
+                
+                status.style.display = 'none';
+                results.classList.add('show');
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                status.className = 'status error';
+                status.textContent = '❌ ' + (error.message || 'Failed to analyze thread');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>🔍</span> Analyze This Thread';
+            }
+        }
+        
+        // Get email body content
+        function getEmailBody() {
+            return new Promise((resolve, reject) => {
+                Office.context.mailbox.item.body.getAsync(
+                    Office.CoercionType.Text,
+                    (result) => {
+                        if (result.status === Office.AsyncResultStatus.Succeeded) {
+                            resolve(result.value);
+                        } else {
+                            reject(new Error('Failed to get email body'));
+                        }
+                    }
+                );
+            });
+        }
+        
+        // Collect all email addresses from the thread
+        async function collectEmailAddresses(item) {
+            const emails = new Set();
+            
+            // User's email
+            emails.add(userEmail.toLowerCase());
+            
+            // From
+            if (item.from && item.from.emailAddress) {
+                emails.add(item.from.emailAddress.toLowerCase());
+            }
+            
+            // To
+            if (item.to) {
+                item.to.forEach(r => {
+                    if (r.emailAddress) emails.add(r.emailAddress.toLowerCase());
+                });
+            }
+            
+            // CC
+            if (item.cc) {
+                item.cc.forEach(r => {
+                    if (r.emailAddress) emails.add(r.emailAddress.toLowerCase());
+                });
+            }
+            
+            return Array.from(emails);
+        }
+        
+        // Display analysis results
+        function displayResults(data) {
+            const analysis = data.analysis;
+            const health = analysis.conversationHealth;
+            
+            // Health score
+            const score = Math.round((health?.healthScore || 0) * 100);
+            const scoreCircle = document.getElementById('score-circle');
+            scoreCircle.textContent = score + '%';
+            scoreCircle.className = 'score-circle ' + getScoreClass(score);
+            
+            // Score bars
+            updateScoreBar('bar-responsiveness', health?.responsivenessScore);
+            updateScoreBar('bar-clarity', health?.clarityScore);
+            updateScoreBar('bar-alignment', health?.alignmentScore);
+            
+            // Risk badge
+            const riskBadge = document.getElementById('risk-badge');
+            const riskLevel = (health?.riskLevel || 'Low').toLowerCase();
+            riskBadge.textContent = health?.riskLevel || 'Low';
+            riskBadge.className = 'risk-badge ' + riskLevel;
+            
+            // Unanswered questions
+            const unanswered = analysis.unansweredQuestions || [];
+            if (unanswered.length > 0) {
+                document.getElementById('unanswered-card').style.display = 'block';
+                document.getElementById('unanswered-list').innerHTML = unanswered.map(q => `
+                    <div class="issue-item">
+                        "${q.question}"
+                        <br><small style="color: var(--gray-600)">Asked by ${q.askedBy}</small>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('unanswered-card').style.display = 'none';
+            }
+            
+            // Tension points
+            const tensions = analysis.tensionPoints || [];
+            if (tensions.length > 0) {
+                document.getElementById('tension-card').style.display = 'block';
+                document.getElementById('tension-list').innerHTML = tensions.map(t => `
+                    <div class="issue-item">
+                        ${t.description}
+                        <span class="severity ${(t.severity || 'medium').toLowerCase()}">${t.severity || 'Medium'}</span>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('tension-card').style.display = 'none';
+            }
+            
+            // Misalignments
+            const misalignments = analysis.misalignments || [];
+            if (misalignments.length > 0) {
+                document.getElementById('misalignment-card').style.display = 'block';
+                document.getElementById('misalignment-list').innerHTML = misalignments.map(m => `
+                    <div class="issue-item">
+                        ${m.description}
+                        <span class="severity ${(m.severity || 'medium').toLowerCase()}">${m.severity || 'Medium'}</span>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('misalignment-card').style.display = 'none';
+            }
+            
+            // Suggested actions
+            const actions = data.suggestedActions || [];
+            if (actions.length > 0) {
+                document.getElementById('actions-card').style.display = 'block';
+                document.getElementById('actions-list').innerHTML = actions.map(a => `
+                    <div class="issue-item">
+                        ${a.action}
+                        <span class="severity ${(a.priority || 'medium').toLowerCase()}">${a.priority || 'Medium'}</span>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('actions-card').style.display = 'none';
+            }
+            
+            // Update dashboard link
+            if (data.analysisId) {
+                document.getElementById('view-full').href = 
+                    `https://threadclear.com/analysis/${data.analysisId}`;
+            }
+        }
+        
+        function updateScoreBar(id, score) {
+            const bar = document.getElementById(id);
+            const percent = Math.round((score || 0) * 100);
+            bar.style.width = percent + '%';
+            bar.className = 'bar-fill ' + getScoreClass(percent);
+        }
+        
+        function getScoreClass(score) {
+            if (score >= 70) return 'high';
+            if (score >= 40) return 'medium';
+            return 'low';
+        }
+    </script>
+</body>
+</html>

@@ -1,108 +1,233 @@
+// ThreadClear Login - Modern Design
+// Matches marketing site aesthetic
+
+$color-primary: #0ea5e9;
+$color-primary-dark: #0284c7;
+$color-text: #0f172a;
+$color-text-secondary: #475569;
+$color-text-muted: #94a3b8;
+$color-border: #e2e8f0;
+$color-bg: #f8fafc;
+$color-danger: #ef4444;
+
 .login-container {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     padding: 20px;
+    position: relative;
+    background: $color-bg;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.login-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.login-gradient {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150%;
+    height: 600px;
+    background: radial-gradient(ellipse at center top, rgba(14, 165, 233, 0.12) 0%, transparent 60%);
+}
+
+.login-grid {
+    position: absolute;
+    inset: 0;
+    background-image: 
+        linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: linear-gradient(180deg, white, transparent 80%);
 }
 
 .login-card {
     background: white;
-    padding: 40px;
+    padding: 48px;
     border-radius: 16px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid $color-border;
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
+    position: relative;
+    z-index: 1;
+}
 
-    h1 {
-        margin: 0 0 8px;
-        color: #333;
-        font-size: 28px;
-        text-align: center;
+.login-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.login-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    margin-bottom: 12px;
+
+    .logo-icon {
+        height: 44px;
+        width: auto;
     }
 
-    .subtitle {
-        color: #666;
-        text-align: center;
-        margin: 0 0 30px;
-        font-size: 14px;
+    .logo-text {
+        font-size: 24px;
+        font-weight: 700;
+        color: $color-text;
+        letter-spacing: -0.5px;
     }
+}
 
-    .form-group {
-        margin-bottom: 20px;
+.subtitle {
+    color: $color-text-secondary;
+    font-size: 15px;
+    margin: 0;
+}
 
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            color: #444;
-            font-size: 14px;
-        }
+.form-group {
+    margin-bottom: 20px;
 
-        input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.2s;
-            box-sizing: border-box;
-
-            &:focus {
-                outline: none;
-                border-color: #667eea;
-            }
-
-            &::placeholder {
-                color: #aaa;
-            }
-
-            &:disabled {
-                background: #f5f5f5;
-            }
-        }
-    }
-
-    .error {
-        background: #ffebee;
-        color: #c62828;
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        font-size: 14px;
-    }
-
-    button {
-        width: 100%;
-        padding: 14px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 16px;
+    label {
+        display: block;
+        margin-bottom: 8px;
         font-weight: 600;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
+        color: $color-text;
+        font-size: 14px;
+    }
 
-        &:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    input {
+        width: 100%;
+        padding: 14px 16px;
+        border: 1px solid $color-border;
+        border-radius: 10px;
+        font-size: 15px;
+        font-family: inherit;
+        transition: all 0.2s;
+        box-sizing: border-box;
+        background: white;
+
+        &:focus {
+            outline: none;
+            border-color: $color-primary;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        &::placeholder {
+            color: $color-text-muted;
         }
 
         &:disabled {
-            opacity: 0.7;
+            background: $color-bg;
             cursor: not-allowed;
         }
     }
 }
 
+.error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fef2f2;
+    color: $color-danger;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    border: 1px solid #fecaca;
+
+    svg {
+        flex-shrink: 0;
+    }
+}
+
+.btn-login {
+    width: 100%;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, $color-primary 0%, #3b82f6 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+
+    &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    &:disabled {
+        opacity: 0.8;
+        cursor: not-allowed;
+    }
+}
+
+.loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    .spinner {
+        animation: spin 1s linear infinite;
+    }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid $color-border;
+
+    p {
+        font-size: 14px;
+        color: $color-text-secondary;
+        margin: 0;
+    }
+
+    a {
+        color: $color-primary;
+        text-decoration: none;
+        font-weight: 600;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+// Responsive
 @media (max-width: 480px) {
     .login-card {
-        padding: 30px 20px;
+        padding: 32px 24px;
+    }
 
-        h1 {
-            font-size: 24px;
+    .login-logo {
+        .logo-icon {
+            height: 36px;
+        }
+
+        .logo-text {
+            font-size: 20px;
         }
     }
 }

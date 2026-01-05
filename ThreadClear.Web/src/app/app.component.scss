@@ -21,36 +21,24 @@
   align-items: center;
   gap: 16px;
 
-  a {
+  .brand-link {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     text-decoration: none;
     color: white;
   }
 
-  .brand-icon {
-    width: 32px;
-    height: 32px;
-    background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 14px;
-    letter-spacing: -1px;
-    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+  .brand-logo {
+    height: 36px;
+    width: auto;
   }
 
   .brand-name {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: white;
   }
 
   .org-name {
@@ -176,6 +164,10 @@ main {
   .nav-brand {
     .brand-name {
       display: none;
+    }
+
+    .brand-logo {
+      height: 32px;
     }
   }
 

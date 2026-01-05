@@ -1,8 +1,8 @@
 <!-- Navigation Bar - shown when logged in -->
 <nav class="main-nav" *ngIf="isLoggedIn && !isAuthPage()">
   <div class="nav-brand">
-    <a routerLink="/analyze">
-      <span class="brand-icon">TC</span>
+    <a routerLink="/analyze" class="brand-link">
+      <img src="assets/images/TC_logo.png" alt="ThreadClear" class="brand-logo">
       <span class="brand-name">ThreadClear</span>
     </a>
     <span class="org-name" *ngIf="currentOrgName">{{ currentOrgName }}</span>

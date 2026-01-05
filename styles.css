@@ -128,6 +128,11 @@ a {
     gap: var(--space-sm);
 }
 
+.logo-img {
+    height: 40px;
+    width: auto;
+}
+
 .logo-mark {
     width: 36px;
     height: 36px;

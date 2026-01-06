@@ -313,11 +313,6 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo">TC</div>
-        <h1>ThreadClear</h1>
-    </div>
-    
     <div id="thread-info" class="thread-info" style="display: none;">
         <strong id="thread-subject">Subject</strong><br>
         <span id="thread-participants">Participants</span>
@@ -474,12 +469,18 @@
                     })
                 });
                 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Analysis failed');
+                const data = await response.json();
+                console.log('API Response:', data);
+                
+                // Check for error response
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.error || data.message || 'Analysis failed');
                 }
                 
-                const data = await response.json();
+                // Check if we have analysis data
+                if (!data.analysis) {
+                    throw new Error('No analysis data returned');
+                }
                 
                 // Display results
                 displayResults(data);

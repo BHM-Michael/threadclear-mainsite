@@ -19,7 +19,7 @@ export class LoginComponent {
   ) {
     // Redirect if already logged in
     if (this.authService.isLoggedIn) {
-      this.router.navigate(['/analyze']);
+      this.handleRedirect();
     }
   }
 
@@ -41,10 +41,7 @@ export class LoginComponent {
 
         if (success) {
           console.log("About to navigate...");
-          this.router.navigate(['/analyze']).then(
-            (navigated) => console.log("Navigation result:", navigated),
-            (error) => console.log("Navigation error:", error)
-          );
+          this.handleRedirect();
         } else {
           const error = response.error || response.Error;
           this.error = error || 'Login failed';
@@ -56,5 +53,24 @@ export class LoginComponent {
         console.error(err);
       }
     });
+  }
+
+  private handleRedirect() {
+    // Check for returnUrl (e.g., from connect page)
+    const returnUrl = localStorage.getItem('returnUrl');
+
+    if (returnUrl) {
+      localStorage.removeItem('returnUrl');
+      console.log("Redirecting to returnUrl:", returnUrl);
+      this.router.navigateByUrl(returnUrl).then(
+        (navigated) => console.log("Navigation result:", navigated),
+        (error) => console.log("Navigation error:", error)
+      );
+    } else {
+      this.router.navigate(['/analyze']).then(
+        (navigated) => console.log("Navigation result:", navigated),
+        (error) => console.log("Navigation error:", error)
+      );
+    }
   }
 }

@@ -1,0 +1,189 @@
+<div class="connect-page">
+  <div class="connect-card">
+
+    <!-- Logged in user indicator -->
+    <div *ngIf="isLoggedIn" class="logged-in-bar">
+      <span>Logged in as: <strong>{{ userEmail }}</strong></span>
+      <button (click)="logout()" class="logout-btn">Logout</button>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="loading" class="state-container">
+      <div class="spinner"></div>
+      <p class="state-text">Loading workspace info...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="error" class="state-container">
+      <div class="icon-circle icon-error">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </div>
+      <h2 class="state-title">Error</h2>
+      <p class="state-text">{{ error }}</p>
+      <a href="https://threadclear.com" class="link">Return to ThreadClear</a>
+    </div>
+
+    <!-- Not Logged In AND Not Connected -->
+    <div *ngIf="!loading && !error && !isLoggedIn && !workspace?.isConnected" class="state-container">
+      <div class="icon-circle icon-primary">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1">
+          </path>
+        </svg>
+      </div>
+      <h2 class="state-title">Connect Your Workspace</h2>
+      <p class="state-text">Sign in to link your {{ platformName }} workspace to your ThreadClear account.</p>
+
+      <div *ngIf="workspace" class="workspace-info">
+        <div class="workspace-header">
+          <img [src]="platformIcon" [alt]="platformName" class="platform-icon">
+          <span class="workspace-name">{{ workspace.name }}</span>
+        </div>
+        <p class="workspace-id">ID: {{ workspace.id }}</p>
+      </div>
+
+      <button (click)="goToLogin()" class="btn btn-primary btn-full">
+        Sign In to Connect
+      </button>
+
+      <p class="signup-link">
+        Don't have an account? <a href="/register" class="link">Sign up</a>
+      </p>
+    </div>
+
+    <!-- Already Connected -->
+    <div *ngIf="!loading && !error && workspace?.isConnected" class="state-container">
+      <div class="icon-circle icon-success">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+      <h2 class="state-title">Already Connected!</h2>
+      <p class="state-text">This workspace is linked to <strong>{{ workspace?.connectedOrgName }}</strong>.</p>
+
+      <div class="workspace-info">
+        <div class="workspace-header">
+          <img [src]="platformIcon" [alt]="platformName" class="platform-icon">
+          <span class="workspace-name">{{ workspace?.name }}</span>
+        </div>
+        <div class="workspace-stats">
+          <div class="stat-row">
+            <span class="stat-label">Tier</span>
+            <span class="stat-value stat-success">{{ workspace?.tier | titlecase }} ✨</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Usage</span>
+            <span class="stat-value">{{ workspace?.tier === 'free' ? workspace?.usage + ' / ' + workspace?.limit :
+              'Unlimited' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <button *ngIf="isLoggedIn" (click)="disconnect()" class="btn btn-danger-outline btn-full">
+        Disconnect Workspace
+      </button>
+    </div>
+
+    <!-- Ready to Connect -->
+    <div *ngIf="!loading && !error && isLoggedIn && workspace && !workspace.isConnected && !success">
+      <div class="state-container">
+        <div class="icon-circle icon-primary">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1">
+            </path>
+          </svg>
+        </div>
+        <h2 class="state-title">Connect Workspace</h2>
+        <p class="state-text">Link this workspace to unlock unlimited analyses.</p>
+      </div>
+
+      <!-- Workspace Info -->
+      <div class="workspace-info">
+        <div class="workspace-header">
+          <img [src]="platformIcon" [alt]="platformName" class="platform-icon-lg">
+          <div>
+            <p class="workspace-name">{{ workspace.name }}</p>
+            <p class="workspace-type">{{ platformName }} Workspace</p>
+          </div>
+        </div>
+        <div class="workspace-stats">
+          <div class="stat-row">
+            <span class="stat-label">Current Tier</span>
+            <span class="stat-value">{{ workspace.tier | titlecase }}</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Usage This Month</span>
+            <span class="stat-value">{{ workspace.usage }} / {{ workspace.limit }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Your Account -->
+      <div class="account-info">
+        <p class="account-label">Connecting as:</p>
+        <p class="account-email">{{ userEmail }}</p>
+        <p class="account-org" *ngIf="orgName">Organization: {{ orgName }}</p>
+      </div>
+
+      <!-- Benefits -->
+      <div class="benefits">
+        <p class="benefits-title">After connecting:</p>
+        <ul class="benefits-list">
+          <li>
+            <svg class="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            Unlimited analyses for your entire workspace
+          </li>
+          <li>
+            <svg class="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            All team members get access
+          </li>
+          <li>
+            <svg class="check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            Priority support
+          </li>
+        </ul>
+      </div>
+
+      <button (click)="connect()" [disabled]="connecting" class="btn btn-primary btn-full">
+        {{ connecting ? 'Connecting...' : 'Connect Workspace' }}
+      </button>
+
+      <p class="info-text">
+        Your workspace will inherit your organization's plan limits.
+        <a href="/pricing" class="link">Upgrade for unlimited analyses</a>
+      </p>
+    </div>
+
+    <!-- Success -->
+    <div *ngIf="success" class="state-container">
+      <div class="icon-circle icon-success">
+        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+      <h2 class="state-title">Connected!</h2>
+      <p class="state-text">Your {{ platformName }} workspace is now linked to your ThreadClear account. Enjoy unlimited
+        analyses!</p>
+
+      <div class="success-info">
+        <p class="success-title">What's next?</p>
+        <p class="success-text">Go back to {{ platformName }} and use ThreadClear - no more limits!</p>
+      </div>
+
+      <a href="/dashboard" class="btn btn-primary btn-full">
+        Go to Dashboard
+      </a>
+    </div>
+
+  </div>
+</div>

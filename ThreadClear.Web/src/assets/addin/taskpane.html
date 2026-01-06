@@ -544,76 +544,81 @@
         
         // Display analysis results
         function displayResults(data) {
-            const analysis = data.analysis;
-            const health = analysis.conversationHealth;
+            console.log('API Response:', JSON.stringify(data, null, 2));
             
-            // Health score
-            const score = Math.round((health?.healthScore || 0) * 100);
+            const analysis = data.analysis || {};
+            
+            // Handle both camelCase and PascalCase
+            const health = analysis.conversationHealth || analysis.ConversationHealth || {};
+            
+            // Health score - handle both cases
+            const healthScore = health.healthScore ?? health.HealthScore ?? health.overallHealth ?? health.OverallHealth ?? 0;
+            const score = Math.round(healthScore * 100);
             const scoreCircle = document.getElementById('score-circle');
             scoreCircle.textContent = score + '%';
             scoreCircle.className = 'score-circle ' + getScoreClass(score);
             
-            // Score bars
-            updateScoreBar('bar-responsiveness', health?.responsivenessScore);
-            updateScoreBar('bar-clarity', health?.clarityScore);
-            updateScoreBar('bar-alignment', health?.alignmentScore);
+            // Score bars - handle both cases
+            updateScoreBar('bar-responsiveness', health.responsivenessScore ?? health.ResponsivenessScore ?? health.responsiveness ?? health.Responsiveness);
+            updateScoreBar('bar-clarity', health.clarityScore ?? health.ClarityScore ?? health.clarity ?? health.Clarity);
+            updateScoreBar('bar-alignment', health.alignmentScore ?? health.AlignmentScore ?? health.alignment ?? health.Alignment);
             
             // Risk badge
             const riskBadge = document.getElementById('risk-badge');
-            const riskLevel = (health?.riskLevel || 'Low').toLowerCase();
-            riskBadge.textContent = health?.riskLevel || 'Low';
+            const riskLevel = (health.riskLevel || health.RiskLevel || 'Low').toLowerCase();
+            riskBadge.textContent = health.riskLevel || health.RiskLevel || 'Low';
             riskBadge.className = 'risk-badge ' + riskLevel;
             
-            // Unanswered questions
-            const unanswered = analysis.unansweredQuestions || [];
+            // Unanswered questions - handle both cases
+            const unanswered = analysis.unansweredQuestions || analysis.UnansweredQuestions || [];
             if (unanswered.length > 0) {
                 document.getElementById('unanswered-card').style.display = 'block';
                 document.getElementById('unanswered-list').innerHTML = unanswered.map(q => `
                     <div class="issue-item">
-                        "${q.question}"
-                        <br><small style="color: var(--gray-600)">Asked by ${q.askedBy}</small>
+                        "${q.question || q.Question}"
+                        <br><small style="color: var(--gray-600)">Asked by ${q.askedBy || q.AskedBy}</small>
                     </div>
                 `).join('');
             } else {
                 document.getElementById('unanswered-card').style.display = 'none';
             }
             
-            // Tension points
-            const tensions = analysis.tensionPoints || [];
+            // Tension points - handle both cases
+            const tensions = analysis.tensionPoints || analysis.TensionPoints || [];
             if (tensions.length > 0) {
                 document.getElementById('tension-card').style.display = 'block';
                 document.getElementById('tension-list').innerHTML = tensions.map(t => `
                     <div class="issue-item">
-                        ${t.description}
-                        <span class="severity ${(t.severity || 'medium').toLowerCase()}">${t.severity || 'Medium'}</span>
+                        ${t.description || t.Description}
+                        <span class="severity ${(t.severity || t.Severity || 'medium').toLowerCase()}">${t.severity || t.Severity || 'Medium'}</span>
                     </div>
                 `).join('');
             } else {
                 document.getElementById('tension-card').style.display = 'none';
             }
             
-            // Misalignments
-            const misalignments = analysis.misalignments || [];
+            // Misalignments - handle both cases
+            const misalignments = analysis.misalignments || analysis.Misalignments || [];
             if (misalignments.length > 0) {
                 document.getElementById('misalignment-card').style.display = 'block';
                 document.getElementById('misalignment-list').innerHTML = misalignments.map(m => `
                     <div class="issue-item">
-                        ${m.description}
-                        <span class="severity ${(m.severity || 'medium').toLowerCase()}">${m.severity || 'Medium'}</span>
+                        ${m.description || m.Description}
+                        <span class="severity ${(m.severity || m.Severity || 'medium').toLowerCase()}">${m.severity || m.Severity || 'Medium'}</span>
                     </div>
                 `).join('');
             } else {
                 document.getElementById('misalignment-card').style.display = 'none';
             }
             
-            // Suggested actions
-            const actions = data.suggestedActions || [];
+            // Suggested actions - handle both cases
+            const actions = data.suggestedActions || data.SuggestedActions || [];
             if (actions.length > 0) {
                 document.getElementById('actions-card').style.display = 'block';
                 document.getElementById('actions-list').innerHTML = actions.map(a => `
                     <div class="issue-item">
-                        ${a.action}
-                        <span class="severity ${(a.priority || 'medium').toLowerCase()}">${a.priority || 'Medium'}</span>
+                        ${a.action || a.Action}
+                        <span class="severity ${(a.priority || a.Priority || 'medium').toLowerCase()}">${a.priority || a.Priority || 'Medium'}</span>
                     </div>
                 `).join('');
             } else {
@@ -621,9 +626,9 @@
             }
             
             // Update dashboard link
-            if (data.analysisId) {
+            if (data.analysisId || data.AnalysisId) {
                 document.getElementById('view-full').href = 
-                    `https://threadclear.com/analysis/${data.analysisId}`;
+                    `https://app.threadclear.com/analysis/${data.analysisId || data.AnalysisId}`;
             }
         }
         

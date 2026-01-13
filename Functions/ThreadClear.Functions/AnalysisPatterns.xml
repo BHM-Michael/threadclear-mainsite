@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AnalysisPatterns>
+	<!-- 
+    ThreadClear Analysis Patterns Configuration
+    These patterns are used for Basic (regex) mode analysis.
+    Edit this file to add/remove detection keywords without code changes.
+  -->
+
+	<!-- Question detection - words that start implicit questions -->
+	<QuestionIndicators>
+		<Word>what</Word>
+		<Word>when</Word>
+		<Word>where</Word>
+		<Word>who</Word>
+		<Word>why</Word>
+		<Word>how</Word>
+		<Word>can</Word>
+		<Word>could</Word>
+		<Word>would</Word>
+		<Word>should</Word>
+		<Word>is</Word>
+		<Word>are</Word>
+		<Word>do</Word>
+		<Word>does</Word>
+		<Word>did</Word>
+		<Word>will</Word>
+		<Word>have</Word>
+		<Word>has</Word>
+	</QuestionIndicators>
+
+	<!-- Frustration/negative emotion indicators -->
+	<FrustrationIndicators>
+		<Word>frustrated</Word>
+		<Word>annoyed</Word>
+		<Word>disappointed</Word>
+		<Word>upset</Word>
+		<Word>angry</Word>
+		<Word>concerned</Word>
+		<Word>worried</Word>
+		<Word>confused</Word>
+		<Word>ridiculous</Word>
+		<Word>unacceptable</Word>
+		<Word>irritated</Word>
+		<Word>fed up</Word>
+		<Word>sick of</Word>
+		<Word>tired of</Word>
+	</FrustrationIndicators>
+
+	<!-- Urgency indicators -->
+	<UrgencyIndicators>
+		<Word>asap</Word>
+		<Word>urgent</Word>
+		<Word>urgently</Word>
+		<Word>immediately</Word>
+		<Word>critical</Word>
+		<Word>emergency</Word>
+		<Word>now</Word>
+		<Word>right away</Word>
+		<Word>as soon as possible</Word>
+		<Word>time sensitive</Word>
+		<Word>deadline</Word>
+		<Word>by end of day</Word>
+		<Word>eod</Word>
+		<Word>priority</Word>
+		<Word>high priority</Word>
+	</UrgencyIndicators>
+
+	<!-- Repetition/follow-up indicators -->
+	<RepetitionIndicators>
+		<Word>again</Word>
+		<Word>already asked</Word>
+		<Word>still waiting</Word>
+		<Word>follow up</Word>
+		<Word>following up</Word>
+		<Word>reminder</Word>
+		<Word>third time</Word>
+		<Word>second time</Word>
+		<Word>once more</Word>
+		<Word>as mentioned</Word>
+		<Word>per my last</Word>
+		<Word>circling back</Word>
+		<Word>checking in</Word>
+		<Word>any update</Word>
+		<Word>status update</Word>
+	</RepetitionIndicators>
+
+	<!-- Escalation indicators -->
+	<EscalationIndicators>
+		<Word>escalate</Word>
+		<Word>manager</Word>
+		<Word>supervisor</Word>
+		<Word>legal</Word>
+		<Word>lawyer</Word>
+		<Word>attorney</Word>
+		<Word>complaint</Word>
+		<Word>unacceptable</Word>
+		<Word>last time</Word>
+		<Word>final warning</Word>
+		<Word>executive</Word>
+		<Word>ceo</Word>
+		<Word>director</Word>
+		<Word>hr</Word>
+		<Word>human resources</Word>
+		<Word>formal complaint</Word>
+	</EscalationIndicators>
+
+	<!-- Dismissive language indicators -->
+	<DismissiveIndicators>
+		<Word>whatever</Word>
+		<Word>fine</Word>
+		<Word>sure</Word>
+		<Word>okay then</Word>
+		<Word>if you say so</Word>
+		<Word>not my problem</Word>
+		<Word>don't care</Word>
+		<Word>not my job</Word>
+		<Word>figure it out</Word>
+		<Word>good luck with that</Word>
+		<Word>that's on you</Word>
+	</DismissiveIndicators>
+
+	<!-- Negative tone indicators -->
+	<NegativeToneIndicators>
+		<Word>never</Word>
+		<Word>always</Word>
+		<Word>worst</Word>
+		<Word>terrible</Word>
+		<Word>horrible</Word>
+		<Word>awful</Word>
+		<Word>hate</Word>
+		<Word>stupid</Word>
+		<Word>incompetent</Word>
+		<Word>useless</Word>
+		<Word>pathetic</Word>
+		<Word>ridiculous</Word>
+		<Word>absurd</Word>
+		<Word>idiotic</Word>
+	</NegativeToneIndicators>
+
+	<!-- Action request indicators -->
+	<ActionRequestIndicators>
+		<Word>can you</Word>
+		<Word>could you</Word>
+		<Word>please</Word>
+		<Word>would you</Word>
+		<Word>will you</Word>
+		<Word>need you to</Word>
+		<Word>should</Word>
+		<Word>must</Word>
+		<Word>have to</Word>
+		<Word>need to</Word>
+		<Word>required to</Word>
+		<Word>make sure</Word>
+		<Word>ensure</Word>
+		<Word>don't forget</Word>
+	</ActionRequestIndicators>
+
+	<!-- Commitment indicators -->
+	<CommitmentIndicators>
+		<Word>I will</Word>
+		<Word>I'll</Word>
+		<Word>we will</Word>
+		<Word>we'll</Word>
+		<Word>I can</Word>
+		<Word>I am going to</Word>
+		<Word>I'm going to</Word>
+		<Word>let me</Word>
+		<Word>I promise</Word>
+		<Word>I commit</Word>
+		<Word>I guarantee</Word>
+		<Word>count on me</Word>
+		<Word>I'll handle</Word>
+		<Word>I'll take care</Word>
+	</CommitmentIndicators>
+
+	<!-- Decision indicators -->
+	<DecisionIndicators>
+		<Word>decided</Word>
+		<Word>agreed</Word>
+		<Word>confirmed</Word>
+		<Word>approved</Word>
+		<Word>let's go with</Word>
+		<Word>we'll use</Word>
+		<Word>final decision</Word>
+		<Word>settled on</Word>
+		<Word>going forward</Word>
+		<Word>moving forward</Word>
+		<Word>we've chosen</Word>
+		<Word>the plan is</Word>
+		<Word>we're going to</Word>
+	</DecisionIndicators>
+
+	<!-- Disagreement indicators -->
+	<DisagreementIndicators>
+		<Word>disagree</Word>
+		<Word>don't think</Word>
+		<Word>not sure about that</Word>
+		<Word>I thought</Word>
+		<Word>but I</Word>
+		<Word>actually</Word>
+		<Word>incorrect</Word>
+		<Word>wrong</Word>
+		<Word>that's not</Word>
+		<Word>I don't agree</Word>
+		<Word>not accurate</Word>
+		<Word>that's incorrect</Word>
+		<Word>I disagree</Word>
+		<Word>on the contrary</Word>
+		<Word>not convinced</Word>
+		<Word>don't see</Word>
+		<Word>don't believe</Word>
+		<Word>hard to justify</Word>
+		<Word>doesn't justify</Word>
+		<Word>too high</Word>
+		<Word>too expensive</Word>
+		<Word>too much</Word>
+		<Word>overpriced</Word>
+		<Word>competitors</Word>
+		<Word>other options</Word>
+		<Word>better deal</Word>
+		<Word>not worth</Word>
+	</DisagreementIndicators>
+
+	<!-- Confusion indicators -->
+	<ConfusionIndicators>
+		<Word>confused</Word>
+		<Word>don't understand</Word>
+		<Word>unclear</Word>
+		<Word>what do you mean</Word>
+		<Word>not following</Word>
+		<Word>lost me</Word>
+		<Word>clarify</Word>
+		<Word>can you explain</Word>
+		<Word>not sure I understand</Word>
+		<Word>what does that mean</Word>
+		<Word>I'm lost</Word>
+		<Word>help me understand</Word>
+	</ConfusionIndicators>
+
+	<!-- Positive tone indicators -->
+	<PositiveIndicators>
+		<Word>great</Word>
+		<Word>excellent</Word>
+		<Word>perfect</Word>
+		<Word>thank</Word>
+		<Word>thanks</Word>
+		<Word>appreciate</Word>
+		<Word>happy</Word>
+		<Word>glad</Word>
+		<Word>awesome</Word>
+		<Word>wonderful</Word>
+		<Word>good job</Word>
+		<Word>well done</Word>
+		<Word>fantastic</Word>
+		<Word>amazing</Word>
+		<Word>love it</Word>
+		<Word>brilliant</Word>
+	</PositiveIndicators>
+
+	<!-- Assumption indicators -->
+	<AssumptionIndicators>
+		<Word>I thought</Word>
+		<Word>I assumed</Word>
+		<Word>I was under the impression</Word>
+		<Word>my understanding was</Word>
+		<Word>I believed</Word>
+		<Word>I expected</Word>
+	</AssumptionIndicators>
+
+	<!-- 
+    SALES MODE PATTERNS (Future)
+    Uncomment and expand when implementing sales coaching feature
+  -->
+	<!--
+  <ObjectionIndicators>
+    <Word>too expensive</Word>
+    <Word>not in the budget</Word>
+    <Word>need to think about it</Word>
+    <Word>talk to my team</Word>
+    <Word>not the right time</Word>
+    <Word>we're happy with</Word>
+    <Word>already have</Word>
+    <Word>competitor</Word>
+    <Word>not interested</Word>
+    <Word>can't afford</Word>
+    <Word>maybe later</Word>
+    <Word>send me info</Word>
+  </ObjectionIndicators>
+
+  <BuyingSignalIndicators>
+    <Word>how much</Word>
+    <Word>pricing</Word>
+    <Word>what's the cost</Word>
+    <Word>timeline</Word>
+    <Word>how soon</Word>
+    <Word>implementation</Word>
+    <Word>next steps</Word>
+    <Word>contract</Word>
+    <Word>agreement</Word>
+    <Word>get started</Word>
+    <Word>sign up</Word>
+    <Word>demo</Word>
+    <Word>trial</Word>
+  </BuyingSignalIndicators>
+  -->
+
+</AnalysisPatterns>

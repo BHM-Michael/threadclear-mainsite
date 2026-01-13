@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ThreadClear.Functions.Functions;
 using ThreadClear.Functions.Models;
 
 namespace ThreadClear.Functions.Services.Interfaces
@@ -28,6 +29,8 @@ namespace ThreadClear.Functions.Services.Interfaces
 
         // Cleanup
         Task<int> DeleteOlderThan(Guid organizationId, DateTime cutoff);
+
+        //Task<Insight?> GetByOutlookConversationIdAsync(string orgId, string conversationId);
     }
 
     // DTOs for aggregations

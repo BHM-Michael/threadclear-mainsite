@@ -850,6 +850,46 @@ a {
     margin-top: 24px;
 }
 
+/* Steps Grid (alternate layout) */
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-xl);
+}
+
+.step-card {
+    text-align: center;
+    padding: var(--space-xl);
+}
+
+.step-card .step-number {
+    width: 56px;
+    height: 56px;
+    background: var(--gradient-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    margin: 0 auto var(--space-lg);
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.step-card h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-sm);
+}
+
+.step-card p {
+    font-size: 15px;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+}
+
 /* ============================================
    Industries Section
    ============================================ */
@@ -860,7 +900,7 @@ a {
 
 .industries-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--space-lg);
 }
 
@@ -963,6 +1003,7 @@ a {
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
+    margin-bottom: var(--space-xl);
 }
 
 .privacy-list li {
@@ -1259,13 +1300,299 @@ a {
 }
 
 /* ============================================
+   Page Header (About, Security, Privacy, Terms)
+   ============================================ */
+.page-header {
+    padding: 8rem 0 4rem;
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    text-align: center;
+}
+
+.page-header h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 1rem;
+}
+
+.page-subtitle {
+    font-size: 1.25rem;
+    color: #94a3b8;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* ============================================
+   About Sections
+   ============================================ */
+.about-section {
+    padding: 5rem 0;
+}
+
+.about-section.alt-bg {
+    background: #f8fafc;
+}
+
+.about-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.about-text h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 1.5rem;
+}
+
+.about-text p {
+    font-size: 1.125rem;
+    color: #475569;
+    line-height: 1.75;
+    margin-bottom: 1.5rem;
+}
+
+.about-text.centered {
+    text-align: center;
+}
+
+/* Approach Grid */
+.approach-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.approach-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 2rem;
+    transition: box-shadow 0.2s ease;
+}
+
+.approach-card:hover {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+}
+
+.approach-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    color: #fff;
+}
+
+.approach-card h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.75rem;
+}
+
+.approach-card p {
+    font-size: 1rem;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+/* ============================================
+   Security Grid
+   ============================================ */
+.security-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.security-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 2rem;
+    transition: all 0.2s ease;
+}
+
+.security-card:hover {
+    border-color: #0ea5e9;
+    box-shadow: 0 10px 40px rgba(14, 165, 233, 0.1);
+}
+
+.security-icon {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    color: #fff;
+}
+
+.security-card h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.75rem;
+}
+
+.security-card p {
+    font-size: 1rem;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+/* ============================================
+   Compliance Grid
+   ============================================ */
+.compliance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.compliance-item {
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid #0ea5e9;
+}
+
+.compliance-item h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+}
+
+.compliance-item p {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ============================================
+   Tech Details
+   ============================================ */
+.tech-details {
+    margin-top: 2rem;
+}
+
+.tech-item {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.tech-item:last-child {
+    border-bottom: none;
+}
+
+.tech-item h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+}
+
+.tech-item p {
+    font-size: 1rem;
+    color: #64748b;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ============================================
+   Legal Content (Privacy & Terms)
+   ============================================ */
+.legal-content {
+    padding: 4rem 0;
+    background: #fff;
+}
+
+.legal-text {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.legal-text h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.legal-text h2:first-of-type {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.legal-text h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+}
+
+.legal-text p {
+    font-size: 1rem;
+    color: #475569;
+    line-height: 1.75;
+    margin-bottom: 1rem;
+}
+
+.legal-text ul {
+    margin: 1rem 0 1.5rem;
+    padding-left: 1.5rem;
+}
+
+.legal-text li {
+    font-size: 1rem;
+    color: #475569;
+    line-height: 1.75;
+    margin-bottom: 0.5rem;
+}
+
+.legal-text a {
+    color: #0ea5e9;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.legal-text a:hover {
+    color: #0369a1;
+    text-decoration: underline;
+}
+
+.legal-text strong {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+/* ============================================
    Responsive
    ============================================ */
 @media (max-width: 1024px) {
     .problem-grid,
     .features-grid,
-    .industries-grid,
     .pricing-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .industries-grid {
         grid-template-columns: repeat(2, 1fr);
     }
     
@@ -1288,6 +1615,10 @@ a {
     
     .footer-links {
         grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .steps-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
@@ -1336,6 +1667,10 @@ a {
         align-items: center;
     }
     
+    .steps-grid {
+        grid-template-columns: 1fr;
+    }
+    
     .step-connector {
         width: 2px;
         height: 40px;
@@ -1358,6 +1693,39 @@ a {
     
     .pricing-card.featured {
         transform: none;
+    }
+    
+    /* Page Header Responsive */
+    .page-header {
+        padding: 6rem 0 3rem;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    /* About Sections Responsive */
+    .about-section {
+        padding: 3rem 0;
+    }
+    
+    .about-text h2 {
+        font-size: 1.75rem;
+    }
+    
+    .security-grid,
+    .approach-grid,
+    .compliance-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Legal Content Responsive */
+    .legal-content {
+        padding: 2rem 0;
+    }
+    
+    .legal-text h2 {
+        font-size: 1.25rem;
     }
 }
 

@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Logging;
+using ThreadClear.Functions.Functions;
 using ThreadClear.Functions.Models;
 using ThreadClear.Functions.Services.Interfaces;
 
@@ -376,6 +377,12 @@ namespace ThreadClear.Functions.Services.Implementations
 
             return rows;
         }
+
+        //public async Task<Insight?> GetByOutlookConversationIdAsync(string orgId, string conversationId)
+        //{
+        //    // TODO: Implement when you have Insight table
+        //    return null;
+        //}
 
         private StorableInsight MapInsight(SqlDataReader reader)
         {

@@ -18,13 +18,18 @@ var host = new HostBuilder()
             ?? configuration.GetConnectionString("SqlConnectionString")
             ?? throw new InvalidOperationException("SqlConnectionString is required");
 
-        // ============================================
-        // EXISTING SERVICES (your original code)
-        // ============================================
-
-        // ⭐ Register UserService
         services.AddSingleton<IUserService>(sp =>
             new UserService(sqlConnectionString, sp.GetRequiredService<ILogger<UserService>>()));
+
+        // Register pattern loader with explicit path
+        services.AddSingleton(sp =>
+        {
+            var basePath = AppContext.BaseDirectory;
+            var xmlPath = Path.Combine(basePath, "AnalysisPatterns.xml");
+            return new AnalysisPatternsLoader(
+                xmlPath,
+                sp.GetService<ILogger<AnalysisPatternsLoader>>());
+        });
 
         // ⭐ Register AI Service based on configuration
         var aiProvider = configuration["AI:Provider"] ?? "Anthropic";
@@ -90,11 +95,6 @@ var host = new HostBuilder()
         services.AddScoped<IThreadCapsuleBuilder, ThreadCapsuleBuilder>();
         services.AddScoped<IConversationAnalyzer, ConversationAnalyzer>();
 
-        // ============================================
-        // NEW SERVICES (Phase 3-7)
-        // ============================================
-
-        // ⭐ Register Repositories
         services.AddSingleton<IOrganizationRepository>(sp =>
             new OrganizationRepository(sqlConnectionString, sp.GetRequiredService<ILogger<OrganizationRepository>>()));
 
@@ -133,6 +133,11 @@ var host = new HostBuilder()
                 sp.GetRequiredService<IOrganizationService>(),
                 sp.GetRequiredService<IOrganizationRepository>(),
                 sp.GetRequiredService<ILogger<RegistrationService>>()));
+
+        services.AddScoped<ITeamsWorkspaceRepository, TeamsWorkspaceRepository>();
+
+        services.AddScoped<ISlackWorkspaceRepository, SlackWorkspaceRepository>();
+        services.AddScoped<ITeamsWorkspaceRepository, TeamsWorkspaceRepository>();
 
         // ============================================
         // APPLICATION INSIGHTS

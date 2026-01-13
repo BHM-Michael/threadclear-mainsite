@@ -1,0 +1,11 @@
+# ThreadClear robots.txt
+# https://threadclear.com/robots.txt
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://threadclear.com/sitemap.xml
+
+# Crawl-delay suggestion (optional, not all bots honor this)
+Crawl-delay: 1

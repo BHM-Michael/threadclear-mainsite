@@ -207,6 +207,100 @@ a {
     transition: var(--transition-fast);
 }
 
+/* Mobile Menu Hamburger Animation */
+.nav-mobile-toggle.open span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.nav-mobile-toggle.open span:nth-child(2) {
+    opacity: 0;
+}
+
+.nav-mobile-toggle.open span:nth-child(3) {
+    transform: rotate(-45deg) translate(5px, -5px);
+}
+
+/* Mobile Menu Panel */
+.nav-mobile-menu {
+    display: none;
+    position: fixed;
+    top: 72px;
+    right: -100%;
+    width: 100%;
+    max-width: 320px;
+    height: calc(100vh - 72px);
+    background: var(--color-surface);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+    padding: var(--space-lg);
+    transition: right var(--transition-slow);
+    overflow-y: auto;
+}
+
+.nav-mobile-menu.open {
+    right: 0;
+}
+
+.nav-mobile-links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-xl);
+}
+
+.nav-mobile-links a {
+    display: block;
+    padding: var(--space-md);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-text);
+    border-radius: var(--radius-md);
+    transition: background var(--transition-fast);
+}
+
+.nav-mobile-links a:hover {
+    background: var(--color-bg);
+    color: var(--color-primary);
+}
+
+.nav-mobile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+}
+
+/* Mobile Menu Overlay */
+.nav-mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 72px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 998;
+    opacity: 0;
+    transition: opacity var(--transition-slow);
+}
+
+.nav-mobile-overlay.open {
+    opacity: 1;
+}
+
+/* Prevent body scroll when menu is open */
+body.menu-open {
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .nav-mobile-menu,
+    .nav-mobile-overlay {
+        display: block;
+    }
+}
+
 /* Buttons */
 .btn-primary {
     display: inline-flex;

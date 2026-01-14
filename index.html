@@ -164,11 +164,25 @@
                 <a href="https://app.threadclear.com/login" class="btn-secondary">Sign In</a>
                 <a href="#contact" class="btn-primary">Get Early Access</a>
             </div>
-            <button class="nav-mobile-toggle" aria-label="Toggle menu">
+            <button class="nav-mobile-toggle" aria-label="Toggle menu" onclick="toggleMobileMenu()">
                 <span></span>
                 <span></span>
                 <span></span>
             </button>
+            <!-- Mobile Menu -->
+            <div class="nav-mobile-menu" id="mobileMenu">
+                <div class="nav-mobile-links">
+                    <a href="#features" onclick="closeMobileMenu()">Features</a>
+                    <a href="#how-it-works" onclick="closeMobileMenu()">How It Works</a>
+                    <a href="#industries" onclick="closeMobileMenu()">Industries</a>
+                    <a href="#pricing" onclick="closeMobileMenu()">Pricing</a>
+                </div>
+                <div class="nav-mobile-actions">
+                    <a href="https://app.threadclear.com/login" class="btn-secondary btn-full">Sign In</a>
+                    <a href="#contact" class="btn-primary btn-full" onclick="closeMobileMenu()">Get Early Access</a>
+                </div>
+            </div>
+            <div class="nav-mobile-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
         </div>
     </nav>
 
@@ -765,6 +779,47 @@
             </div>
         </div>
     </footer>
+
+    <script>
+// Mobile Menu Toggle
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileOverlay');
+    const toggle = document.querySelector('.nav-mobile-toggle');
+    const body = document.body;
+    
+    menu.classList.toggle('open');
+    overlay.classList.toggle('open');
+    toggle.classList.toggle('open');
+    body.classList.toggle('menu-open');
+}
+
+function closeMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileOverlay');
+    const toggle = document.querySelector('.nav-mobile-toggle');
+    const body = document.body;
+    
+    menu.classList.remove('open');
+    overlay.classList.remove('open');
+    toggle.classList.remove('open');
+    body.classList.remove('menu-open');
+}
+
+// Close menu on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeMobileMenu();
+    }
+});
+
+// Close menu on window resize if desktop size
+window.addEventListener('resize', function() {
+    if (window.innerWidth > 768) {
+        closeMobileMenu();
+    }
+});
+</script>
 
     <script>
 document.getElementById('early-access-form').addEventListener('submit', function(e) {

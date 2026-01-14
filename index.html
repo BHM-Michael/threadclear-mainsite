@@ -841,8 +841,7 @@ document.getElementById('early-access-form').addEventListener('submit', function
         headers: { 'Accept': 'application/json' }
     }).then(response => {
         if (response.ok) {
-            form.reset();
-            alert('Thanks! We\'ll be in touch within 24 hours.');
+            window.location.href = '/thank-you.html';
         } else {
             alert('Oops! Something went wrong. Please try again.');
         }

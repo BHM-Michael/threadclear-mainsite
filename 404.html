@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-R7JPVX5P7E"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-R7JPVX5P7E');
+    </script>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - ThreadClear</title>
+    <meta name="description" content="The page you're looking for doesn't exist or has been moved.">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="TC_logo.png">
+    
+    <style>
+        .error-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-lg);
+        }
+        
+        .error-content {
+            text-align: center;
+            max-width: 500px;
+        }
+        
+        .error-code {
+            font-size: clamp(80px, 20vw, 150px);
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: var(--space-md);
+        }
+        
+        .error-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: var(--space-md);
+        }
+        
+        .error-message {
+            font-size: 16px;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-xl);
+            line-height: 1.6;
+        }
+        
+        .error-actions {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+            align-items: center;
+        }
+        
+        .error-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: var(--space-md);
+            margin-top: var(--space-md);
+        }
+        
+        .error-links a {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            transition: color var(--transition-fast);
+        }
+        
+        .error-links a:hover {
+            color: var(--color-primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <img src="TC_logo.png" alt="ThreadClear" class="logo-icon">
+                <span class="logo-text">ThreadClear</span>
+            </a>
+            <div class="nav-links">
+                <a href="/#features">Features</a>
+                <a href="/#how-it-works">How It Works</a>
+                <a href="/#industries">Industries</a>
+                <a href="/#pricing">Pricing</a>
+            </div>
+            <div class="nav-actions">
+                <a href="https://app.threadclear.com/login" class="btn-secondary">Sign In</a>
+                <a href="/#contact" class="btn-primary">Get Early Access</a>
+            </div>
+            <button class="nav-mobile-toggle" aria-label="Toggle menu" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <!-- Mobile Menu -->
+            <div class="nav-mobile-menu" id="mobileMenu">
+                <div class="nav-mobile-links">
+                    <a href="/#features" onclick="closeMobileMenu()">Features</a>
+                    <a href="/#how-it-works" onclick="closeMobileMenu()">How It Works</a>
+                    <a href="/#industries" onclick="closeMobileMenu()">Industries</a>
+                    <a href="/#pricing" onclick="closeMobileMenu()">Pricing</a>
+                </div>
+                <div class="nav-mobile-actions">
+                    <a href="https://app.threadclear.com/login" class="btn-secondary btn-full">Sign In</a>
+                    <a href="/#contact" class="btn-primary btn-full" onclick="closeMobileMenu()">Get Early Access</a>
+                </div>
+            </div>
+            <div class="nav-mobile-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
+        </div>
+    </nav>
+
+    <main class="error-page">
+        <div class="error-content">
+            <div class="error-code">404</div>
+            <h1 class="error-title">Page not found</h1>
+            <p class="error-message">
+                The page you're looking for doesn't exist or has been moved. 
+                Let's get you back on track.
+            </p>
+            <div class="error-actions">
+                <a href="/" class="btn-primary btn-large">
+                    Back to Home
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </a>
+                <div class="error-links">
+                    <a href="/#features">Features</a>
+                    <a href="/#pricing">Pricing</a>
+                    <a href="/#contact">Contact</a>
+                    <a href="/about">About</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    // Mobile Menu Toggle
+    function toggleMobileMenu() {
+        const menu = document.getElementById('mobileMenu');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.querySelector('.nav-mobile-toggle');
+        const body = document.body;
+        
+        menu.classList.toggle('open');
+        overlay.classList.toggle('open');
+        toggle.classList.toggle('open');
+        body.classList.toggle('menu-open');
+    }
+
+    function closeMobileMenu() {
+        const menu = document.getElementById('mobileMenu');
+        const overlay = document.getElementById('mobileOverlay');
+        const toggle = document.querySelector('.nav-mobile-toggle');
+        const body = document.body;
+        
+        menu.classList.remove('open');
+        overlay.classList.remove('open');
+        toggle.classList.remove('open');
+        body.classList.remove('menu-open');
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeMobileMenu();
+        }
+    });
+    </script>
+</body>
+</html>

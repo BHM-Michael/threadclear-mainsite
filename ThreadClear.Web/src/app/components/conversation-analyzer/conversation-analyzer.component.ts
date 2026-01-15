@@ -1,6 +1,8 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { ApiService } from '../../services/api.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { ApiService, StreamEvent } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -25,6 +27,14 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   selectedAudio: File | null = null;
   imagePreviews: string[] = [];
 
+  // STREAMING - New properties
+  useStreaming = true;
+  isStreaming = false;
+  streamingText = '';
+  streamingProgress = 0;
+  streamStatus = '';
+  private destroy$ = new Subject<void>();
+
   constructor(
     private apiService: ApiService,
     private authService: AuthService,
@@ -47,6 +57,9 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     // Clean up paste listener
     document.removeEventListener('paste', this.onPaste.bind(this));
+    // Clean up streaming subscription
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   onPaste(event: ClipboardEvent) {
@@ -206,8 +219,128 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
       this.analyzeImages();
     } else if (this.inputMode === 'audio' && this.selectedAudio) {
       this.analyzeAudio();
+    } else if (this.useStreaming && this.inputMode === 'text') {
+      // NEW: Use streaming for text analysis if enabled
+      this.analyzeTextStreaming();
     } else {
       this.analyzeText();
+    }
+  }
+
+  // NEW: Streaming analysis method
+  analyzeTextStreaming() {
+    this.loading = true;
+    this.isStreaming = true;
+    this.streamingProgress = 0;
+    this.streamStatus = 'Connecting...';
+    this.error = '';
+    this.results = null;
+    this.draftAnalysis = null;
+
+    // Animated progress simulation
+    const progressSteps = [
+      { progress: 5, status: 'Starting analysis...', delay: 0 },
+      { progress: 15, status: 'Parsing conversation...', delay: 1500 },
+      { progress: 25, status: 'Identifying participants...', delay: 3000 },
+      { progress: 40, status: 'Extracting messages...', delay: 5000 },
+      { progress: 55, status: 'Detecting unanswered questions...', delay: 7500 },
+      { progress: 70, status: 'Analyzing tension points...', delay: 10000 },
+      { progress: 85, status: 'Generating insights...', delay: 13000 },
+      { progress: 90, status: 'Finalizing results...', delay: 16000 },
+    ];
+
+    progressSteps.forEach(step => {
+      setTimeout(() => {
+        if (this.loading) {
+          this.streamingProgress = step.progress;
+          this.streamStatus = step.status;
+        }
+      }, step.delay);
+    });
+
+    // Actual API call (non-streaming endpoint)
+    this.apiService.analyzeConversation({
+      conversationText: this.conversationText,
+      sourceType: this.sourceType,
+      parsingMode: this.parsingMode,
+      draftMessage: this.draftMessage || null
+    }).pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.streamingProgress = 100;
+          this.streamStatus = 'Complete!';
+
+          setTimeout(() => {
+            this.results = this.filterResultsByPermissions(response.capsule);
+            this.draftAnalysis = this.normalizeDraftAnalysis(response.draftAnalysis);
+            this.isStreaming = false;
+            this.loading = false;
+          }, 300);
+        },
+        error: (err) => {
+          console.error('Analysis error:', err);
+          this.error = 'Error analyzing conversation. Please try again.';
+          this.isStreaming = false;
+          this.loading = false;
+        }
+      });
+  }
+
+  // NEW: Handle streaming events
+  private handleStreamEvent(event: StreamEvent): void {
+    console.log('Stream event received:', event);  // ADD THIS
+
+    switch (event.status) {
+      case 'started':
+        console.log('Started');  // ADD THIS
+        this.streamStatus = 'Analysis started...';
+        this.streamingProgress = 5;
+        break;
+
+      case 'streaming':
+        console.log('Streaming chunk:', event.chunk?.substring(0, 50));  // ADD THIS
+        if (event.chunk) {
+          this.streamingText += event.chunk;
+        }
+        if (event.totalLength) {
+          this.streamingProgress = Math.min(90, Math.round((event.totalLength / 2000) * 85) + 5);
+        }
+        this.updateStreamStatus();
+        break;
+
+      case 'complete':
+        this.streamStatus = 'Analysis complete!';
+        this.streamingProgress = 100;
+        this.results = this.filterResultsByPermissions(event.capsule);
+        this.isStreaming = false;
+        this.loading = false;
+        break;
+
+      case 'error':
+        this.error = event.message || 'An error occurred';
+        this.isStreaming = false;
+        this.loading = false;
+        break;
+    }
+  }
+
+  // NEW: Update status based on what's been streamed
+  private updateStreamStatus(): void {
+    if (this.streamingText.includes('"suggestedActions"')) {
+      this.streamStatus = 'Generating recommendations...';
+    } else if (this.streamingText.includes('"tensionPoints"')) {
+      this.streamStatus = 'Detecting tension points...';
+    } else if (this.streamingText.includes('"unansweredQuestions"')) {
+      this.streamStatus = 'Finding unanswered questions...';
+    } else if (this.streamingText.includes('"summary"')) {
+      this.streamStatus = 'Generating summary...';
+    } else if (this.streamingText.includes('"messages"')) {
+      const count = (this.streamingText.match(/"content":/g) || []).length;
+      this.streamStatus = `Processing ${count} messages...`;
+    } else if (this.streamingText.includes('"participants"')) {
+      this.streamStatus = 'Identifying participants...';
+    } else {
+      this.streamStatus = 'Processing conversation...';
     }
   }
 
@@ -254,6 +387,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   }
 
   analyzeImages() {
+    this.loading = true;
     this.loadingMessage = 'Parsing conversation...';
     this.startProgressMessages();
     this.error = '';
@@ -293,6 +427,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   analyzeAudio() {
     if (!this.selectedAudio) return;
 
+    this.loading = true;
     this.loadingMessage = 'Parsing conversation...';
     this.startProgressMessages();
     this.error = '';
@@ -395,7 +530,6 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   }
 
   // Normalize draft analysis to handle PascalCase from API
-  // Normalize draft analysis to handle PascalCase from API
   normalizeDraftAnalysis(draft: any): any {
     if (!draft) return null;
 
@@ -447,6 +581,10 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
     this.selectedImages = [];
     this.imagePreviews = [];
     this.selectedAudio = null;
+    // NEW: Clear streaming state
+    this.streamingText = '';
+    this.streamingProgress = 0;
+    this.streamStatus = '';
   }
 
   goToAdmin() {

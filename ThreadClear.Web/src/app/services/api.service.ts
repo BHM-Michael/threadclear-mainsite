@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface AnalysisRequest {
@@ -15,6 +15,15 @@ export interface AnalysisResponse {
   capsule: any;
   parsingMode: string;
   draftAnalysis?: any;
+}
+
+export interface StreamEvent {
+  status: 'started' | 'streaming' | 'complete' | 'error';
+  message?: string;
+  chunk?: string;
+  totalLength?: number;
+  capsule?: any;
+  user?: string;
 }
 
 @Injectable({
@@ -48,6 +57,72 @@ export class ApiService {
       : `${this.apiUrl}/analyze`;
 
     return this.http.post<AnalysisResponse>(url, data, { headers: this.getAuthHeaders() });
+  }
+
+  // 3. Add this method to your ApiService class (alongside your other methods)
+  analyzeConversationStream(conversationText: string, sourceType: string = 'simple'): Observable<StreamEvent> {
+    const subject = new Subject<StreamEvent>();
+
+    const credentials = localStorage.getItem('userCredentials');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+
+    if (credentials) {
+      const [email, password] = atob(credentials).split(':');
+      headers['X-User-Email'] = email;
+      headers['X-User-Password'] = password;
+    }
+
+    fetch(`${this.apiUrl}/analyze/stream`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ conversationText, sourceType })
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        const read = (): void => {
+          reader?.read().then(({ done, value }) => {
+            if (done) {
+              subject.complete();
+              return;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.substring(6)) as StreamEvent;
+                  subject.next(data);
+                } catch (e) {
+                  console.warn('Failed to parse stream event:', e);
+                }
+              }
+            }
+
+            read();
+          }).catch(error => {
+            subject.error(error);
+          });
+        };
+
+        read();
+      })
+      .catch(error => {
+        subject.error(error);
+      });
+
+    return subject.asObservable();
   }
 
   analyzeImage(file: File, sourceType: string, parsingMode: number): Observable<AnalysisResponse> {

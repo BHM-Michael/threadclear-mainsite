@@ -67,7 +67,9 @@ $color-danger: #ef4444;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 // Page Header
@@ -939,6 +941,102 @@ $color-danger: #ef4444;
             color: $color-text;
             font-size: 14px;
             line-height: 1.5;
+        }
+    }
+}
+
+// Streaming Toggle
+.streaming-toggle {
+    display: flex;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: $color-primary;
+    }
+
+    .control-label {
+        margin: 0;
+    }
+}
+
+// Streaming Progress in Loading Card
+.streaming-content {
+    min-width: 320px;
+
+    .streaming-header {
+        margin-bottom: 24px;
+
+        h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: $color-text;
+        }
+    }
+
+    .progress-bar-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 16px;
+
+        .progress-bar {
+            flex: 1;
+            height: 8px;
+            background: $color-border;
+            border-radius: 4px;
+            overflow: hidden;
+
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(90deg, $color-primary 0%, #3b82f6 50%, #8b5cf6 100%);
+                border-radius: 4px;
+                transition: width 0.3s ease;
+            }
+        }
+
+        .progress-percent {
+            font-size: 14px;
+            font-weight: 700;
+            color: $color-primary;
+            min-width: 45px;
+        }
+    }
+
+    .stream-status {
+        margin: 0 0 20px;
+        font-size: 14px;
+        color: $color-text-secondary;
+        text-align: center;
+    }
+
+    .streaming-indicators {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+
+        .indicator {
+            padding: 6px 12px;
+            background: $color-bg;
+            border: 1px solid $color-border;
+            border-radius: 20px;
+            font-size: 12px;
+            color: $color-text-muted;
+            transition: all 0.3s;
+
+            &.active {
+                background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+                border-color: $color-primary;
+                color: $color-primary;
+                font-weight: 600;
+            }
         }
     }
 }

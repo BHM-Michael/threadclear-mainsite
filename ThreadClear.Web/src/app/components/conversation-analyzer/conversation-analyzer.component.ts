@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { ApiService, StreamEvent } from '../../services/api.service';
+import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -12,12 +12,12 @@ import { AuthService } from '../../services/auth.service';
 })
 export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   conversationText = '';
-  draftMessage = '';  // NEW: Draft message input
+  draftMessage = '';
   sourceType = 'simple';
   parsingMode = 2;
   loading = false;
   results: any = null;
-  draftAnalysis: any = null;  // NEW: Draft analysis results
+  draftAnalysis: any = null;
   error = '';
   loadingMessage = 'Analyzing conversation...';
 
@@ -27,12 +27,34 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   selectedAudio: File | null = null;
   imagePreviews: string[] = [];
 
-  // STREAMING - New properties
+  // Streaming/Progressive loading
   useStreaming = true;
   isStreaming = false;
-  streamingText = '';
   streamingProgress = 0;
   streamStatus = '';
+  streamingText = '';
+
+  // Section loading states - for progressive UI updates
+  sectionsLoading: { [key: string]: boolean } = {
+    summary: false,
+    questions: false,
+    tensions: false,
+    health: false,
+    actions: false,
+    misalignments: false
+  };
+
+  sectionsComplete: { [key: string]: boolean } = {
+    summary: false,
+    questions: false,
+    tensions: false,
+    health: false,
+    actions: false,
+    misalignments: false
+  };
+
+  sectionsError: { [key: string]: string } = {};
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -50,14 +72,11 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
       this.router.navigate(['/login']);
     }
 
-    // Listen for paste events
     document.addEventListener('paste', this.onPaste.bind(this));
   }
 
   ngOnDestroy() {
-    // Clean up paste listener
     document.removeEventListener('paste', this.onPaste.bind(this));
-    // Clean up streaming subscription
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -71,7 +90,6 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
         event.preventDefault();
         const file = items[i].getAsFile();
         if (file) {
-          // Switch to image mode and add the pasted image
           this.inputMode = 'image';
           this.addImages([file]);
           console.log('Image pasted from clipboard');
@@ -138,12 +156,10 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   }
 
   selectAudio(file: File) {
-    // Check file size (max 25MB for Whisper)
     if (file.size > 25 * 1024 * 1024) {
       this.error = 'Audio file must be less than 25MB';
       return;
     }
-
     this.selectedAudio = file;
     this.error = '';
   }
@@ -187,12 +203,10 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
         this.error = 'Please select only image files';
         continue;
       }
-
       if (file.size > 10 * 1024 * 1024) {
         this.error = 'Each image must be less than 10MB';
         continue;
       }
-
       if (this.selectedImages.length >= 10) {
         this.error = 'Maximum 10 images allowed';
         break;
@@ -220,150 +234,238 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
     } else if (this.inputMode === 'audio' && this.selectedAudio) {
       this.analyzeAudio();
     } else if (this.useStreaming && this.inputMode === 'text') {
-      // NEW: Use streaming for text analysis if enabled
-      this.analyzeTextStreaming();
+      this.analyzeTextProgressive();
     } else {
       this.analyzeText();
     }
   }
 
-  // NEW: Streaming analysis method
-  analyzeTextStreaming() {
+  // NEW: Progressive analysis - shows results as they come in
+  analyzeTextProgressive() {
     this.loading = true;
     this.isStreaming = true;
     this.streamingProgress = 0;
-    this.streamStatus = 'Connecting...';
+    this.streamStatus = 'Parsing conversation...';
     this.error = '';
     this.results = null;
     this.draftAnalysis = null;
 
-    // Animated progress simulation
-    const progressSteps = [
-      { progress: 5, status: 'Starting analysis...', delay: 0 },
-      { progress: 15, status: 'Parsing conversation...', delay: 1500 },
-      { progress: 25, status: 'Identifying participants...', delay: 3000 },
-      { progress: 40, status: 'Extracting messages...', delay: 5000 },
-      { progress: 55, status: 'Detecting unanswered questions...', delay: 7500 },
-      { progress: 70, status: 'Analyzing tension points...', delay: 10000 },
-      { progress: 85, status: 'Generating insights...', delay: 13000 },
-      { progress: 90, status: 'Finalizing results...', delay: 16000 },
-    ];
-
-    progressSteps.forEach(step => {
-      setTimeout(() => {
-        if (this.loading) {
-          this.streamingProgress = step.progress;
-          this.streamStatus = step.status;
-        }
-      }, step.delay);
+    // Reset section states
+    Object.keys(this.sectionsLoading).forEach(key => {
+      this.sectionsLoading[key] = false;
+      this.sectionsComplete[key] = false;
+      this.sectionsError[key] = '';
     });
 
-    // Actual API call (non-streaming endpoint)
-    this.apiService.analyzeConversation({
-      conversationText: this.conversationText,
-      sourceType: this.sourceType,
-      parsingMode: this.parsingMode,
-      draftMessage: this.draftMessage || null
-    }).pipe(takeUntil(this.destroy$))
+    // Phase 1: Quick parse (instant, no AI)
+    this.apiService.quickParse(this.conversationText)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
-          this.streamingProgress = 100;
-          this.streamStatus = 'Complete!';
+        next: (parseResult) => {
+          console.log('QuickParse result:', parseResult);
 
-          setTimeout(() => {
-            this.results = this.filterResultsByPermissions(response.capsule);
-            this.draftAnalysis = this.normalizeDraftAnalysis(response.draftAnalysis);
-            this.isStreaming = false;
-            this.loading = false;
-          }, 300);
-        },
-        error: (err) => {
-          console.error('Analysis error:', err);
-          this.error = 'Error analyzing conversation. Please try again.';
+          // Initialize results with parsed data - user sees this immediately
+          this.results = {
+            CapsuleId: 'tc-' + Date.now(),
+            SourceType: parseResult.sourceType || 'conversation',
+            Participants: parseResult.participants || [],
+            Messages: parseResult.messages || [],
+            Metadata: parseResult.metadata || {},
+            Summary: null,  // Will be filled by AI
+            Analysis: {
+              UnansweredQuestions: null,  // null = loading, [] = empty
+              TensionPoints: null,
+              Misalignments: null,
+              ConversationHealth: null
+            },
+            SuggestedActions: null
+          };
+
+          this.streamingProgress = 20;
+          this.streamStatus = 'Running AI analysis...';
+
+          // Hide the loading overlay - show results with spinners
           this.isStreaming = false;
           this.loading = false;
+
+          // Phase 2: Fire all AI analysis sections in parallel
+          this.loadSectionParallel('summary');
+          this.loadSectionParallel('questions');
+          this.loadSectionParallel('tensions');
+          this.loadSectionParallel('health');
+          this.loadSectionParallel('actions');
+          this.loadSectionParallel('misalignments');
+
+          // Also analyze draft if provided
+          if (this.draftMessage) {
+            this.analyzeDraftMessage();
+          }
+        },
+        error: (err) => {
+          console.error('QuickParse error, falling back to full analysis:', err);
+          // Fallback to the original full analysis
+          this.analyzeText();
         }
       });
   }
 
-  // NEW: Handle streaming events
-  private handleStreamEvent(event: StreamEvent): void {
-    console.log('Stream event received:', event);  // ADD THIS
+  private loadSectionParallel(section: string) {
+    // Check permissions before loading
+    if (!this.shouldLoadSection(section)) {
+      this.sectionsComplete[section] = true;
+      this.updateProgress();
+      return;
+    }
 
-    switch (event.status) {
-      case 'started':
-        console.log('Started');  // ADD THIS
-        this.streamStatus = 'Analysis started...';
-        this.streamingProgress = 5;
-        break;
+    this.sectionsLoading[section] = true;
 
-      case 'streaming':
-        console.log('Streaming chunk:', event.chunk?.substring(0, 50));  // ADD THIS
-        if (event.chunk) {
-          this.streamingText += event.chunk;
+    this.apiService.analyzeSection(this.conversationText, section)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          console.log(`Section ${section} response:`, response);
+          if (response.success) {
+            this.updateResultsSection(section, response.data);
+          } else {
+            this.sectionsError[section] = response.error || 'Analysis failed';
+          }
+          this.sectionsLoading[section] = false;
+          this.sectionsComplete[section] = true;
+          this.updateProgress();
+        },
+        error: (err) => {
+          console.error(`Section ${section} error:`, err);
+          this.sectionsError[section] = 'Failed to analyze';
+          this.sectionsLoading[section] = false;
+          this.sectionsComplete[section] = true;
+          this.updateProgress();
         }
-        if (event.totalLength) {
-          this.streamingProgress = Math.min(90, Math.round((event.totalLength / 2000) * 85) + 5);
+      });
+  }
+
+  private shouldLoadSection(section: string): boolean {
+    if (this.isAdmin) return true;
+    if (!this.permissions) return true;
+
+    const perms = this.permissions;
+    switch (section) {
+      case 'questions':
+        return perms.UnansweredQuestions || perms.unansweredQuestions || false;
+      case 'tensions':
+        return perms.TensionPoints || perms.tensionPoints || false;
+      case 'misalignments':
+        return perms.Misalignments || perms.misalignments || false;
+      case 'health':
+        return perms.ConversationHealth || perms.conversationHealth || false;
+      case 'actions':
+        return perms.SuggestedActions || perms.suggestedActions || false;
+      case 'summary':
+        return true; // Always show summary
+      default:
+        return true;
+    }
+  }
+
+  private updateResultsSection(section: string, data: any) {
+    if (!this.results) return;
+
+    console.log(`Updating section ${section} with data:`, data);
+
+    switch (section) {
+      case 'summary':
+        this.results.Summary = data?.Summary || data?.summary || data;
+        break;
+      case 'questions':
+        if (this.results.Analysis) {
+          this.results.Analysis.UnansweredQuestions = data?.UnansweredQuestions || data?.unansweredQuestions || [];
         }
-        this.updateStreamStatus();
         break;
-
-      case 'complete':
-        this.streamStatus = 'Analysis complete!';
-        this.streamingProgress = 100;
-        this.results = this.filterResultsByPermissions(event.capsule);
-        this.isStreaming = false;
-        this.loading = false;
+      case 'tensions':
+        if (this.results.Analysis) {
+          this.results.Analysis.TensionPoints = data?.TensionPoints || data?.tensionPoints || [];
+        }
         break;
-
-      case 'error':
-        this.error = event.message || 'An error occurred';
-        this.isStreaming = false;
-        this.loading = false;
+      case 'health':
+        if (this.results.Analysis) {
+          this.results.Analysis.ConversationHealth = data?.ConversationHealth || data?.conversationHealth || data;
+        }
+        break;
+      case 'actions':
+        this.results.SuggestedActions = data?.SuggestedActions || data?.suggestedActions || [];
+        break;
+      case 'misalignments':
+        if (this.results.Analysis) {
+          this.results.Analysis.Misalignments = data?.Misalignments || data?.misalignments || [];
+        }
         break;
     }
   }
 
-  // NEW: Update status based on what's been streamed
-  private updateStreamStatus(): void {
-    if (this.streamingText.includes('"suggestedActions"')) {
-      this.streamStatus = 'Generating recommendations...';
-    } else if (this.streamingText.includes('"tensionPoints"')) {
-      this.streamStatus = 'Detecting tension points...';
-    } else if (this.streamingText.includes('"unansweredQuestions"')) {
-      this.streamStatus = 'Finding unanswered questions...';
-    } else if (this.streamingText.includes('"summary"')) {
-      this.streamStatus = 'Generating summary...';
-    } else if (this.streamingText.includes('"messages"')) {
-      const count = (this.streamingText.match(/"content":/g) || []).length;
-      this.streamStatus = `Processing ${count} messages...`;
-    } else if (this.streamingText.includes('"participants"')) {
-      this.streamStatus = 'Identifying participants...';
+  private updateProgress() {
+    const total = Object.keys(this.sectionsComplete).length;
+    const complete = Object.values(this.sectionsComplete).filter(v => v).length;
+    this.streamingProgress = 20 + Math.round((complete / total) * 80);
+
+    // Update status message based on what's still loading
+    const stillLoading = Object.entries(this.sectionsLoading)
+      .filter(([_, loading]) => loading)
+      .map(([section, _]) => section);
+
+    if (stillLoading.length === 0) {
+      this.streamStatus = 'Analysis complete!';
     } else {
-      this.streamStatus = 'Processing conversation...';
+      const sectionNames: { [key: string]: string } = {
+        summary: 'summary',
+        questions: 'unanswered questions',
+        tensions: 'tension points',
+        health: 'conversation health',
+        actions: 'suggested actions',
+        misalignments: 'misalignments'
+      };
+      this.streamStatus = `Analyzing ${sectionNames[stillLoading[0]] || stillLoading[0]}...`;
     }
   }
 
+  private analyzeDraftMessage() {
+    // For draft analysis, use the full endpoint with draft included
+    const request: any = {
+      conversationText: this.conversationText,
+      sourceType: this.sourceType,
+      parsingMode: this.parsingMode,
+      draftMessage: this.draftMessage
+    };
+
+    this.apiService.analyzeConversation(request)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.draftAnalysis = this.normalizeDraftAnalysis(response.draftAnalysis);
+        },
+        error: (err) => {
+          console.error('Draft analysis error:', err);
+        }
+      });
+  }
+
+  // Original full analysis method (fallback)
   analyzeText() {
     this.loading = true;
     this.loadingMessage = 'Parsing conversation...';
     this.startProgressMessages();
     this.error = '';
     this.results = null;
-    this.draftAnalysis = null;  // Reset draft analysis
+    this.draftAnalysis = null;
 
     const perms = this.permissions;
     const isAdmin = this.isAdmin;
 
-    // Build request with permissions
     const request: any = {
       conversationText: this.conversationText,
       sourceType: this.sourceType,
       parsingMode: this.parsingMode,
-      draftMessage: this.draftMessage || null  // NEW: Include draft message
+      draftMessage: this.draftMessage || null
     };
 
-    // If not admin, include permission flags
     if (!isAdmin && perms) {
       request.enableUnansweredQuestions = perms.UnansweredQuestions || perms.unansweredQuestions || false;
       request.enableTensionPoints = perms.TensionPoints || perms.tensionPoints || false;
@@ -397,7 +499,6 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
     const perms = this.permissions;
     const isAdmin = this.isAdmin;
 
-    // Build permission flags
     let enableFlags: any = {};
     if (!isAdmin && perms) {
       enableFlags = {
@@ -465,7 +566,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
 
   getEnabledFeatures() {
     if (this.isAdmin || !this.permissions) {
-      return {}; // Admin gets all features
+      return {};
     }
     return {
       enableUnansweredQuestions: this.permissions.unansweredQuestions,
@@ -477,28 +578,22 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   }
 
   filterResultsByPermissions(capsule: any) {
-    if (!capsule) {
-      return capsule;
-    }
+    if (!capsule) return capsule;
 
     console.log("Filtering results. isAdmin:", this.isAdmin, "permissions:", this.permissions);
 
     if (this.isAdmin || !this.permissions) {
-      return capsule; // Admin sees everything
+      return capsule;
     }
 
     const perms = this.permissions;
 
-    // Check both casings for permissions
     const hasUnanswered = perms.UnansweredQuestions || perms.unansweredQuestions || false;
     const hasTension = perms.TensionPoints || perms.tensionPoints || false;
     const hasMisalignments = perms.Misalignments || perms.misalignments || false;
     const hasHealth = perms.ConversationHealth || perms.conversationHealth || false;
     const hasSuggested = perms.SuggestedActions || perms.suggestedActions || false;
 
-    console.log("Permission checks:", { hasUnanswered, hasTension, hasMisalignments, hasHealth, hasSuggested });
-
-    // Filter out features user doesn't have access to - check both casings for capsule properties
     const analysis = capsule.analysis || capsule.Analysis;
 
     if (analysis) {
@@ -524,16 +619,12 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
       capsule.SuggestedActions = [];
     }
 
-    console.log("Filtered capsule:", capsule);
-
     return capsule;
   }
 
-  // Normalize draft analysis to handle PascalCase from API
   normalizeDraftAnalysis(draft: any): any {
     if (!draft) return null;
 
-    // Normalize tone object
     const toneRaw = draft.Tone || draft.tone;
     const tone = toneRaw ? {
       tone: toneRaw.Tone || toneRaw.tone || '',
@@ -542,7 +633,6 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
       explanation: toneRaw.Explanation || toneRaw.explanation || ''
     } : null;
 
-    // Normalize questions covered
     const questionsCoveredRaw = draft.QuestionsCovered || draft.questionsCovered || [];
     const questionsCovered = questionsCoveredRaw.map((q: any) => ({
       question: q.Question || q.question || '',
@@ -550,7 +640,6 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
       howAddressed: q.HowAddressed || q.howAddressed || null
     }));
 
-    // Normalize risk flags
     const riskFlagsRaw = draft.RiskFlags || draft.riskFlags || [];
     const riskFlags = riskFlagsRaw.map((r: any) => ({
       type: r.Type || r.type || '',
@@ -574,17 +663,21 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
 
   clear() {
     this.conversationText = '';
-    this.draftMessage = '';  // NEW: Clear draft message
+    this.draftMessage = '';
     this.results = null;
-    this.draftAnalysis = null;  // NEW: Clear draft analysis
+    this.draftAnalysis = null;
     this.error = '';
     this.selectedImages = [];
     this.imagePreviews = [];
     this.selectedAudio = null;
-    // NEW: Clear streaming state
-    this.streamingText = '';
     this.streamingProgress = 0;
     this.streamStatus = '';
+
+    Object.keys(this.sectionsLoading).forEach(key => {
+      this.sectionsLoading[key] = false;
+      this.sectionsComplete[key] = false;
+      this.sectionsError[key] = '';
+    });
   }
 
   goToAdmin() {

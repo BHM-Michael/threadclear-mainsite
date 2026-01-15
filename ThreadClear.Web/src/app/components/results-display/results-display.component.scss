@@ -1062,6 +1062,70 @@
     }
 }
 
+/* ADD THIS TO YOUR results-display.component.scss */
+
+/* Section Loading State */
+.section-loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px;
+    color: #64748b;
+    font-size: 14px;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin: 8px 0;
+}
+
+.mini-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e2e8f0;
+    border-top-color: #0ea5e9;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Empty states */
+.empty-state {
+    padding: 16px;
+    color: #94a3b8;
+    font-style: italic;
+    text-align: center;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin: 8px 0;
+}
+
+.empty-state.success {
+    color: #059669;
+    background: #ecfdf5;
+}
+
+/* Error states */
+.error-state {
+    padding: 16px;
+    color: #dc2626;
+    background: #fef2f2;
+    border-radius: 8px;
+    margin: 8px 0;
+}
+
+/* Ensure sections are always visible for loading states */
+.alert-card,
+.health-card,
+.actions-card,
+.section-card.summary-text {
+    display: block;
+    /* Always show the card */
+}
+
 // Extra small phones
 @media (max-width: 360px) {
     .results-container {
@@ -1083,5 +1147,123 @@
         .metadata-grid {
             grid-template-columns: 1fr;
         }
+    }
+}
+
+/* Conversation Health Styles */
+.health-card {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 24px;
+    margin-top: 24px;
+
+    h3 {
+        margin: 0 0 20px;
+        font-size: 18px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+}
+
+.health-overview {
+    margin-bottom: 24px;
+}
+
+.health-score-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .score-number {
+        font-size: 36px;
+        font-weight: 700;
+
+        &.good {
+            color: #10b981;
+        }
+
+        &.warning {
+            color: #f59e0b;
+        }
+
+        &.danger {
+            color: #ef4444;
+        }
+    }
+
+    .risk-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+
+        &.risk-low {
+            background: #ecfdf5;
+            color: #059669;
+        }
+
+        &.risk-medium {
+            background: #fffbeb;
+            color: #d97706;
+        }
+
+        &.risk-high {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+    }
+}
+
+.health-details {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.score-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .score-label {
+        width: 120px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #475569;
+    }
+
+    .score-bar {
+        flex: 1;
+        height: 10px;
+        background: #e2e8f0;
+        border-radius: 5px;
+        overflow: hidden;
+
+        .score-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+
+            &.good {
+                background: linear-gradient(90deg, #10b981, #34d399);
+            }
+
+            &.warning {
+                background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            }
+
+            &.danger {
+                background: linear-gradient(90deg, #ef4444, #f87171);
+            }
+        }
+    }
+
+    .score-value {
+        width: 50px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #0f172a;
+        text-align: right;
     }
 }

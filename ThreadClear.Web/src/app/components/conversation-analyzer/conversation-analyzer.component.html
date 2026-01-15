@@ -1,5 +1,6 @@
 <div class="page-container">
     <!-- Loading Overlay - Updated with streaming support -->
+    <!-- Loading Overlay -->
     <div class="loading-overlay" *ngIf="loading">
         <div class="loading-card">
             <!-- Standard loading spinner (when not streaming) -->
@@ -11,26 +12,7 @@
 
             <!-- Streaming progress (when streaming) -->
             <div *ngIf="isStreaming" class="streaming-content">
-                <div class="streaming-header">
-                    <h3>Analyzing...</h3>
-                </div>
-                <div class="progress-bar-container">
-                    <div class="progress-bar">
-                        <div class="progress-fill" [style.width.%]="streamingProgress"></div>
-                    </div>
-                    <span class="progress-percent">{{ streamingProgress }}%</span>
-                </div>
-                <p class="stream-status">{{ streamStatus }}</p>
-                <div class="streaming-indicators">
-                    <span class="indicator" [class.active]="streamingText.includes('participants')">👥
-                        Participants</span>
-                    <span class="indicator" [class.active]="streamingText.includes('messages')">💬 Messages</span>
-                    <span class="indicator" [class.active]="streamingText.includes('summary')">📝 Summary</span>
-                    <span class="indicator" [class.active]="streamingText.includes('unansweredQuestions')">❓
-                        Questions</span>
-                    <span class="indicator" [class.active]="streamingText.includes('tensionPoints')">⚡ Tensions</span>
-                    <span class="indicator" [class.active]="streamingText.includes('suggestedActions')">✅ Actions</span>
-                </div>
+                <!-- ... all the progress bar stuff ... -->
             </div>
         </div>
     </div>

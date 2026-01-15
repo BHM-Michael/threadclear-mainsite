@@ -52,10 +52,25 @@
         </div>
     </div>
 
-    <!-- 2. AI Summary -->
-    <div class="summary-text" *ngIf="results.Summary" id="summary">
+    <!-- 2. AI Summary - With Loading State -->
+    <div class="section-card summary-text" id="summary">
         <h3>📝 Summary</h3>
-        <p>{{ results.Summary }}</p>
+        <!-- Loading state -->
+        <div *ngIf="sectionsLoading?.['summary']" class="section-loading">
+            <div class="mini-spinner"></div>
+            <span>Generating summary...</span>
+        </div>
+        <!-- Content -->
+        <p *ngIf="!sectionsLoading?.['summary'] && results.Summary">{{ results.Summary }}</p>
+        <!-- Empty state -->
+        <p *ngIf="!sectionsLoading?.['summary'] && !results.Summary && sectionsComplete?.['summary']"
+            class="empty-state">
+            No summary available
+        </p>
+        <!-- Error state -->
+        <p *ngIf="sectionsError?.['summary']" class="error-state">
+            {{ sectionsError['summary'] }}
+        </p>
     </div>
 
     <!-- 3. Participants with Activity Breakdown -->
@@ -102,7 +117,7 @@
                 <div class="message" *ngFor="let m of results.Messages; let i = index">
                     <div class="message-header">
                         <div class="message-sender">
-                            <strong>{{ getParticipantName(m.ParticipantId) }}</strong>
+                            <strong>{{ getParticipantName(m.ParticipantId) || m.Sender }}</strong>
                             <span class="message-id">#{{ i + 1 }}</span>
                         </div>
                         <span class="timestamp">{{ m.Timestamp | date:'medium' }}</span>
@@ -111,7 +126,7 @@
                     <div class="message-content">{{ m.Content }}</div>
 
                     <!-- Message Details - Shows on Hover -->
-                    <div class="message-details">
+                    <div class="message-details" *ngIf="m.LinguisticFeatures">
                         <div class="message-features">
                             <span class="badge sentiment" [title]="'Sentiment analysis of this message'">
                                 {{ getSentimentIcon(m.LinguisticFeatures?.Sentiment) }} {{
@@ -155,73 +170,97 @@
         </div>
     </div>
 
-    <!-- 5. Conversation Health -->
-    <div class="health-card" *ngIf="hasConversationHealth()" id="health">
-        <h3>🏥 Conversation Health</h3>
-        <div class="health-overview">
-            <div class="risk-badge risk-{{ getRiskClass(results.Analysis?.ConversationHealth?.RiskLevel) }}">
-                Risk: {{ results.Analysis?.ConversationHealth?.RiskLevel }}
-            </div>
+    <!-- 5. Conversation Health - With Loading State -->
+    <div class="health-card" id="health">
+        <h3>💚 Conversation Health</h3>
+
+        <!-- Loading state -->
+        <div *ngIf="sectionsLoading?.['health']" class="section-loading">
+            <div class="mini-spinner"></div>
+            <span>Assessing conversation health...</span>
         </div>
-        <div class="health-scores">
-            <div class="score-item">
-                <span class="score-label">Overall Health</span>
-                <div class="score-bar">
-                    <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.HealthScore) }}"
-                        [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.HealthScore)"></div>
+
+        <!-- Content (only show when loaded and has data) -->
+        <ng-container *ngIf="!sectionsLoading?.['health'] && hasConversationHealth()">
+            <div class="health-overview">
+                <div class="health-score-main">
+                    <span class="score-number {{ getHealthClass(results.Analysis?.ConversationHealth?.OverallScore) }}">
+                        {{ formatScore(results.Analysis?.ConversationHealth?.OverallScore) }}%
+                    </span>
+                    <span class="risk-badge risk-{{ results.Analysis?.ConversationHealth?.RiskLevel?.toLowerCase() }}">
+                        {{ results.Analysis?.ConversationHealth?.RiskLevel }} Risk
+                    </span>
                 </div>
-                <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.HealthScore) }}%</span>
             </div>
-            <div class="score-item">
-                <span class="score-label">Responsiveness</span>
-                <div class="score-bar">
-                    <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.ResponsivenessScore) }}"
-                        [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.ResponsivenessScore)"></div>
-                </div>
-                <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.ResponsivenessScore)
-                    }}%</span>
-            </div>
-            <div class="score-item">
-                <span class="score-label">Clarity</span>
-                <div class="score-bar">
-                    <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.ClarityScore) }}"
-                        [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.ClarityScore)"></div>
-                </div>
-                <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.ClarityScore) }}%</span>
-            </div>
-            <div class="score-item">
-                <span class="score-label">Alignment</span>
-                <div class="score-bar">
-                    <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.AlignmentScore) }}"
-                        [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.AlignmentScore)"></div>
-                </div>
-                <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.AlignmentScore)
-                    }}%</span>
-            </div>
-        </div>
-        <!-- Reasoning & Evidence -->
-        <div class="reasoning-section"
-            *ngIf="results.Analysis?.ConversationHealth?.Reasoning || results.Analysis?.ConversationHealth?.Evidence?.length > 0">
-            <details>
-                <summary>How were these scores determined?</summary>
-                <div class="reasoning-content">
-                    <p *ngIf="results.Analysis?.ConversationHealth?.Reasoning" class="reasoning-text">{{
-                        results.Analysis?.ConversationHealth?.Reasoning }}</p>
-                    <div *ngIf="results.Analysis?.ConversationHealth?.Evidence?.length > 0" class="evidence-list">
-                        <strong>Evidence:</strong>
-                        <ul>
-                            <li *ngFor="let e of results.Analysis?.ConversationHealth?.Evidence">{{ e }}</li>
-                        </ul>
+
+            <div class="health-details">
+                <div class="score-item">
+                    <span class="score-label">Responsiveness</span>
+                    <div class="score-bar">
+                        <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.ResponsivenessScore) }}"
+                            [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.ResponsivenessScore)">
+                        </div>
                     </div>
+                    <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.ResponsivenessScore)
+                        }}%</span>
                 </div>
-            </details>
-        </div>
+                <div class="score-item">
+                    <span class="score-label">Clarity</span>
+                    <div class="score-bar">
+                        <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.ClarityScore) }}"
+                            [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.ClarityScore)"></div>
+                    </div>
+                    <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.ClarityScore)
+                        }}%</span>
+                </div>
+                <div class="score-item">
+                    <span class="score-label">Alignment</span>
+                    <div class="score-bar">
+                        <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.AlignmentScore) }}"
+                            [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.AlignmentScore)"></div>
+                    </div>
+                    <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.AlignmentScore)
+                        }}%</span>
+                </div>
+            </div>
+            <!-- Reasoning & Evidence -->
+            <div class="reasoning-section"
+                *ngIf="results.Analysis?.ConversationHealth?.Reasoning || results.Analysis?.ConversationHealth?.Evidence?.length > 0">
+                <details>
+                    <summary>How were these scores determined?</summary>
+                    <div class="reasoning-content">
+                        <p *ngIf="results.Analysis?.ConversationHealth?.Reasoning" class="reasoning-text">{{
+                            results.Analysis?.ConversationHealth?.Reasoning }}</p>
+                        <div *ngIf="results.Analysis?.ConversationHealth?.Evidence?.length > 0" class="evidence-list">
+                            <strong>Evidence:</strong>
+                            <ul>
+                                <li *ngFor="let e of results.Analysis?.ConversationHealth?.Evidence">{{ e }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </ng-container>
+
+        <!-- Empty state -->
+        <p *ngIf="!sectionsLoading?.['health'] && !hasConversationHealth() && sectionsComplete?.['health']"
+            class="empty-state">
+            No health data available
+        </p>
     </div>
 
-    <!-- 6. Unanswered Questions - HERO FEATURE -->
-    <div class="alert-card unanswered" *ngIf="hasUnansweredQuestions()" id="unanswered">
+    <!-- 6. Unanswered Questions - HERO FEATURE - With Loading State -->
+    <div class="alert-card unanswered" id="unanswered">
         <h3>❓ Unanswered Questions</h3>
-        <div class="alert-list">
+
+        <!-- Loading state -->
+        <div *ngIf="sectionsLoading?.['questions']" class="section-loading">
+            <div class="mini-spinner"></div>
+            <span>Finding unanswered questions...</span>
+        </div>
+
+        <!-- Content -->
+        <div *ngIf="!sectionsLoading?.['questions'] && hasUnansweredQuestions()" class="alert-list">
             <div class="alert-item" *ngFor="let uq of results.Analysis?.UnansweredQuestions">
                 <div class="alert-header">
                     <span class="question-text">"{{ uq.Question }}"</span>
@@ -235,12 +274,26 @@
                 </div>
             </div>
         </div>
+
+        <!-- Empty state -->
+        <p *ngIf="!sectionsLoading?.['questions'] && !hasUnansweredQuestions() && sectionsComplete?.['questions']"
+            class="empty-state success">
+            ✓ No unanswered questions found
+        </p>
     </div>
 
-    <!-- 7. Tension Points - HERO FEATURE -->
-    <div class="alert-card tension" *ngIf="hasTensionPoints()" id="tension">
+    <!-- 7. Tension Points - HERO FEATURE - With Loading State -->
+    <div class="alert-card tension" id="tension">
         <h3>⚡ Tension Points</h3>
-        <div class="alert-list">
+
+        <!-- Loading state -->
+        <div *ngIf="sectionsLoading?.['tensions']" class="section-loading">
+            <div class="mini-spinner"></div>
+            <span>Detecting tension points...</span>
+        </div>
+
+        <!-- Content -->
+        <div *ngIf="!sectionsLoading?.['tensions'] && hasTensionPoints()" class="alert-list">
             <div class="alert-item" *ngFor="let tp of results.Analysis?.TensionPoints">
                 <div class="alert-header">
                     <span class="badge type-badge">{{ tp.Type }}</span>
@@ -267,12 +320,26 @@
                 </div>
             </div>
         </div>
+
+        <!-- Empty state -->
+        <p *ngIf="!sectionsLoading?.['tensions'] && !hasTensionPoints() && sectionsComplete?.['tensions']"
+            class="empty-state success">
+            ✓ No tension points detected
+        </p>
     </div>
 
-    <!-- 8. Misalignments - HERO FEATURE -->
-    <div class="alert-card misalignment" *ngIf="hasMisalignments()" id="misalignments">
+    <!-- 8. Misalignments - HERO FEATURE - With Loading State -->
+    <div class="alert-card misalignment" id="misalignments">
         <h3>🔀 Misalignments</h3>
-        <div class="alert-list">
+
+        <!-- Loading state -->
+        <div *ngIf="sectionsLoading?.['misalignments']" class="section-loading">
+            <div class="mini-spinner"></div>
+            <span>Identifying misalignments...</span>
+        </div>
+
+        <!-- Content -->
+        <div *ngIf="!sectionsLoading?.['misalignments'] && hasMisalignments()" class="alert-list">
             <div class="alert-item" *ngFor="let ma of results.Analysis?.Misalignments">
                 <div class="alert-header">
                     <span class="badge type-badge">{{ ma.Type }}</span>
@@ -300,12 +367,26 @@
                 </div>
             </div>
         </div>
+
+        <!-- Empty state -->
+        <p *ngIf="!sectionsLoading?.['misalignments'] && !hasMisalignments() && sectionsComplete?.['misalignments']"
+            class="empty-state success">
+            ✓ No misalignments found
+        </p>
     </div>
 
-    <!-- 9. Suggested Actions -->
-    <div class="actions-card" *ngIf="hasSuggestedActions()" id="actions">
+    <!-- 9. Suggested Actions - With Loading State -->
+    <div class="actions-card" id="actions">
         <h3>✅ Suggested Actions</h3>
-        <ul class="actions-list">
+
+        <!-- Loading state -->
+        <div *ngIf="sectionsLoading?.['actions']" class="section-loading">
+            <div class="mini-spinner"></div>
+            <span>Generating recommendations...</span>
+        </div>
+
+        <!-- Content -->
+        <ul *ngIf="!sectionsLoading?.['actions'] && hasSuggestedActions()" class="actions-list">
             <li *ngFor="let action of results.SuggestedActions; let i = index">
                 <div class="action-header">
                     <span class="action-number">{{ i + 1 }}</span>
@@ -332,5 +413,11 @@
                 </div>
             </li>
         </ul>
+
+        <!-- Empty state -->
+        <p *ngIf="!sectionsLoading?.['actions'] && !hasSuggestedActions() && sectionsComplete?.['actions']"
+            class="empty-state">
+            No specific actions recommended
+        </p>
     </div>
 </div>

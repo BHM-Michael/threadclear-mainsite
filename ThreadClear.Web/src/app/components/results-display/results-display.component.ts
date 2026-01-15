@@ -8,29 +8,16 @@ import { Component, Input } from '@angular/core';
 export class ResultsDisplayComponent {
   @Input() results: any;
 
-  participantsExpanded = false;
-  messagesExpanded = false;
+  // NEW: Section loading states from parent component
+  @Input() sectionsLoading: { [key: string]: boolean } = {};
+  @Input() sectionsComplete: { [key: string]: boolean } = {};
+  @Input() sectionsError: { [key: string]: string } = {};
 
-  // Scroll to section
-  // Scroll to section and expand if needed
-  scrollTo(sectionId: string): void {
-    if (sectionId === 'participants') {
-      this.participantsExpanded = true;
-    } else if (sectionId === 'messages') {
-      this.messagesExpanded = true;
-    }
+  // Collapsible sections state
+  participantsExpanded = true;
+  messagesExpanded = true;
 
-    // Small delay to allow expansion before scrolling
-    setTimeout(() => {
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
-  }
-
-  // Toggle section
-  toggleSection(section: string): void {
+  toggleSection(section: string) {
     if (section === 'participants') {
       this.participantsExpanded = !this.participantsExpanded;
     } else if (section === 'messages') {
@@ -38,150 +25,166 @@ export class ResultsDisplayComponent {
     }
   }
 
-  // Participant helpers
-  getParticipantName(id: string): string {
-    if (!this.results?.Participants) return id;
-    const participant = this.results.Participants.find((p: any) => p.Id === id);
-    return participant ? participant.Name : id;
+  scrollTo(elementId: string) {
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
-  getRoleName(role: number): string {
+  getParticipantName(participantId: string): string {
+    if (!this.results?.Participants || !participantId) return participantId || 'Unknown';
+    const participant = this.results.Participants.find((p: any) =>
+      p.Id === participantId || p.Name === participantId
+    );
+    return participant?.Name || participantId;
+  }
+
+  getRoleName(role: number | undefined): string {
+    if (role === undefined || role === null) return 'Unknown';
     const roles: { [key: number]: string } = {
       0: 'Unknown',
-      1: 'Sender',
-      2: 'Recipient',
-      3: 'Moderator',
-      4: 'Observer'
+      1: 'Initiator',
+      2: 'Responder',
+      3: 'Observer',
+      4: 'Moderator'
     };
     return roles[role] || 'Unknown';
   }
 
-  // Styling helpers
-  getUrgencyClass(urgency: string): string {
-    return urgency ? urgency.toLowerCase() : 'low';
+  getMetadataValue(key: string): any {
+    if (!this.results?.Metadata) return '';
+    return this.results.Metadata[key] || this.results.Metadata[key.toLowerCase()] || '';
   }
 
-  getSeverityClass(severity: string): string {
-    return severity ? severity.toLowerCase() : 'low';
+  // Conversation Health helpers
+  hasConversationHealth(): boolean {
+    const health = this.results?.Analysis?.ConversationHealth;
+    return health && (health.OverallScore !== undefined || health.RiskLevel);
   }
 
-  getRiskClass(risk: string): string {
-    return risk ? risk.toLowerCase() : 'low';
+  getHealthClass(score: number | undefined): string {
+    if (score === undefined) return '';
+    if (score >= 70) return 'good';
+    if (score >= 40) return 'warning';
+    return 'danger';
   }
 
-  getSentimentIcon(sentiment: string): string {
-    const icons: { [key: string]: string } = {
-      'Positive': '😊',
-      'Negative': '😟',
-      'Neutral': '😐'
-    };
-    return icons[sentiment] || '😐';
+  getScoreClass(score: number | undefined): string {
+    if (score === undefined) return '';
+    if (score >= 70) return 'good';
+    if (score >= 40) return 'warning';
+    return 'danger';
+  }
+
+  formatScore(score: number | undefined): number {
+    if (score === undefined) return 0;
+    return Math.round(score);
+  }
+
+  // Unanswered Questions helpers
+  hasUnansweredQuestions(): boolean {
+    const questions = this.results?.Analysis?.UnansweredQuestions;
+    return questions && questions.length > 0;
+  }
+
+  // Tension Points helpers
+  hasTensionPoints(): boolean {
+    const tensions = this.results?.Analysis?.TensionPoints;
+    return tensions && tensions.length > 0;
+  }
+
+  getSeverityClass(severity: string | undefined): string {
+    if (!severity) return 'low';
+    return severity.toLowerCase();
+  }
+
+  // Misalignments helpers
+  hasMisalignments(): boolean {
+    const misalignments = this.results?.Analysis?.Misalignments;
+    return misalignments && misalignments.length > 0;
+  }
+
+  // Suggested Actions helpers
+  hasSuggestedActions(): boolean {
+    const actions = this.results?.SuggestedActions;
+    return actions && actions.length > 0;
   }
 
   // Message helpers
-  getQuestionsFromMessage(message: any): string[] {
-    return message?.LinguisticFeatures?.Questions || [];
+  getSentimentIcon(sentiment: string | undefined): string {
+    if (!sentiment) return '😐';
+    const lower = sentiment.toLowerCase();
+    if (lower.includes('positive')) return '😊';
+    if (lower.includes('negative')) return '😟';
+    if (lower.includes('frustrated')) return '😤';
+    if (lower.includes('neutral')) return '😐';
+    return '😐';
+  }
+
+  getUrgencyClass(urgency: string | undefined): string {
+    if (!urgency) return 'normal';
+    return urgency.toLowerCase();
   }
 
   hasQuestions(message: any): boolean {
-    return message?.LinguisticFeatures?.ContainsQuestion || false;
+    return message?.Content?.includes('?') ||
+      (message?.LinguisticFeatures?.Questions?.length > 0);
   }
 
-  formatPoliteness(score: number): number {
-    if (!score) return 50;
-    return Math.round(score * 100);
+  formatPoliteness(politeness: number | undefined): number {
+    if (politeness === undefined) return 0;
+    return Math.round(politeness * 100);
+  }
+
+  getQuestionsFromMessage(message: any): string[] {
+    if (message?.LinguisticFeatures?.Questions) {
+      return message.LinguisticFeatures.Questions;
+    }
+    // Fallback: extract questions from content
+    const content = message?.Content || '';
+    const questions = content.match(/[^.!?]*\?/g) || [];
+    return questions.map((q: string) => q.trim()).filter((q: string) => q.length > 3);
   }
 
   getIssuesForMessage(message: any, index: number): string[] {
     const issues: string[] = [];
-
-    if (!message) return issues;
-
-    const messageId = message?.Id || `msg-${index}`;
+    const messageId = message?.Id || `msg${index + 1}`;
 
     // Check tension points
     if (this.results?.Analysis?.TensionPoints) {
-      for (const tp of this.results.Analysis.TensionPoints) {
-        if (tp.MessageId === messageId || tp.MessageId === index.toString()) {
+      this.results.Analysis.TensionPoints.forEach((tp: any) => {
+        if (tp.MessageId === messageId) {
           issues.push(`Tension: ${tp.Description}`);
         }
-      }
+      });
     }
 
     // Check misalignments
     if (this.results?.Analysis?.Misalignments) {
-      for (const ma of this.results.Analysis.Misalignments) {
-        if (ma.MessageId === messageId || ma.MessageId === index.toString()) {
+      this.results.Analysis.Misalignments.forEach((ma: any) => {
+        if (ma.MessageId === messageId) {
           issues.push(`Misalignment: ${ma.Description}`);
         }
-      }
+      });
     }
 
     return issues;
   }
 
-  // Analysis helpers
-  hasAnalysis(): boolean {
-    return !!this.results?.Analysis;
-  }
-
-  hasUnansweredQuestions(): boolean {
-    return this.results?.Analysis?.UnansweredQuestions?.length > 0;
-  }
-
-  hasTensionPoints(): boolean {
-    return this.results?.Analysis?.TensionPoints?.length > 0;
-  }
-
-  hasMisalignments(): boolean {
-    return this.results?.Analysis?.Misalignments?.length > 0;
-  }
-
-  hasDecisions(): boolean {
-    return this.results?.Analysis?.Decisions?.some((d: any) => d.Decision && d.Decision.trim() !== '');
-  }
-
-  hasActionItems(): boolean {
-    return this.results?.Analysis?.ActionItems?.length > 0;
-  }
-
-  hasSuggestedActions(): boolean {
-    return this.results?.SuggestedActions?.length > 0;
-  }
-
-  hasConversationHealth(): boolean {
-    return !!this.results?.Analysis?.ConversationHealth;
-  }
-
-  // Score formatting
-  formatScore(score: number): number {
-    if (!score) return 0;
-    return Math.round(score * 100);
-  }
-
-  getScoreClass(score: number): string {
-    if (score >= 0.7) return 'good';
-    if (score >= 0.4) return 'medium';
-    return 'poor';
-  }
-
-  // Metadata helpers
-  getMetadataValue(key: string): string {
-    return this.results?.Metadata?.[key] || '';
-  }
-
+  // Participant Activity
   parseParticipantActivity(): { name: string; count: number }[] {
-    const activityJson = this.results?.Metadata?.ParticipantActivity;
-    if (!activityJson) return [];
+    if (!this.results?.Messages || !this.results?.Participants) return [];
 
-    try {
-      const activity = JSON.parse(activityJson);
-      return Object.entries(activity).map(([id, count]) => ({
-        name: this.getParticipantName(id),
-        count: count as number
-      }));
-    } catch {
-      return [];
-    }
+    const counts: { [key: string]: number } = {};
+
+    this.results.Messages.forEach((m: any) => {
+      const name = this.getParticipantName(m.ParticipantId || m.Sender);
+      counts[name] = (counts[name] || 0) + 1;
+    });
+
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
   }
 }

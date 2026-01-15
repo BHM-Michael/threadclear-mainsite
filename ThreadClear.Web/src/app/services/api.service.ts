@@ -26,6 +26,23 @@ export interface StreamEvent {
   user?: string;
 }
 
+export interface QuickParseResponse {
+  success: boolean;
+  participants: any[];
+  messages: any[];
+  sourceType: string;
+  metadata: any;
+  parseTimeMs: number;
+}
+
+export interface SectionResponse {
+  success: boolean;
+  section: string;
+  data: any;
+  timeMs: number;
+  error?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -51,6 +68,25 @@ export class ApiService {
     });
   }
 
+  // Quick regex-based parsing (no AI) - returns in ~1-2 seconds
+  quickParse(conversationText: string): Observable<QuickParseResponse> {
+    const url = this.functionKey
+      ? `${this.apiUrl}/parse/quick?code=${this.functionKey}`
+      : `${this.apiUrl}/parse/quick`;
+
+    return this.http.post<QuickParseResponse>(url, { conversationText }, { headers: this.getAuthHeaders() });
+  }
+
+  // Analyze a single section (AI-powered) - call in parallel for each section
+  analyzeSection(conversationText: string, section: string): Observable<SectionResponse> {
+    const url = this.functionKey
+      ? `${this.apiUrl}/analyze/section?code=${this.functionKey}`
+      : `${this.apiUrl}/analyze/section`;
+
+    return this.http.post<SectionResponse>(url, { conversationText, section }, { headers: this.getAuthHeaders() });
+  }
+
+  // Full analysis (original endpoint) - still available as fallback
   analyzeConversation(data: any): Observable<AnalysisResponse> {
     const url = this.functionKey
       ? `${this.apiUrl}/analyze?code=${this.functionKey}`
@@ -59,7 +95,7 @@ export class ApiService {
     return this.http.post<AnalysisResponse>(url, data, { headers: this.getAuthHeaders() });
   }
 
-  // 3. Add this method to your ApiService class (alongside your other methods)
+  // Streaming analysis (not currently working due to Azure Functions buffering)
   analyzeConversationStream(conversationText: string, sourceType: string = 'simple'): Observable<StreamEvent> {
     const subject = new Subject<StreamEvent>();
 
@@ -135,7 +171,6 @@ export class ApiService {
       ? `${this.apiUrl}/analyze-image?code=${this.functionKey}`
       : `${this.apiUrl}/analyze-image`;
 
-    // For FormData, we need different headers (no Content-Type, browser sets it with boundary)
     const headers = this.getFormDataAuthHeaders();
     return this.http.post<AnalysisResponse>(url, formData, { headers });
   }
@@ -148,7 +183,6 @@ export class ApiService {
     formData.append('sourceType', sourceType);
     formData.append('parsingMode', parsingMode.toString());
 
-    // Add permission flags
     if (Object.keys(enableFlags).length > 0) {
       formData.append('enableFlags', JSON.stringify(enableFlags));
     }
@@ -167,7 +201,6 @@ export class ApiService {
     formData.append('sourceType', sourceType);
     formData.append('parsingMode', parsingMode.toString());
 
-    // Add permission flags
     if (Object.keys(enableFlags).length > 0) {
       formData.append('enableFlags', JSON.stringify(enableFlags));
     }
@@ -198,22 +231,15 @@ export class ApiService {
   }
 
   detectSourceType(text: string): string {
-    // Email detection
     if (/^(From|To|Cc|Subject|Date):/mi.test(text)) {
       return 'email';
     }
-
-    // Slack detection
     if (/\w+\s+\[\d{1,2}:\d{2}\s*(?:AM|PM)?\]:/m.test(text)) {
       return 'slack';
     }
-
-    // Teams detection (similar to Slack)
     if (/\[\d{1,2}:\d{2}\s*(?:AM|PM)?\]\s+\w+:/m.test(text)) {
       return 'teams';
     }
-
-    // Default to simple
     return 'simple';
   }
 }

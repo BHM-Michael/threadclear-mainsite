@@ -298,7 +298,7 @@ namespace ThreadClear.Functions.Services.Implementations
             // If user is in an org, use org's plan
             if (organizationId.HasValue)
             {
-                var sql = "SELECT Plan FROM Organizations WHERE Id = @OrgId";
+                var sql = "SELECT [Plan] FROM Organizations WHERE Id = @OrgId";
                 using var connection = new SqlConnection(_connectionString);
                 await connection.OpenAsync();
                 using var command = new SqlCommand(sql, connection);
@@ -307,8 +307,8 @@ namespace ThreadClear.Functions.Services.Implementations
                 return result?.ToString() ?? "free";
             }
 
-            // Otherwise use user's plan
-            var userSql = "SELECT Plan FROM Users WHERE Id = @UserId";
+            // Otherwise use user'[s plan
+            var userSql = "SELECT [Plan] FROM Users WHERE Id = @UserId";
             using var conn = new SqlConnection(_connectionString);
             await conn.OpenAsync();
             using var cmd = new SqlCommand(userSql, conn);

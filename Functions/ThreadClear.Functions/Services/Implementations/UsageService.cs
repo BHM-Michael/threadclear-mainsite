@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using ThreadClear.Functions.Models;
 using ThreadClear.Functions.Services.Interfaces;
 
 namespace ThreadClear.Functions.Services.Implementations
@@ -255,32 +256,92 @@ namespace ThreadClear.Functions.Services.Implementations
             return results;
         }
 
-        public async Task<UsageLimitCheck> CheckUserLimits(Guid userId)
+        public async Task<UsageLimitCheck> CheckUserLimits(Guid userId, Guid? organizationId = null)
         {
-            // Get current month's usage
             var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
             var nextMonth = monthStart.AddMonths(1);
 
-            var usage = await GetUserUsage(userId, monthStart, DateTime.UtcNow);
+            // Get usage - roll up to org if applicable
+            UsageSummary usage;
+            if (organizationId.HasValue)
+            {
+                usage = await GetOrganizationUsage(organizationId.Value, monthStart, DateTime.UtcNow);
+            }
+            else
+            {
+                usage = await GetUserUsage(userId, monthStart, DateTime.UtcNow);
+            }
 
-            // TODO: Get user's plan limits from subscription table
-            // For now, use free tier limits
-            var limit = FREE_TIER_MONTHLY_ANALYSES;
+            // Get tier limits
+            var tier = await GetEffectiveTier(userId, organizationId);
+            var limits = await GetTierLimits(tier);
 
             var check = new UsageLimitCheck
             {
                 AnalysesUsed = usage.TotalAnalyses,
-                AnalysesLimit = limit,
-                IsWithinLimits = usage.TotalAnalyses < limit,
-                ResetDate = nextMonth
+                AnalysesLimit = limits.MonthlyAnalyses,
+                IsWithinLimits = usage.TotalAnalyses < limits.MonthlyAnalyses,
+                ResetDate = nextMonth,
+                CurrentTier = tier
             };
 
             if (!check.IsWithinLimits)
             {
-                check.LimitMessage = $"You've used all {limit} analyses this month. Upgrade for unlimited access.";
+                check.LimitMessage = $"You've used all {limits.MonthlyAnalyses} analyses this month. Upgrade for more.";
             }
 
             return check;
+        }
+
+        private async Task<string> GetEffectiveTier(Guid userId, Guid? organizationId)
+        {
+            // If user is in an org, use org's plan
+            if (organizationId.HasValue)
+            {
+                var sql = "SELECT Plan FROM Organizations WHERE Id = @OrgId";
+                using var connection = new SqlConnection(_connectionString);
+                await connection.OpenAsync();
+                using var command = new SqlCommand(sql, connection);
+                command.Parameters.AddWithValue("@OrgId", organizationId.Value);
+                var result = await command.ExecuteScalarAsync();
+                return result?.ToString() ?? "free";
+            }
+
+            // Otherwise use user's plan
+            var userSql = "SELECT Plan FROM Users WHERE Id = @UserId";
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            using var cmd = new SqlCommand(userSql, conn);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            var userResult = await cmd.ExecuteScalarAsync();
+            return userResult?.ToString() ?? "free";
+        }
+
+        private async Task<TierLimits> GetTierLimits(string tierName)
+        {
+            var sql = @"SELECT MonthlyAnalyses, MonthlyGmailThreads, MonthlySpellChecks, MonthlyAITokens 
+                FROM TierLimits WHERE TierName = @TierName AND IsActive = 1";
+
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@TierName", tierName.ToLower());
+
+            using var reader = await command.ExecuteReaderAsync();
+            if (await reader.ReadAsync())
+            {
+                return new TierLimits
+                {
+                    TierName = tierName,
+                    MonthlyAnalyses = reader.GetInt32(0),
+                    MonthlyGmailThreads = reader.GetInt32(1),
+                    MonthlySpellChecks = reader.GetInt32(2),
+                    MonthlyAITokens = reader.GetInt32(3)
+                };
+            }
+
+            // Default to free if tier not found
+            return new TierLimits { TierName = "free", MonthlyAnalyses = 10, MonthlyGmailThreads = 5, MonthlySpellChecks = 20, MonthlyAITokens = 10000 };
         }
     }
 }

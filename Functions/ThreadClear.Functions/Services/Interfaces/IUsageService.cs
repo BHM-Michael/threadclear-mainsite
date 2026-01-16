@@ -49,7 +49,7 @@ namespace ThreadClear.Functions.Services.Interfaces
         /// <summary>
         /// Check if user has exceeded their plan limits
         /// </summary>
-        Task<UsageLimitCheck> CheckUserLimits(Guid userId);
+        Task<UsageLimitCheck> CheckUserLimits(Guid userId, Guid? organizationId = null);
     }
 
     public class UsageSummary
@@ -79,5 +79,6 @@ namespace ThreadClear.Functions.Services.Interfaces
         public int AnalysesRemaining => Math.Max(0, AnalysesLimit - AnalysesUsed);
         public string? LimitMessage { get; set; }
         public DateTime ResetDate { get; set; }
+        public string CurrentTier { get; set; } = "free";
     }
 }

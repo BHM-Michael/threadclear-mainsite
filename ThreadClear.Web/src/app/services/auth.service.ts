@@ -45,6 +45,9 @@ export class AuthService {
     private currentUserSubject = new BehaviorSubject<User | null>(null);
     public currentUser$ = this.currentUserSubject.asObservable();
 
+    private idleTimeout: any;
+    private readonly IDLE_TIME = 30 * 60 * 1000; // 30 minutes in ms
+
     constructor(private http: HttpClient) {
         // Check for stored user on startup
         const storedUser = localStorage.getItem('currentUser');
@@ -99,6 +102,7 @@ export class AuthService {
     logout(): void {
         localStorage.removeItem('currentUser');
         localStorage.removeItem('userCredentials');
+        clearTimeout(this.idleTimeout);
         this.currentUserSubject.next(null);
     }
 
@@ -156,5 +160,27 @@ export class AuthService {
             { price },
             { headers: this.getAdminHeaders() }
         );
+    }
+
+    startIdleTimer(): void {
+        this.resetIdleTimer();
+
+        // Listen for user activity
+        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(event => {
+            document.addEventListener(event, () => this.resetIdleTimer(), { passive: true });
+        });
+    }
+
+    private resetIdleTimer(): void {
+        if (this.idleTimeout) {
+            clearTimeout(this.idleTimeout);
+        }
+
+        if (this.currentUserSubject.value) {
+            this.idleTimeout = setTimeout(() => {
+                console.log('Session timeout due to inactivity');
+                this.logout();
+            }, this.IDLE_TIME);
+        }
     }
 }

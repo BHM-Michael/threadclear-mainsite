@@ -4,6 +4,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { SpellCheckIssue, MessageSpellCheckResult } from '../../services/api.service';
 
 @Component({
   selector: 'app-conversation-analyzer',
@@ -33,6 +34,11 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   streamingProgress = 0;
   streamStatus = '';
   streamingText = '';
+
+  spellCheckEnabled = false;
+  spellCheckLoading = false;
+  spellCheckResults: Map<string, SpellCheckIssue[]> = new Map();
+  totalSpellIssues = 0;
 
   // Section loading states - for progressive UI updates
   sectionsLoading: { [key: string]: boolean } = {
@@ -484,7 +490,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   // Original full analysis method (fallback)
   analyzeText() {
     this.loading = true;
-    //this.loadingMessage = 'Parsing conversation...';
+    this.loadingMessage = 'Parsing conversation...';
     this.startProgressMessages();
     this.error = '';
     this.results = null;
@@ -745,6 +751,68 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
       overallAssessment: draft.OverallAssessment || draft.overallAssessment || '',
       readyToSend: draft.ReadyToSend ?? draft.readyToSend ?? false
     };
+  }
+
+  toggleSpellCheck() {
+    this.spellCheckEnabled = !this.spellCheckEnabled;
+
+    if (this.spellCheckEnabled && this.results?.Messages?.length > 0) {
+      this.runSpellCheck();
+    } else {
+      this.spellCheckResults.clear();
+      this.totalSpellIssues = 0;
+    }
+  }
+
+  // Add this method to run spell check on all messages
+  runSpellCheck() {
+    if (!this.results?.Messages || this.results.Messages.length === 0) {
+      return;
+    }
+
+    this.spellCheckLoading = true;
+
+    // Prepare messages for spell check
+    const messagesToCheck = this.results.Messages.map((msg: any, index: number) => ({
+      messageId: msg.Id || msg.id || `msg-${index}`,
+      text: msg.Content || msg.content || ''
+    })).filter((m: any) => m.text.length > 0);
+
+    this.apiService.checkMessagesSpelling(messagesToCheck)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.spellCheckResults.clear();
+          this.totalSpellIssues = 0;
+
+          if (response.success && response.results) {
+            response.results.forEach(result => {
+              if (result.issues && result.issues.length > 0) {
+                this.spellCheckResults.set(result.messageId, result.issues);
+                this.totalSpellIssues += result.issues.length;
+              }
+            });
+          }
+
+          this.spellCheckLoading = false;
+          console.log(`Spell check complete: ${this.totalSpellIssues} issues found`);
+        },
+        error: (err) => {
+          console.error('Spell check error:', err);
+          this.spellCheckLoading = false;
+        }
+      });
+  }
+
+  // Add this helper method to get issues for a specific message
+  getMessageSpellIssues(messageId: string): SpellCheckIssue[] {
+    return this.spellCheckResults.get(messageId) || [];
+  }
+
+  // Add this helper to check if a message has issues
+  hasSpellIssues(messageId: string): boolean {
+    const issues = this.spellCheckResults.get(messageId);
+    return issues !== undefined && issues.length > 0;
   }
 
   clear() {

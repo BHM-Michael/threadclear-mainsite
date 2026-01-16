@@ -98,10 +98,42 @@
 
     <!-- 4. Messages with Details -->
     <div class="section-card collapsible" id="messages">
-        <h3 class="collapsible-header" (click)="toggleSection('messages')">
-            <span>💬 Messages ({{ results.Messages?.length }})</span>
-            <span class="collapse-icon">{{ messagesExpanded ? '▼' : '▶' }}</span>
+        <h3 class="collapsible-header">
+            <span (click)="toggleSection('messages')">💬 Messages ({{ results.Messages?.length }})</span>
+            <span class="header-actions">
+                <!-- Spell Check Toggle Button -->
+                <label class="spell-check-checkbox" (click)="$event.stopPropagation()">
+                    <input type="checkbox" [checked]="spellCheckEnabled" (change)="toggleSpellCheck()"
+                        [disabled]="!results?.Messages?.length">
+                    <span>Spell Check</span>
+                    <span *ngIf="spellCheckEnabled && totalSpellIssues > 0" class="issue-count">({{ totalSpellIssues
+                        }})</span>
+                </label>
+
+                <!-- Spell Check Loading -->
+                <span *ngIf="spellCheckLoading" class="spell-check-loading">
+                    <span class="alphabet-spinner"></span>
+                </span>
+            </span>
+            <span class="collapse-icon" (click)="toggleSection('messages')">{{ messagesExpanded ? '▼' : '▶' }}</span>
         </h3>
+
+        <!-- Spell Check Legend -->
+        <div class="spell-legend" *ngIf="spellCheckEnabled && totalSpellIssues > 0 && messagesExpanded">
+            <div class="spell-legend-item">
+                <span class="sample spelling">abc</span>
+                <span>Spelling</span>
+            </div>
+            <div class="spell-legend-item">
+                <span class="sample grammar">abc</span>
+                <span>Grammar</span>
+            </div>
+            <div class="spell-legend-item">
+                <span class="sample typo">abc</span>
+                <span>Typo</span>
+            </div>
+        </div>
+
         <div class="collapsible-content" [class.expanded]="messagesExpanded">
             <div class="messages-list">
                 <div class="message" *ngFor="let m of results.Messages; let i = index">
@@ -109,11 +141,28 @@
                         <div class="message-sender">
                             <strong>{{ getParticipantName(m.ParticipantId) || m.Sender }}</strong>
                             <span class="message-id">#{{ i + 1 }}</span>
+
+                            <!-- Spell check badge for this message -->
+                            <span *ngIf="spellCheckEnabled && hasSpellIssues(getMessageId(m, i))"
+                                class="spell-check-badge has-issues">
+                                ⚠️ {{ getMessageSpellIssues(getMessageId(m, i)).length }} issues
+                            </span>
                         </div>
                         <span class="timestamp">{{ m.Timestamp | date:'medium' }}</span>
                     </div>
 
-                    <div class="message-content">{{ m.Content }}</div>
+                    <div class="message-content">
+                        <!-- Without spell check -->
+                        <ng-container *ngIf="!spellCheckEnabled">
+                            {{ m.Content }}
+                        </ng-container>
+
+                        <!-- With spell check highlighting -->
+                        <ng-container *ngIf="spellCheckEnabled">
+                            <span
+                                [innerHTML]="m.Content | highlightSpelling:getMessageSpellIssues(getMessageId(m, i))"></span>
+                        </ng-container>
+                    </div>
 
                     <!-- Message Details - Shows on Hover -->
                     <div class="message-details" *ngIf="m.LinguisticFeatures">
@@ -167,80 +216,42 @@
         <!-- Loading state -->
         <div *ngIf="sectionsLoading?.['health']" class="section-loading">
             <div class="mini-spinner"></div>
-            <span>Assessing conversation health...</span>
+            <span>Analyzing conversation health...</span>
         </div>
 
-        <!-- Content (only show when loaded and has data) -->
-        <ng-container *ngIf="!sectionsLoading?.['health'] && hasConversationHealth()">
-            <div class="health-overview">
-                <div class="health-score-main">
-                    <span class="score-number {{ getHealthClass(results.Analysis?.ConversationHealth?.OverallScore) }}">
-                        {{ formatScore(results.Analysis?.ConversationHealth?.OverallScore) }}%
-                    </span>
-                    <span class="risk-badge risk-{{ results.Analysis?.ConversationHealth?.RiskLevel?.toLowerCase() }}">
-                        {{ results.Analysis?.ConversationHealth?.RiskLevel }} Risk
-                    </span>
+        <!-- Content -->
+        <div *ngIf="!sectionsLoading?.['health'] && results.Analysis?.ConversationHealth" class="health-content">
+            <div class="health-score">
+                <div class="score-circle" [class.good]="results.Analysis.ConversationHealth.HealthScore >= 0.7"
+                    [class.warning]="results.Analysis.ConversationHealth.HealthScore >= 0.4 && results.Analysis.ConversationHealth.HealthScore < 0.7"
+                    [class.poor]="results.Analysis.ConversationHealth.HealthScore < 0.4">
+                    {{ (results.Analysis.ConversationHealth.HealthScore * 100) | number:'1.0-0' }}%
                 </div>
+                <div class="health-label">Overall Health</div>
             </div>
-
             <div class="health-details">
-                <div class="score-item">
-                    <span class="score-label">Responsiveness</span>
-                    <div class="score-bar">
-                        <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.ResponsivenessScore) }}"
-                            [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.ResponsivenessScore)">
-                        </div>
-                    </div>
-                    <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.ResponsivenessScore)
-                        }}%</span>
+                <div class="health-metric">
+                    <span class="metric-label">Risk Level</span>
+                    <span class="metric-value risk-{{ results.Analysis.ConversationHealth.RiskLevel?.toLowerCase() }}">
+                        {{ results.Analysis.ConversationHealth.RiskLevel }}
+                    </span>
                 </div>
-                <div class="score-item">
-                    <span class="score-label">Clarity</span>
-                    <div class="score-bar">
-                        <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.ClarityScore) }}"
-                            [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.ClarityScore)"></div>
-                    </div>
-                    <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.ClarityScore)
-                        }}%</span>
+                <div class="health-metric" *ngIf="results.Analysis.ConversationHealth.ClarityScore">
+                    <span class="metric-label">Clarity</span>
+                    <span class="metric-value">{{ (results.Analysis.ConversationHealth.ClarityScore * 100) |
+                        number:'1.0-0' }}%</span>
                 </div>
-                <div class="score-item">
-                    <span class="score-label">Alignment</span>
-                    <div class="score-bar">
-                        <div class="score-fill {{ getScoreClass(results.Analysis?.ConversationHealth?.AlignmentScore) }}"
-                            [style.width.%]="formatScore(results.Analysis?.ConversationHealth?.AlignmentScore)"></div>
-                    </div>
-                    <span class="score-value">{{ formatScore(results.Analysis?.ConversationHealth?.AlignmentScore)
-                        }}%</span>
+                <div class="health-metric" *ngIf="results.Analysis.ConversationHealth.ResponsivenessScore">
+                    <span class="metric-label">Responsiveness</span>
+                    <span class="metric-value">{{ (results.Analysis.ConversationHealth.ResponsivenessScore * 100) |
+                        number:'1.0-0' }}%</span>
                 </div>
             </div>
-            <!-- Reasoning & Evidence -->
-            <div class="reasoning-section"
-                *ngIf="results.Analysis?.ConversationHealth?.Reasoning || results.Analysis?.ConversationHealth?.Evidence?.length > 0">
-                <details>
-                    <summary>How were these scores determined?</summary>
-                    <div class="reasoning-content">
-                        <p *ngIf="results.Analysis?.ConversationHealth?.Reasoning" class="reasoning-text">{{
-                            results.Analysis?.ConversationHealth?.Reasoning }}</p>
-                        <div *ngIf="results.Analysis?.ConversationHealth?.Evidence?.length > 0" class="evidence-list">
-                            <strong>Evidence:</strong>
-                            <ul>
-                                <li *ngFor="let e of results.Analysis?.ConversationHealth?.Evidence">{{ e }}</li>
-                            </ul>
-                        </div>
-                    </div>
-                </details>
-            </div>
-        </ng-container>
-
-        <!-- Empty state -->
-        <p *ngIf="!sectionsLoading?.['health'] && !hasConversationHealth() && sectionsComplete?.['health']"
-            class="empty-state">
-            No health data available
-        </p>
+        </div>
     </div>
 
     <!-- 6. Unanswered Questions - HERO FEATURE - With Loading State -->
-    <div class="alert-card unanswered" id="unanswered">
+    <div class="alert-card questions" id="questions">
         <h3>❓ Unanswered Questions</h3>
 
         <!-- Loading state -->

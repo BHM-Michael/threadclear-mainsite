@@ -1,4 +1,7 @@
 import { Component, Input } from '@angular/core';
+import { ApiService, SpellCheckIssue, MessageSpellCheckResult } from '../../services/api.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-results-display',
@@ -31,6 +34,19 @@ export class ResultsDisplayComponent {
   // Collapsible sections state
   participantsExpanded = true;
   messagesExpanded = true;
+
+  spellCheckEnabled = false;
+  spellCheckLoading = false;
+  spellCheckResults: Map<string, SpellCheckIssue[]> = new Map();
+  totalSpellIssues = 0;
+  private destroy$ = new Subject<void>();
+
+  constructor(private apiService: ApiService) { }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   isSectionLoading(section: string): boolean {
     return this.sectionsLoading && this.sectionsLoading[section] === true;
@@ -209,5 +225,72 @@ export class ResultsDisplayComponent {
     return Object.entries(counts)
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
+  }
+
+  toggleSpellCheck() {
+    this.spellCheckEnabled = !this.spellCheckEnabled;
+
+    if (this.spellCheckEnabled && this.results?.Messages?.length > 0) {
+      this.runSpellCheck();
+    } else {
+      this.spellCheckResults.clear();
+      this.totalSpellIssues = 0;
+    }
+  }
+
+  // Run spell check on all messages
+  runSpellCheck() {
+    if (!this.results?.Messages || this.results.Messages.length === 0) {
+      return;
+    }
+
+    this.spellCheckLoading = true;
+
+    // Prepare messages for spell check
+    const messagesToCheck = this.results.Messages.map((msg: any, index: number) => ({
+      messageId: this.getMessageId(msg, index),
+      text: msg.Content || msg.content || ''
+    })).filter((m: any) => m.text.length > 0);
+
+    this.apiService.checkMessagesSpelling(messagesToCheck)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.spellCheckResults.clear();
+          this.totalSpellIssues = 0;
+
+          if (response.success && response.results) {
+            response.results.forEach(result => {
+              if (result.issues && result.issues.length > 0) {
+                this.spellCheckResults.set(result.messageId, result.issues);
+                this.totalSpellIssues += result.issues.length;
+              }
+            });
+          }
+
+          this.spellCheckLoading = false;
+          console.log(`Spell check complete: ${this.totalSpellIssues} issues found`);
+        },
+        error: (err) => {
+          console.error('Spell check error:', err);
+          this.spellCheckLoading = false;
+        }
+      });
+  }
+
+  // Get unique message ID
+  getMessageId(message: any, index: number): string {
+    return message.Id || message.id || message.MessageId || `msg-${index}`;
+  }
+
+  // Get spell issues for a specific message
+  getMessageSpellIssues(messageId: string): SpellCheckIssue[] {
+    return this.spellCheckResults.get(messageId) || [];
+  }
+
+  // Check if a message has spell issues
+  hasSpellIssues(messageId: string): boolean {
+    const issues = this.spellCheckResults.get(messageId);
+    return issues !== undefined && issues.length > 0;
   }
 }

@@ -18,6 +18,7 @@ import { TaxonomyService } from './services/taxonomy.service';
 import { InsightsService } from './services/insights.service';
 import { RegistrationService } from './services/registration.service';
 import { AdminService } from './services/admin.service';
+import { HighlightSpellingPipe } from './pipes/highlight-spelling.pipe';
 
 @NgModule({
   declarations: [
@@ -28,7 +29,8 @@ import { AdminService } from './services/admin.service';
     AdminComponent,
     RegisterComponent,
     DashboardComponent,
-    OrganizationSettingsComponent
+    OrganizationSettingsComponent,
+    HighlightSpellingPipe
   ],
   imports: [
     BrowserModule,

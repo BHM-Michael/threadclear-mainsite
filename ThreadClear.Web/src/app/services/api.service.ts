@@ -51,6 +51,27 @@ export interface ExtractTextResponse {
   error?: string;
 }
 
+export interface SpellCheckIssue {
+  word: string;
+  startIndex: number;
+  endIndex: number;
+  type: 'spelling' | 'grammar' | 'typo';
+  message: string;
+  suggestions: string[];
+  severity?: string;
+}
+
+export interface MessageSpellCheckResult {
+  messageId: string;
+  issues: SpellCheckIssue[];
+}
+
+export interface SpellCheckResponse {
+  success: boolean;
+  results: MessageSpellCheckResult[];
+  totalIssues: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -260,6 +281,32 @@ export class ApiService {
     return this.http.post<{ success: boolean; stored: boolean; reason?: string }>(
       url,
       { capsule },
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  // Check spelling/grammar for multiple messages
+  checkMessagesSpelling(messages: { messageId: string; text: string }[]): Observable<SpellCheckResponse> {
+    const url = this.functionKey
+      ? `${this.apiUrl}/spellcheck/messages?code=${this.functionKey}`
+      : `${this.apiUrl}/spellcheck/messages`;
+
+    return this.http.post<SpellCheckResponse>(
+      url,
+      { messages },
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  // Check spelling/grammar for single text
+  checkTextSpelling(text: string): Observable<{ success: boolean; issues: SpellCheckIssue[]; totalIssues: number }> {
+    const url = this.functionKey
+      ? `${this.apiUrl}/spellcheck/text?code=${this.functionKey}`
+      : `${this.apiUrl}/spellcheck/text`;
+
+    return this.http.post<{ success: boolean; issues: SpellCheckIssue[]; totalIssues: number }>(
+      url,
+      { text },
       { headers: this.getAuthHeaders() }
     );
   }

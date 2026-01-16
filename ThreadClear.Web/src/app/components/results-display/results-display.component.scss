@@ -865,6 +865,155 @@
     scroll-margin-top: 20px;
 }
 
+.spell-check-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #555;
+    cursor: pointer;
+    user-select: none;
+
+    input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+
+    .issue-count {
+        color: #e65100;
+        font-weight: 500;
+    }
+}
+
+.spell-check-loading {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 8px;
+}
+
+.alphabet-spinner {
+    display: inline-block;
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 14px;
+    color: #1976d2;
+    width: 1em;
+    text-align: center;
+    animation: alphabet-cycle 2.6s steps(1) infinite;
+}
+
+.alphabet-spinner::after {
+    content: 'A';
+    animation: alphabet-letters 2.6s steps(1) infinite;
+}
+
+@keyframes alphabet-letters {
+    0% {
+        content: 'A';
+    }
+
+    3.85% {
+        content: 'B';
+    }
+
+    7.7% {
+        content: 'C';
+    }
+
+    11.55% {
+        content: 'D';
+    }
+
+    15.4% {
+        content: 'E';
+    }
+
+    19.25% {
+        content: 'F';
+    }
+
+    23.1% {
+        content: 'G';
+    }
+
+    26.95% {
+        content: 'H';
+    }
+
+    30.8% {
+        content: 'I';
+    }
+
+    34.65% {
+        content: 'J';
+    }
+
+    38.5% {
+        content: 'K';
+    }
+
+    42.35% {
+        content: 'L';
+    }
+
+    46.2% {
+        content: 'M';
+    }
+
+    50.05% {
+        content: 'N';
+    }
+
+    53.9% {
+        content: 'O';
+    }
+
+    57.75% {
+        content: 'P';
+    }
+
+    61.6% {
+        content: 'Q';
+    }
+
+    65.45% {
+        content: 'R';
+    }
+
+    69.3% {
+        content: 'S';
+    }
+
+    73.15% {
+        content: 'T';
+    }
+
+    76.95% {
+        content: 'U';
+    }
+
+    80.8% {
+        content: 'V';
+    }
+
+    84.65% {
+        content: 'W';
+    }
+
+    88.5% {
+        content: 'X';
+    }
+
+    92.35% {
+        content: 'Y';
+    }
+
+    96.2% {
+        content: 'Z';
+    }
+}
+
 // =============================================
 // MOBILE RESPONSIVE STYLES
 // =============================================

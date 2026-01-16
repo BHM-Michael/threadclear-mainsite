@@ -279,6 +279,79 @@ namespace ThreadClear.Functions.Functions
             return analysis;
         }
 
+        [Function("GetMyUsage")]
+        public async Task<HttpResponseData> GetMyUsage(
+    [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "usage/me")] HttpRequestData req)
+        {
+            try
+            {
+                // Get auth header
+                if (!req.Headers.TryGetValues("Authorization", out var authHeaders))
+                {
+                    var unauthorized = req.CreateResponse(HttpStatusCode.Unauthorized);
+                    await unauthorized.WriteAsJsonAsync(new { success = false, error = "Authentication required" });
+                    return unauthorized;
+                }
+
+                var authHeader = authHeaders.FirstOrDefault();
+                if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Basic "))
+                {
+                    var unauthorized = req.CreateResponse(HttpStatusCode.Unauthorized);
+                    await unauthorized.WriteAsJsonAsync(new { success = false, error = "Invalid authentication" });
+                    return unauthorized;
+                }
+
+                // Decode credentials
+                var encodedCredentials = authHeader.Substring("Basic ".Length);
+                var credentials = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(encodedCredentials));
+                var parts = credentials.Split(':');
+                if (parts.Length != 2)
+                {
+                    var unauthorized = req.CreateResponse(HttpStatusCode.Unauthorized);
+                    await unauthorized.WriteAsJsonAsync(new { success = false, error = "Invalid credentials format" });
+                    return unauthorized;
+                }
+
+                var email = parts[0];
+                var user = await _userService.GetUserByEmail(email);
+                if (user == null)
+                {
+                    var unauthorized = req.CreateResponse(HttpStatusCode.Unauthorized);
+                    await unauthorized.WriteAsJsonAsync(new { success = false, error = "User not found" });
+                    return unauthorized;
+                }
+
+                // Get user's organization if they have one
+                Guid? organizationId = null;
+                var membership = await _organizationService.GetUserDefaultOrganization(user.Id);
+                if (membership != null)
+                {
+                    organizationId = membership.Id;
+                }
+
+                var usage = await _usageService.CheckUserLimits(user.Id, organizationId);
+
+                var response = req.CreateResponse(HttpStatusCode.OK);
+                await response.WriteAsJsonAsync(new
+                {
+                    success = true,
+                    analysesUsed = usage.AnalysesUsed,
+                    analysesLimit = usage.AnalysesLimit,
+                    isWithinLimits = usage.IsWithinLimits,
+                    currentTier = usage.CurrentTier,
+                    resetDate = usage.ResetDate
+                });
+                return response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting usage");
+                var error = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await error.WriteAsJsonAsync(new { success = false, error = "Failed to get usage" });
+                return error;
+            }
+        }
+
 
         private async Task<User?> AuthenticateUser(HttpRequestData req)
         {

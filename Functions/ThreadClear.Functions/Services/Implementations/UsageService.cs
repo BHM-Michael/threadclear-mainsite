@@ -1,8 +1,11 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 using ThreadClear.Functions.Models;
 using ThreadClear.Functions.Services.Interfaces;

@@ -1,0 +1,76 @@
+<div class="profile-container">
+    <h1>My Profile</h1>
+
+    <div class="profile-card" *ngIf="!loading">
+        <!-- User Info -->
+        <section class="profile-section">
+            <h2>Account</h2>
+            <div class="info-row">
+                <span class="label">Email</span>
+                <span class="value">{{ user?.email || user?.Email }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Name</span>
+                <span class="value">{{ user?.displayName || 'Not set' }}</span>
+            </div>
+        </section>
+
+        <!-- Current Plan -->
+        <section class="profile-section">
+            <h2>Subscription</h2>
+            <div class="plan-badge" [ngClass]="currentPlan">
+                {{ currentPlan | titlecase }} Plan
+            </div>
+        </section>
+
+        <!-- Usage -->
+        <section class="profile-section">
+            <h2>Usage This Month</h2>
+            <div class="usage-bar-container">
+                <div class="usage-bar" [style.width.%]="usagePercentage"></div>
+            </div>
+            <div class="usage-text">
+                {{ analysesUsed }} / {{ analysesLimit }} analyses used
+            </div>
+        </section>
+
+        <!-- Upgrade Options -->
+        <section class="profile-section" *ngIf="currentPlan === 'free'">
+            <h2>Upgrade</h2>
+            <div class="upgrade-options">
+                <div class="upgrade-card">
+                    <h3>Pro</h3>
+                    <div class="price">$19.99<span>/month</span></div>
+                    <ul>
+                        <li>100 analyses/month</li>
+                        <li>Priority support</li>
+                    </ul>
+                    <button class="btn-upgrade" (click)="upgrade(PRO_PRICE_ID)" [disabled]="upgrading">
+                        {{ upgrading ? 'Loading...' : 'Upgrade to Pro' }}
+                    </button>
+                </div>
+                <div class="upgrade-card enterprise">
+                    <h3>Enterprise</h3>
+                    <div class="price">$99.99<span>/month</span></div>
+                    <ul>
+                        <li>10,000 analyses/month</li>
+                        <li>Team management</li>
+                        <li>Dedicated support</li>
+                    </ul>
+                    <button class="btn-upgrade" (click)="upgrade(ENTERPRISE_PRICE_ID)" [disabled]="upgrading">
+                        {{ upgrading ? 'Loading...' : 'Upgrade to Enterprise' }}
+                    </button>
+                </div>
+            </div>
+            <p class="error" *ngIf="error">{{ error }}</p>
+        </section>
+
+        <!-- Already subscribed -->
+        <section class="profile-section" *ngIf="currentPlan !== 'free'">
+            <p class="subscribed-note">Manage your subscription in the <a href="https://billing.stripe.com/p/login/test"
+                    target="_blank">billing portal</a>.</p>
+        </section>
+    </div>
+
+    <div class="loading" *ngIf="loading">Loading...</div>
+</div>

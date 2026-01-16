@@ -139,6 +139,29 @@ main {
   }
 }
 
+.user-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.profile-icon {
+  color: inherit;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .main-nav {
@@ -153,7 +176,7 @@ main {
 
   .nav-links a {
     padding: 10px 14px;
-    
+
     .nav-text {
       display: none;
     }
@@ -179,7 +202,7 @@ main {
 
   .nav-links {
     padding: 3px;
-    
+
     a {
       padding: 8px 12px;
     }

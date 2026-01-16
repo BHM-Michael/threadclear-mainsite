@@ -19,6 +19,7 @@ import { InsightsService } from './services/insights.service';
 import { RegistrationService } from './services/registration.service';
 import { AdminService } from './services/admin.service';
 import { HighlightSpellingPipe } from './pipes/highlight-spelling.pipe';
+import { ProfileComponent } from './components/profile/profile.component';
 
 @NgModule({
   declarations: [
@@ -30,7 +31,8 @@ import { HighlightSpellingPipe } from './pipes/highlight-spelling.pipe';
     RegisterComponent,
     DashboardComponent,
     OrganizationSettingsComponent,
-    HighlightSpellingPipe
+    HighlightSpellingPipe,
+    ProfileComponent
   ],
   imports: [
     BrowserModule,

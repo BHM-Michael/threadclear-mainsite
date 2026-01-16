@@ -10,7 +10,7 @@ namespace ThreadClear.Functions.Models
     {
         public string CapsuleId { get; set; } = string.Empty;
         public string Version { get; set; } = "1.0.0";
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string SourceType { get; set; } = string.Empty;
         public string RawText { get; set; } = string.Empty;
         public ConversationSource Source { get; set; } = new ConversationSource();

@@ -15,17 +15,17 @@ export interface InsightSummary {
 }
 
 export interface InsightTrend {
-  period: string;
-  conversationCount: number;
-  highRiskCount: number;
-  averageHealthScore: number;
+  Period: string;
+  ConversationCount: number;
+  HighRiskCount: number;
+  AverageHealthScore: number;
 }
 
 export interface TopicBreakdown {
-  topic: string;
-  count: number;
-  highSeverityCount: number;
-  byCategory: { [key: string]: number };
+  Topic: string;
+  Count: number;
+  HighSeverityCount: number;
+  ByCategory: { [key: string]: number };
 }
 
 export interface StorableInsight {

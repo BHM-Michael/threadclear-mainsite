@@ -27,7 +27,7 @@ namespace ThreadClear.Functions.Services.Implementations
                 ParticipantCount = capsule.Participants?.Count ?? 0,
                 MessageCount = capsule.Messages?.Count ?? 0,
                 OverallRisk = capsule.Analysis?.ConversationHealth?.RiskLevel ?? "Low",
-                HealthScore = (int)(capsule.Analysis?.ConversationHealth?.HealthScore ?? 0)
+                HealthScore = (int)((capsule.Analysis?.ConversationHealth?.HealthScore ?? 0) * 100)
             };
 
             if (capsule.Analysis == null) return insight;

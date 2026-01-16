@@ -249,6 +249,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
     this.error = '';
     this.results = null;
     this.draftAnalysis = null;
+    this.insightStored = false;
 
     // Reset section states
     Object.keys(this.sectionsLoading).forEach(key => {
@@ -414,14 +415,20 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
     const complete = Object.values(this.sectionsComplete).filter(v => v).length;
     this.streamingProgress = 20 + Math.round((complete / total) * 80);
 
-    // Update status message based on what's still loading
-    const stillLoading = Object.entries(this.sectionsLoading)
-      .filter(([_, loading]) => loading)
-      .map(([section, _]) => section);
+    // Check if ALL sections are complete
+    const allComplete = complete === total;
 
-    if (stillLoading.length === 0) {
+    if (allComplete && this.results) {
       this.streamStatus = 'Analysis complete!';
+
+      // Store insight now that we have the full capsule
+      this.storeInsightIfNeeded();
     } else {
+      // Update status message based on what's still loading
+      const stillLoading = Object.entries(this.sectionsLoading)
+        .filter(([_, loading]) => loading)
+        .map(([section, _]) => section);
+
       const sectionNames: { [key: string]: string } = {
         summary: 'summary',
         questions: 'unanswered questions',
@@ -432,6 +439,25 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
       };
       this.streamStatus = `Analyzing ${sectionNames[stillLoading[0]] || stillLoading[0]}...`;
     }
+  }
+
+  private insightStored = false;  // Add this flag to the class properties
+
+  private storeInsightIfNeeded() {
+    if (this.insightStored || !this.results) return;
+    this.insightStored = true;
+
+    this.apiService.storeInsight(this.results)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          console.log('Insight storage result:', response);
+        },
+        error: (err) => {
+          console.warn('Failed to store insight:', err);
+          // Non-blocking - don't show error to user
+        }
+      });
   }
 
   private analyzeDraftMessage() {
@@ -458,7 +484,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   // Original full analysis method (fallback)
   analyzeText() {
     this.loading = true;
-    this.loadingMessage = 'Parsing conversation...';
+    //this.loadingMessage = 'Parsing conversation...';
     this.startProgressMessages();
     this.error = '';
     this.results = null;
@@ -732,6 +758,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
     this.selectedAudio = null;
     this.streamingProgress = 0;
     this.streamStatus = '';
+    this.insightStored = false;
 
     Object.keys(this.sectionsLoading).forEach(key => {
       this.sectionsLoading[key] = false;

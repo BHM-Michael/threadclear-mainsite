@@ -1,7 +1,6 @@
 <div class="page-container">
     <!-- Loading Overlay - Updated with streaming support -->
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" *ngIf="loading">
+    <div class="loading-overlay" *ngIf="false">
         <div class="loading-card">
             <!-- Standard loading spinner (when not streaming) -->
             <div *ngIf="!isStreaming">
@@ -12,7 +11,7 @@
 
             <!-- Streaming progress (when streaming) -->
             <div *ngIf="isStreaming" class="streaming-content">
-                <!-- ... all the progress bar stuff ... -->
+
             </div>
         </div>
     </div>

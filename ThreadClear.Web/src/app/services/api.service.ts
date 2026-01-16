@@ -248,6 +248,22 @@ export class ApiService {
     return this.http.post<ExtractTextResponse>(url, formData, { headers });
   }
 
+  // Store insight after progressive analysis completes
+  storeInsight(capsule: any): Observable<{ success: boolean; stored: boolean; reason?: string }> {
+    const url = this.functionKey
+      ? `${this.apiUrl}/insights/store?code=${this.functionKey}`
+      : `${this.apiUrl}/insights/store`;
+
+    console.log('Storing insight with capsule:', capsule);
+    console.log('Storing insight with url:', url);
+
+    return this.http.post<{ success: boolean; stored: boolean; reason?: string }>(
+      url,
+      { capsule },
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
   healthCheck(): Observable<any> {
     return this.http.get(`${this.apiUrl}/health`);
   }

@@ -110,7 +110,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   getMaxConversations(): number {
     if (this.trends.length === 0) return 1;
     // Handle both PascalCase and camelCase
-    return Math.max(...this.trends.map(t => t.conversationCount || (t as any).conversationCount || 0), 1);
+    return Math.max(...this.trends.map(t => t.ConversationCount || (t as any).ConversationCount || 0), 1);
   }
 
   getSourceTypes(): { key: string; value: number }[] {
@@ -128,7 +128,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getTopCategories(topic: TopicBreakdown): { key: string; value: number }[] {
     // Handle both PascalCase and camelCase
-    const categoryData = topic.byCategory || (topic as any)?.byCategory;
+    const categoryData = topic.ByCategory || (topic as any)?.ByCategory;
     if (!categoryData) return [];
     return Object.entries(categoryData)
       .map(([key, value]) => ({ key, value: value as number }))
@@ -136,7 +136,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getTopicSeverity(topic: TopicBreakdown): string {
-    if (topic.highSeverityCount > 0) return 'high';
+    if (topic.HighSeverityCount > 0) return 'high';
     return 'low';
   }
 }

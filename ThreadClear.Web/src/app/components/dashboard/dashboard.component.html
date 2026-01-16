@@ -87,7 +87,7 @@
             </svg>
           </div>
         </div>
-        <div class="card-value">{{ summary?.AverageHealthScore || 0 }}%</div>
+        <div class="card-value">{{ summary?.AverageHealthScore | number:'1.0-0' }}%</div>
       </div>
     </div>
 
@@ -100,10 +100,10 @@
         </div>
         <div class="trends-chart" *ngIf="trends.length > 0">
           <div class="trend-bar-wrapper" *ngFor="let trend of trends">
-            <div class="trend-bar" [style.height.%]="(trend.conversationCount / getMaxConversations()) * 100">
-              <div class="trend-tooltip">{{ trend.conversationCount }} conversations</div>
+            <div class="trend-bar" [style.height.%]="(trend.ConversationCount / getMaxConversations()) * 100">
+              <div class="trend-tooltip">{{ trend.ConversationCount }} conversations</div>
             </div>
-            <span class="trend-label">{{ trend.period | slice:5:10 }}</span>
+            <span class="trend-label">{{ trend.Period | slice:5:10 }}</span>
           </div>
         </div>
         <div class="empty-state" *ngIf="trends.length === 0">
@@ -155,8 +155,8 @@
       <div class="topics-grid">
         <div class="topic-card" *ngFor="let topic of topics">
           <div class="topic-header">
-            <span class="topic-name">{{ topic.topic }}</span>
-            <span class="topic-count">{{ topic.count }}</span>
+            <span class="topic-name">{{ topic.Topic }}</span>
+            <span class="topic-count">{{ topic.Count }}</span>
           </div>
           <div class="topic-categories" *ngIf="getTopCategories(topic).length > 0">
             <span class="category-tag" *ngFor="let cat of getTopCategories(topic)"

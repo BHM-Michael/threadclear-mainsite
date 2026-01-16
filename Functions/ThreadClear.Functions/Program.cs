@@ -22,6 +22,10 @@ var host = new HostBuilder()
             new UserService(sqlConnectionString, sp.GetRequiredService<ILogger<UserService>>()));
 
         services.AddScoped<ISpellCheckService, SpellCheckService>();
+        services.AddScoped<IUsageService>(sp =>
+    new UsageService(
+        sqlConnectionString,
+        sp.GetRequiredService<ILogger<UsageService>>()));
 
         // Register pattern loader with explicit path
         services.AddSingleton(sp =>

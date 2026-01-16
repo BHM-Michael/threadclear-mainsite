@@ -18,17 +18,20 @@ namespace ThreadClear.Functions.Functions
         private readonly IUserService _userService;
         private readonly IOrganizationService _organizationService;
         private readonly IInsightService _insightService;
+        private readonly IUsageService _usageService;
 
         public StoreInsight(
             ILoggerFactory loggerFactory,
             IUserService userService,
             IOrganizationService organizationService,
-            IInsightService insightService)
+            IInsightService insightService,
+            IUsageService usageService)
         {
             _logger = loggerFactory.CreateLogger<StoreInsight>();
             _userService = userService;
             _organizationService = organizationService;
             _insightService = insightService;
+            _usageService = usageService;
         }
 
         [Function("StoreInsight")]
@@ -72,23 +75,39 @@ namespace ThreadClear.Functions.Functions
                     Summary = capsuleJson.TryGetProperty("Summary", out var sum) ? sum.GetString() : null
                 };
 
+                // Get org if user belongs to one (optional now)
                 var userOrgs = await _organizationService.GetUserOrganizations(user.Id);
-                if (userOrgs == null || userOrgs.Count == 0)
+                Guid? orgId = userOrgs?.FirstOrDefault()?.Id;
+
+                // Track usage (always, regardless of org)
+                await _usageService.IncrementAnalysisCount(user.Id, orgId);
+
+                // Store insight only if user has an organization
+                // TODO: Add support for individual user insights later
+                if (orgId.HasValue)
                 {
-                    _logger.LogDebug("Skipping insight storage - user has no organization");
-                    var noOrgResponse = req.CreateResponse(HttpStatusCode.OK);
-                    await noOrgResponse.WriteAsJsonAsync(new { success = true, stored = false, reason = "no_organization" });
-                    return noOrgResponse;
+                    await _insightService.StoreInsight(orgId.Value, user.Id, capsule);
+                    _logger.LogInformation("Stored insight for user {UserId} in org {OrgId}", user.Id, orgId);
+
+                    var response = req.CreateResponse(HttpStatusCode.OK);
+                    await response.WriteAsJsonAsync(new { success = true, stored = true, hasOrganization = true });
+                    return response;
                 }
+                else
+                {
+                    _logger.LogInformation("Usage tracked for individual user {UserId} (no org, insight not stored)", user.Id);
 
-                var orgId = userOrgs[0].Id;
-                await _insightService.StoreInsight(orgId, user.Id, capsule);
-
-                _logger.LogInformation("Stored insight for user {UserId} in org {OrgId}", user.Id, orgId);
-
-                var response = req.CreateResponse(HttpStatusCode.OK);
-                await response.WriteAsJsonAsync(new { success = true, stored = true });
-                return response;
+                    var response = req.CreateResponse(HttpStatusCode.OK);
+                    await response.WriteAsJsonAsync(new
+                    {
+                        success = true,
+                        stored = false,
+                        reason = "individual_user",
+                        hasOrganization = false,
+                        usageTracked = true
+                    });
+                    return response;
+                }
             }
             catch (Exception ex)
             {

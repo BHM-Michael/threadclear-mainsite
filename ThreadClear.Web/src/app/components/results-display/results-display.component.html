@@ -221,30 +221,58 @@
 
         <!-- Content -->
         <div *ngIf="!sectionsLoading?.['health'] && results.Analysis?.ConversationHealth" class="health-content">
-            <div class="health-score">
-                <div class="score-circle" [class.good]="results.Analysis.ConversationHealth.HealthScore >= 0.7"
-                    [class.warning]="results.Analysis.ConversationHealth.HealthScore >= 0.4 && results.Analysis.ConversationHealth.HealthScore < 0.7"
-                    [class.poor]="results.Analysis.ConversationHealth.HealthScore < 0.4">
-                    {{ (results.Analysis.ConversationHealth.HealthScore * 100) | number:'1.0-0' }}%
-                </div>
-                <div class="health-label">Overall Health</div>
+            <!-- Risk Badge -->
+            <div class="health-overview">
+                <span class="risk-badge risk-{{ results.Analysis.ConversationHealth.RiskLevel?.toLowerCase() }}">
+                    Risk: {{ results.Analysis.ConversationHealth.RiskLevel }}
+                </span>
             </div>
-            <div class="health-details">
-                <div class="health-metric">
-                    <span class="metric-label">Risk Level</span>
-                    <span class="metric-value risk-{{ results.Analysis.ConversationHealth.RiskLevel?.toLowerCase() }}">
-                        {{ results.Analysis.ConversationHealth.RiskLevel }}
-                    </span>
+
+            <!-- Health Bars -->
+            <div class="health-bars">
+                <div class="health-bar-item">
+                    <span class="bar-label">Overall Health</span>
+                    <div class="bar-container">
+                        <div class="bar-fill" [class.good]="results.Analysis.ConversationHealth.OverallScore >= 70"
+                            [class.warning]="results.Analysis.ConversationHealth.OverallScore >= 40 && results.Analysis.ConversationHealth.OverallScore < 70"
+                            [class.poor]="results.Analysis.ConversationHealth.OverallScore < 40"
+                            [style.width.%]="results.Analysis.ConversationHealth.OverallScore"></div>
+                    </div>
+                    <span class="bar-value">{{ results.Analysis.ConversationHealth.OverallScore }}%</span>
                 </div>
-                <div class="health-metric" *ngIf="results.Analysis.ConversationHealth.ClarityScore">
-                    <span class="metric-label">Clarity</span>
-                    <span class="metric-value">{{ (results.Analysis.ConversationHealth.ClarityScore * 100) |
-                        number:'1.0-0' }}%</span>
+
+                <div class="health-bar-item" *ngIf="results.Analysis.ConversationHealth.ResponsivenessScore">
+                    <span class="bar-label">Responsiveness</span>
+                    <div class="bar-container">
+                        <div class="bar-fill"
+                            [class.good]="results.Analysis.ConversationHealth.ResponsivenessScore >= 70"
+                            [class.warning]="results.Analysis.ConversationHealth.ResponsivenessScore >= 40 && results.Analysis.ConversationHealth.ResponsivenessScore < 70"
+                            [class.poor]="results.Analysis.ConversationHealth.ResponsivenessScore < 40"
+                            [style.width.%]="results.Analysis.ConversationHealth.ResponsivenessScore"></div>
+                    </div>
+                    <span class="bar-value">{{ results.Analysis.ConversationHealth.ResponsivenessScore }}%</span>
                 </div>
-                <div class="health-metric" *ngIf="results.Analysis.ConversationHealth.ResponsivenessScore">
-                    <span class="metric-label">Responsiveness</span>
-                    <span class="metric-value">{{ (results.Analysis.ConversationHealth.ResponsivenessScore * 100) |
-                        number:'1.0-0' }}%</span>
+
+                <div class="health-bar-item" *ngIf="results.Analysis.ConversationHealth.ClarityScore">
+                    <span class="bar-label">Clarity</span>
+                    <div class="bar-container">
+                        <div class="bar-fill" [class.good]="results.Analysis.ConversationHealth.ClarityScore >= 70"
+                            [class.warning]="results.Analysis.ConversationHealth.ClarityScore >= 40 && results.Analysis.ConversationHealth.ClarityScore < 70"
+                            [class.poor]="results.Analysis.ConversationHealth.ClarityScore < 40"
+                            [style.width.%]="results.Analysis.ConversationHealth.ClarityScore"></div>
+                    </div>
+                    <span class="bar-value">{{ results.Analysis.ConversationHealth.ClarityScore }}%</span>
+                </div>
+
+                <div class="health-bar-item" *ngIf="results.Analysis.ConversationHealth.AlignmentScore">
+                    <span class="bar-label">Alignment</span>
+                    <div class="bar-container">
+                        <div class="bar-fill" [class.good]="results.Analysis.ConversationHealth.AlignmentScore >= 70"
+                            [class.warning]="results.Analysis.ConversationHealth.AlignmentScore >= 40 && results.Analysis.ConversationHealth.AlignmentScore < 70"
+                            [class.poor]="results.Analysis.ConversationHealth.AlignmentScore < 40"
+                            [style.width.%]="results.Analysis.ConversationHealth.AlignmentScore"></div>
+                    </div>
+                    <span class="bar-value">{{ results.Analysis.ConversationHealth.AlignmentScore }}%</span>
                 </div>
             </div>
         </div>

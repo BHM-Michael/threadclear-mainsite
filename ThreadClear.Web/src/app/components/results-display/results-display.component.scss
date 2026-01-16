@@ -100,6 +100,7 @@
     }
 
     // Health Card
+    // Health Card
     .health-card {
         background: white;
         border: 1px solid #e0e0e0;
@@ -139,6 +140,58 @@
                     background: #ffcdd2;
                     color: #c62828;
                 }
+            }
+        }
+
+        .health-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .health-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            .bar-label {
+                width: 120px;
+                font-size: 13px;
+                color: #555;
+            }
+
+            .bar-container {
+                flex: 1;
+                height: 12px;
+                background: #e0e0e0;
+                border-radius: 6px;
+                overflow: hidden;
+            }
+
+            .bar-fill {
+                height: 100%;
+                border-radius: 6px;
+                transition: width 0.3s ease;
+
+                &.good {
+                    background: linear-gradient(90deg, #66bb6a, #4caf50);
+                }
+
+                &.warning {
+                    background: linear-gradient(90deg, #ffca28, #ffa726);
+                }
+
+                &.poor {
+                    background: linear-gradient(90deg, #ef5350, #e53935);
+                }
+            }
+
+            .bar-value {
+                width: 45px;
+                text-align: right;
+                font-size: 13px;
+                font-weight: 600;
+                color: #333;
             }
         }
     }
@@ -266,6 +319,11 @@
         &.misalignment {
             background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
             border-left: 4px solid #3f51b5;
+        }
+
+        &.questions {
+            background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+            border-left: 4px solid #ffc107;
         }
 
         .alert-list {

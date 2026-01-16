@@ -25,7 +25,7 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                SELECT u.Id, u.Email, u.DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM Users u
@@ -49,7 +49,7 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                SELECT u.Id, u.Email, u.DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM Users u
@@ -88,7 +88,7 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                SELECT u.Id, u.Email, u.DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM Users u
@@ -458,7 +458,7 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                SELECT u.Id, u.Email, u.DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM UserTokens t
@@ -571,11 +571,12 @@ namespace ThreadClear.Functions.Services.Implementations
             {
                 Id = reader.GetGuid(0),
                 Email = reader.GetString(1),
-                PasswordHash = reader.GetString(2),
-                Role = reader.GetString(3),
-                IsActive = reader.GetBoolean(4),
-                CreatedAt = reader.GetDateTime(5),
-                CreatedBy = reader.IsDBNull(6) ? null : reader.GetGuid(6)
+                DisplayName = reader.GetString(2),
+                PasswordHash = reader.GetString(3),
+                Role = reader.GetString(4),
+                IsActive = reader.GetBoolean(5),
+                CreatedAt = reader.GetDateTime(6),
+                CreatedBy = reader.IsDBNull(7) ? null : reader.GetGuid(6)
             };
 
             if (!reader.IsDBNull(7))

@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 export interface User {
     id: string;
     email: string;
+    displayName: string;
     role: string;
     isActive: boolean;
     permissions: UserPermissions;
@@ -72,12 +73,22 @@ export class AuthService {
                 tap((response: any) => {
                     const success = response.success || response.Success;
                     const user = response.user || response.User;
+                    console.log('Login response:', response);
 
                     if (success && user) {
                         // Normalize the permissions property casing
                         if (user.Permissions) {
                             user.permissions = user.Permissions;
                         }
+
+                        if (user.DisplayName) {
+                            user.displayName = user.DisplayName;
+                        }
+
+                        if (user.Role) {
+                            user.role = user.Role;
+                        }
+
                         localStorage.setItem('currentUser', JSON.stringify(user));
                         localStorage.setItem('userCredentials', btoa(`${email}:${password}`));
                         this.currentUserSubject.next(user);

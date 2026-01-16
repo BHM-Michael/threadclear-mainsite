@@ -12,8 +12,13 @@ export class AppComponent implements OnInit {
   title = 'ThreadClear';
   isLoggedIn = false;
   isAdmin = false;
+  isOrgAdmin = false;
   userEmail = '';
+  userName = '';
+  displayName = '';
+  fullName = '';
   currentOrgName = '';
+  hasOrganization = false;
 
   constructor(
     private authService: AuthService,
@@ -24,14 +29,26 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     // Subscribe to auth state
     this.authService.currentUser$.subscribe(user => {
-      this.isLoggedIn = !!user;
-      this.isAdmin = user?.role === 'admin' || user?.role === 'admin';
-      this.userEmail = user?.email || user?.email || '';
+      console.log('Current user:', user);
+      if (user) {
+        this.isLoggedIn = true;
+        this.isAdmin = user.role === 'admin';
+        this.userEmail = user.email || '';
+        this.userName = user.email?.split('@')[0] || '';
+        this.displayName = user.displayName || '';
+        this.isOrgAdmin = user.role === 'admin';// || user.permissions?.isOrgAdmin || false;
+        console.log('isAdmin set to:', this.isAdmin);
+      } else {
+        this.isLoggedIn = false;
+        // Don't reset other properties - keep last known values
+      }
     });
 
     // Subscribe to current org
     this.orgService.currentOrg$.subscribe(org => {
+      console.log('Current organization:', org);
       this.currentOrgName = org?.name || '';
+      this.hasOrganization = !!org;
     });
   }
 

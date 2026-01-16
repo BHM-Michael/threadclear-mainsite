@@ -806,8 +806,13 @@ namespace ThreadClear.Functions.Services.Implementations
 
             var sections = new List<string>();
 
+            // Always include summary - it's lightweight
+            sections.Add(@"  ""summary"": ""2-3 sentence summary of the conversation""");
+
             if (options.EnableUnansweredQuestions)
-                sections.Add(@"  ""unansweredQuestions"": [{ ""question"": ""text"", ""askedBy"": ""name"" }]");
+                sections.Add(@"  ""unansweredQuestions"": [{ ""question"": ""text"", ""askedBy"": ""name"" }]
+    // Only include DIRECT questions ending with '?' that received no response
+    // Do NOT include offers, requests, or statements like 'let me know if...'");
             if (options.EnableTensionPoints)
                 sections.Add(@"  ""tensionPoints"": [{ ""description"": ""text"", ""severity"": ""Low|Medium|High"", ""participants"": [""name""] }]");
             if (options.EnableMisalignments)
@@ -831,6 +836,12 @@ namespace ThreadClear.Functions.Services.Implementations
                 var cleanResponse = JsonHelper.CleanJsonResponse(response);
                 using var doc = JsonDocument.Parse(cleanResponse);
                 var root = doc.RootElement;
+
+                // Extract summary first
+                if (root.TryGetProperty("summary", out var summaryElement))
+                {
+                    capsule.Summary = summaryElement.GetString() ?? "";
+                }
 
                 capsule.Analysis.UnansweredQuestions = options.EnableUnansweredQuestions && root.TryGetProperty("unansweredQuestions", out var uq)
                     ? ParseUnansweredQuestionsCombined(uq) : new List<UnansweredQuestion>();
@@ -908,9 +919,15 @@ namespace ThreadClear.Functions.Services.Implementations
             var result = new List<Misalignment>();
             foreach (var item in element.EnumerateArray())
             {
+                var type = item.TryGetProperty("topic", out var t) ? t.GetString() ?? "" : "";
+
+                // Skip empty misalignments
+                if (string.IsNullOrWhiteSpace(type))
+                    continue;
+
                 var ma = new Misalignment
                 {
-                    Type = item.TryGetProperty("topic", out var t) ? t.GetString() ?? "" : "",
+                    Type = type,
                     Severity = item.TryGetProperty("severity", out var s) ? s.GetString() ?? "Low" : "Low"
                 };
                 if (item.TryGetProperty("participantsInvolved", out var p))

@@ -20,6 +20,13 @@ namespace ThreadClear.Tests
             return Task.FromResult("Mock response");
         }
 
+        public async IAsyncEnumerable<string> StreamResponseAsync(string prompt)
+        {
+            // Fallback: Get full response and yield it as single chunk
+            var response = await GenerateStructuredResponseAsync(prompt);
+            yield return response;
+        }
+
         public Task<string> GenerateStructuredResponseAsync(string prompt)
         {
             return Task.FromResult("{}");

@@ -29,6 +29,13 @@ namespace ThreadClear.Functions.Services.Implementations
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
         }
 
+        public async IAsyncEnumerable<string> StreamResponseAsync(string prompt)
+        {
+            // Fallback: Get full response and yield it as single chunk
+            var response = await GenerateStructuredResponseAsync(prompt);
+            yield return response;
+        }
+
         public async Task<string> GenerateResponseAsync(string prompt)
         {
             var requestBody = new

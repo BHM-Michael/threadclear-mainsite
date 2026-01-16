@@ -23,6 +23,13 @@ namespace ThreadClear.Functions.Services.Implementations
             _httpClient = new HttpClient();
         }
 
+        public async IAsyncEnumerable<string> StreamResponseAsync(string prompt)
+        {
+            // Fallback: Get full response and yield it as single chunk
+            var response = await GenerateStructuredResponseAsync(prompt);
+            yield return response;
+        }
+
         public async Task<string> GenerateResponseAsync(string prompt)
         {
             var url = $"{ApiUrl}{_model}:generateContent?key={_apiKey}";

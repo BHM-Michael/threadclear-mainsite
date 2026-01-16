@@ -43,6 +43,14 @@ export interface SectionResponse {
   error?: string;
 }
 
+export interface ExtractTextResponse {
+  success: boolean;
+  text: string;
+  imageCount: number;
+  extractTimeMs: number;
+  error?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -224,6 +232,20 @@ export class ApiService {
       'X-User-Email': email,
       'X-User-Password': password
     });
+  }
+
+  extractTextFromImages(files: File[]): Observable<ExtractTextResponse> {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('images', file);
+    });
+
+    const url = this.functionKey
+      ? `${this.apiUrl}/images/extract-text?code=${this.functionKey}`
+      : `${this.apiUrl}/images/extract-text`;
+
+    const headers = this.getFormDataAuthHeaders();
+    return this.http.post<ExtractTextResponse>(url, formData, { headers });
   }
 
   healthCheck(): Observable<any> {

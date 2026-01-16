@@ -9,21 +9,21 @@
         </div>
         <div class="stat">
             <span class="label">Source Type</span>
-            <span class="value">{{ results.SourceType }}</span>
+            <span class="value">{{ results.SourceType || '--' }}</span>
         </div>
         <div class="stat">
             <span class="label">Parsing Mode</span>
-            <span class="value">{{ getMetadataValue('ParsingMode') }}</span>
+            <span class="value">{{ getMetadataValue('ParsingMode') || '--' }}</span>
         </div>
         <div class="stat clickable" (click)="scrollTo('participants')">
             <span class="label">Participants</span>
-            <span class="value link">{{ results.Participants?.length }} ↓</span>
+            <span class="value link">{{ results.Participants?.length || 0 }} ↓</span>
         </div>
         <div class="stat clickable" (click)="scrollTo('messages')">
             <span class="label">Messages</span>
-            <span class="value link">{{ results.Messages?.length }} ↓</span>
+            <span class="value link">{{ results.Messages?.length || 0 }} ↓</span>
         </div>
-        <div class="stat">
+        <div class="stat" *ngIf="getMetadataValue('DurationDays')">
             <span class="label">Duration</span>
             <span class="value">{{ getMetadataValue('DurationDays') }} days</span>
         </div>
@@ -35,44 +35,34 @@
         <div class="metadata-grid">
             <div class="metadata-item">
                 <span class="label">Start Date</span>
-                <span class="value">{{ getMetadataValue('StartDate') | date:'medium' }}</span>
+                <span class="value">{{ getMetadataValue('StartDate') ? (getMetadataValue('StartDate') | date:'medium') :
+                    '--' }}</span>
             </div>
             <div class="metadata-item">
                 <span class="label">End Date</span>
-                <span class="value">{{ getMetadataValue('EndDate') | date:'medium' }}</span>
+                <span class="value">{{ getMetadataValue('EndDate') ? (getMetadataValue('EndDate') | date:'medium') :
+                    '--' }}</span>
             </div>
             <div class="metadata-item">
                 <span class="label">Avg Response Time</span>
-                <span class="value">{{ getMetadataValue('AverageResponseTimeHours') }} hours</span>
+                <span class="value">{{ getMetadataValue('AverageResponseTimeHours') ?
+                    (getMetadataValue('AverageResponseTimeHours') + ' hours') : '--' }}</span>
             </div>
             <div class="metadata-item">
                 <span class="label">Thread Initiator</span>
-                <span class="value">{{ getParticipantName(getMetadataValue('ThreadInitiator')) }}</span>
+                <span class="value">{{ getParticipantName(getMetadataValue('ThreadInitiator')) || '--' }}</span>
             </div>
         </div>
     </div>
-
-    <!-- 2. AI Summary - With Loading State -->
+    <!-- 2. AI Summary -->
     <div class="section-card summary-text" id="summary">
         <h3>📝 Summary</h3>
-        <!-- Loading state -->
-        <div *ngIf="sectionsLoading?.['summary']" class="section-loading">
+        <div *ngIf="isSectionLoading('summary')" class="section-loading">
             <div class="mini-spinner"></div>
             <span>Generating summary...</span>
         </div>
-        <!-- Content -->
-        <p *ngIf="!sectionsLoading?.['summary'] && results.Summary">{{ results.Summary }}</p>
-        <!-- Empty state -->
-        <p *ngIf="!sectionsLoading?.['summary'] && !results.Summary && sectionsComplete?.['summary']"
-            class="empty-state">
-            No summary available
-        </p>
-        <!-- Error state -->
-        <p *ngIf="sectionsError?.['summary']" class="error-state">
-            {{ sectionsError['summary'] }}
-        </p>
+        <p *ngIf="results.Summary">{{ results.Summary }}</p>
     </div>
-
     <!-- 3. Participants with Activity Breakdown -->
     <div class="section-card collapsible" id="participants">
         <h3 class="collapsible-header" (click)="toggleSection('participants')">

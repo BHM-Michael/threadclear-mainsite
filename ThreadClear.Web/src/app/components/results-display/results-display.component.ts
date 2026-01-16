@@ -9,13 +9,36 @@ export class ResultsDisplayComponent {
   @Input() results: any;
 
   // NEW: Section loading states from parent component
-  @Input() sectionsLoading: { [key: string]: boolean } = {};
-  @Input() sectionsComplete: { [key: string]: boolean } = {};
-  @Input() sectionsError: { [key: string]: string } = {};
+  @Input() sectionsLoading: { [key: string]: boolean } = {
+    summary: false,
+    questions: false,
+    tensions: false,
+    health: false,
+    actions: false,
+    misalignments: false
+  };
 
+  @Input() sectionsComplete: { [key: string]: boolean } = {
+    summary: false,
+    questions: false,
+    tensions: false,
+    health: false,
+    actions: false,
+    misalignments: false
+  };
+
+  @Input() sectionsError: { [key: string]: string } = {};
   // Collapsible sections state
   participantsExpanded = true;
   messagesExpanded = true;
+
+  isSectionLoading(section: string): boolean {
+    return this.sectionsLoading && this.sectionsLoading[section] === true;
+  }
+
+  isSectionComplete(section: string): boolean {
+    return this.sectionsComplete && this.sectionsComplete[section] === true;
+  }
 
   toggleSection(section: string) {
     if (section === 'participants') {

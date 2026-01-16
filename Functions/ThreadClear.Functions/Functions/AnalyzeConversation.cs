@@ -1,11 +1,17 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
+using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using ThreadClear.Functions.Models;
 using ThreadClear.Functions.Services.Interfaces;
-using ThreadClear.Functions.Services.Implementations;
+using ThreadClear.Functions.Helpers;
 
 namespace ThreadClear.Functions.Functions
 {
@@ -18,6 +24,7 @@ namespace ThreadClear.Functions.Functions
         private readonly IUserService _userService;
         private readonly IOrganizationService _organizationService;
         private readonly IInsightService _insightService;
+        private readonly IAIService _aiService;
 
         public AnalyzeConversation(
             ILoggerFactory loggerFactory,
@@ -26,7 +33,8 @@ namespace ThreadClear.Functions.Functions
             IThreadCapsuleBuilder builder,
             IUserService userService,
             IOrganizationService organizationService,
-            IInsightService insightService)
+            IInsightService insightService,
+            IAIService aiService)
         {
             _logger = loggerFactory.CreateLogger<AnalyzeConversation>();
             _parser = parser;
@@ -35,6 +43,7 @@ namespace ThreadClear.Functions.Functions
             _userService = userService;
             _organizationService = organizationService;
             _insightService = insightService;
+            _aiService = aiService;
         }
 
         [Function("AnalyzeConversation")]
@@ -42,7 +51,6 @@ namespace ThreadClear.Functions.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", "options", Route = "analyze")]
             HttpRequestData req)
         {
-            // Handle CORS preflight
             if (req.Method == "OPTIONS")
             {
                 var corsResponse = req.CreateResponse(HttpStatusCode.OK);
@@ -53,46 +61,8 @@ namespace ThreadClear.Functions.Functions
 
             try
             {
-                // Check for token authentication
-                User? authenticatedUser = null;
-                if (req.Headers.TryGetValues("Authorization", out var authHeaders))
-                {
-                    var authHeader = authHeaders.FirstOrDefault();
-                    if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
-                    {
-                        var token = authHeader.Substring("Bearer ".Length);
-                        authenticatedUser = await _userService.ValidateToken(token);
+                var authenticatedUser = await AuthenticateUser(req);
 
-                        if (authenticatedUser != null)
-                        {
-                            _logger.LogInformation("Authenticated user via token: {Email}", authenticatedUser.Email);
-                        }
-                    }
-                }
-
-                // If no Bearer token, check for email/password headers (backward compatibility)
-                if (authenticatedUser == null)
-                {
-                    var email = req.Headers.TryGetValues("X-User-Email", out var emailValues) ? emailValues.FirstOrDefault() : null;
-                    var password = req.Headers.TryGetValues("X-User-Password", out var passValues) ? passValues.FirstOrDefault() : null;
-
-                    if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(password))
-                    {
-                        authenticatedUser = await _userService.ValidateLogin(email, password);
-                        if (authenticatedUser != null)
-                        {
-                            _logger.LogInformation("Authenticated user via headers: {Email}", authenticatedUser.Email);
-                        }
-                    }
-                }
-
-                // If still no auth, allow unauthenticated but with limited features
-                if (authenticatedUser == null)
-                {
-                    _logger.LogInformation("Unauthenticated request - limited features, no insight storage");
-                }
-
-                // Parse request
                 var request = await req.ReadFromJsonAsync<AnalysisRequest>();
 
                 if (request == null || string.IsNullOrWhiteSpace(request.ConversationText))
@@ -100,7 +70,6 @@ namespace ThreadClear.Functions.Functions
                     return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request");
                 }
 
-                // Determine parsing mode
                 ParsingMode? mode = request.ParsingMode;
 
                 if (mode == null && !string.IsNullOrEmpty(request.PriorityLevel))
@@ -113,61 +82,30 @@ namespace ThreadClear.Functions.Functions
                     };
                 }
 
-                // Parse conversation
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+
                 var capsule = await _parser.ParseConversation(
                     request.ConversationText,
                     request.SourceType ?? "simple",
                     mode);
 
-                var modeUsed = capsule.Metadata["ParsingMode"];
+                _logger.LogInformation("TIMING: ParseConversation took {Ms}ms", sw.ElapsedMilliseconds);
+                sw.Restart();
+
+                var modeUsed = capsule.Metadata.TryGetValue("ParsingMode", out var pm) ? pm : "Advanced";
+
                 _logger.LogInformation("Parsed conversation {Id} using {Mode} mode",
                     capsule.CapsuleId, modeUsed);
 
-                // Build analysis options from request or user permissions
-                AnalysisOptions? options = null;
-                if (authenticatedUser != null && authenticatedUser.Permissions != null)
-                {
-                    // Use user's permissions
-                    options = new AnalysisOptions
-                    {
-                        EnableUnansweredQuestions = authenticatedUser.Permissions.UnansweredQuestions,
-                        EnableTensionPoints = authenticatedUser.Permissions.TensionPoints,
-                        EnableMisalignments = authenticatedUser.Permissions.Misalignments,
-                        EnableConversationHealth = authenticatedUser.Permissions.ConversationHealth,
-                        EnableSuggestedActions = authenticatedUser.Permissions.SuggestedActions
-                    };
-                    _logger.LogInformation("Using user permissions for analysis");
-                }
-                else if (request.HasPermissionFlags())
-                {
-                    options = new AnalysisOptions
-                    {
-                        EnableUnansweredQuestions = request.EnableUnansweredQuestions ?? true,
-                        EnableTensionPoints = request.EnableTensionPoints ?? true,
-                        EnableMisalignments = request.EnableMisalignments ?? true,
-                        EnableConversationHealth = request.EnableConversationHealth ?? true,
-                        EnableSuggestedActions = request.EnableSuggestedActions ?? true
-                    };
-                }
+                _logger.LogInformation("Analysis complete - {Questions} questions, {Tensions} tensions, {Misalignments} misalignments",
+                    capsule.Analysis?.UnansweredQuestions?.Count ?? 0,
+                    capsule.Analysis?.TensionPoints?.Count ?? 0,
+                    capsule.Analysis?.Misalignments?.Count ?? 0);
 
-                if (options != null)
-                {
-                    _logger.LogInformation("Analysis options: UQ={UQ}, TP={TP}, MA={MA}, CH={CH}, SA={SA}",
-                        options.EnableUnansweredQuestions, options.EnableTensionPoints,
-                        options.EnableMisalignments, options.EnableConversationHealth,
-                        options.EnableSuggestedActions);
-                }
-
-                // Perform analysis (combined if options provided, full if not)
-                await _analyzer.AnalyzeConversation(capsule, options);
-
-                // Enrich with additional features
-                await _builder.EnrichWithLinguisticFeatures(capsule);
                 await _builder.CalculateMetadata(capsule);
-                var summary = await _builder.GenerateSummary(capsule);
-                capsule.Summary = summary;
 
-                // Analyze draft if provided
+                _logger.LogInformation("TIMING: CalculateMetadata took {Ms}ms", sw.ElapsedMilliseconds);
+
                 DraftAnalysis? draftAnalysis = null;
                 if (!string.IsNullOrWhiteSpace(request.DraftMessage))
                 {
@@ -175,12 +113,8 @@ namespace ThreadClear.Functions.Functions
                     draftAnalysis = await _analyzer.AnalyzeDraft(capsule, request.DraftMessage);
                 }
 
-                // ============================================
-                // STORE INSIGHT (if authenticated user with org)
-                // ============================================
                 await StoreInsightAsync(authenticatedUser, capsule, request.SourceType ?? "simple");
 
-                // Create response
                 var response = req.CreateResponse(HttpStatusCode.OK);
                 await response.WriteAsJsonAsync(new
                 {
@@ -202,8 +136,419 @@ namespace ThreadClear.Functions.Functions
         }
 
         /// <summary>
-        /// Stores privacy-safe insight from analysis results
+        /// Streaming endpoint for real-time analysis updates
         /// </summary>
+        [Function("AnalyzeConversationStream")]
+        public async Task<HttpResponseData> RunStream(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", "options", Route = "analyze/stream")]
+            HttpRequestData req)
+        {
+            if (req.Method == "OPTIONS")
+            {
+                var corsResponse = req.CreateResponse(HttpStatusCode.OK);
+                corsResponse.Headers.Add("Access-Control-Allow-Origin", "*");
+                corsResponse.Headers.Add("Access-Control-Allow-Methods", "POST, OPTIONS");
+                corsResponse.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-Email, X-User-Password");
+                return corsResponse;
+            }
+
+            _logger.LogInformation("Processing streaming conversation analysis request");
+
+            try
+            {
+                var authenticatedUser = await AuthenticateUser(req);
+
+                var request = await req.ReadFromJsonAsync<AnalysisRequest>();
+
+                if (request == null || string.IsNullOrWhiteSpace(request.ConversationText))
+                {
+                    return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request");
+                }
+
+                var response = req.CreateResponse(HttpStatusCode.OK);
+                response.Headers.Add("Content-Type", "text/event-stream");
+                response.Headers.Add("Cache-Control", "no-cache");
+                response.Headers.Add("Connection", "keep-alive");
+                response.Headers.Add("Access-Control-Allow-Origin", "*");
+
+                var sourceType = DetectSourceType(request.ConversationText, request.SourceType);
+                var prompt = BuildAnalysisPrompt(request.ConversationText, sourceType);
+
+                // Send initial event
+                var initialEvent = JsonSerializer.Serialize(new { status = "started", message = "Analysis started..." });
+                var bodyBytes = new MemoryStream();
+                var writer = new StreamWriter(bodyBytes, Encoding.UTF8) { AutoFlush = true };
+
+                await writer.WriteAsync($"data: {initialEvent}\n\n");
+
+                var fullResponse = new StringBuilder();
+                var chunkCount = 0;
+
+                await foreach (var chunk in _aiService.StreamResponseAsync(prompt))
+                {
+                    fullResponse.Append(chunk);
+                    chunkCount++;
+
+                    // Send chunk every few pieces to avoid overwhelming the client
+                    if (chunkCount % 3 == 0)
+                    {
+                        var chunkEvent = JsonSerializer.Serialize(new
+                        {
+                            status = "streaming",
+                            chunk = chunk,
+                            totalLength = fullResponse.Length
+                        });
+                        await writer.WriteAsync($"data: {chunkEvent}\n\n");
+                    }
+                }
+
+                // Parse the complete response
+                var capsule = ParseCompleteResponse(fullResponse.ToString(), sourceType, request.ConversationText);
+
+                // Calculate metadata
+                await _builder.CalculateMetadata(capsule);
+
+                // Store insight
+                await StoreInsightAsync(authenticatedUser, capsule, sourceType);
+
+                // Send final event with complete capsule
+                var finalEvent = JsonSerializer.Serialize(new
+                {
+                    status = "complete",
+                    capsule = capsule,
+                    user = authenticatedUser?.Email
+                });
+                await writer.WriteAsync($"data: {finalEvent}\n\n");
+
+                // Copy to response body
+                bodyBytes.Position = 0;
+                await bodyBytes.CopyToAsync(response.Body);
+
+                _logger.LogInformation("Streaming analysis complete - {MsgCount} messages", capsule.Messages.Count);
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing streaming conversation");
+                return await CreateErrorResponse(req, HttpStatusCode.InternalServerError,
+                    "An error occurred processing your request");
+            }
+        }
+
+        private async Task<User?> AuthenticateUser(HttpRequestData req)
+        {
+            User? authenticatedUser = null;
+
+            if (req.Headers.TryGetValues("Authorization", out var authHeaders))
+            {
+                var authHeader = authHeaders.FirstOrDefault();
+                if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+                {
+                    var token = authHeader.Substring("Bearer ".Length);
+                    authenticatedUser = await _userService.ValidateToken(token);
+
+                    if (authenticatedUser != null)
+                    {
+                        _logger.LogInformation("Authenticated user via token: {Email}", authenticatedUser.Email);
+                    }
+                }
+            }
+
+            if (authenticatedUser == null)
+            {
+                var email = req.Headers.TryGetValues("X-User-Email", out var emailValues) ? emailValues.FirstOrDefault() : null;
+                var password = req.Headers.TryGetValues("X-User-Password", out var passValues) ? passValues.FirstOrDefault() : null;
+
+                if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(password))
+                {
+                    authenticatedUser = await _userService.ValidateLogin(email, password);
+                    if (authenticatedUser != null)
+                    {
+                        _logger.LogInformation("Authenticated user via headers: {Email}", authenticatedUser.Email);
+                    }
+                }
+            }
+
+            if (authenticatedUser == null)
+            {
+                _logger.LogInformation("Unauthenticated request - limited features, no insight storage");
+            }
+
+            return authenticatedUser;
+        }
+
+        private string DetectSourceType(string text, string? provided)
+        {
+            if (!string.IsNullOrEmpty(provided) && provided.ToLower() != "simple")
+                return provided;
+
+            if (Regex.IsMatch(text, @"^From:\s*.+", RegexOptions.Multiline | RegexOptions.IgnoreCase))
+                return "email";
+
+            var outlookPattern = new Regex(@"^(You|\w+\s+\w+)\s*\n\w{3}\s+\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}\s*(AM|PM)",
+                RegexOptions.Multiline | RegexOptions.IgnoreCase);
+            if (outlookPattern.Matches(text).Count >= 2)
+                return "email";
+
+            return "conversation";
+        }
+
+        private string BuildAnalysisPrompt(string conversationText, string sourceType)
+        {
+            return $@"Analyze this {sourceType} conversation completely. Return a single JSON object.
+
+CONVERSATION:
+{conversationText}
+
+Return this exact JSON structure:
+{{
+  ""participants"": [{{""name"": ""Full Name"", ""email"": ""email or null""}}],
+  ""messages"": [{{""sender"": ""Full Name"", ""timestamp"": ""ISO datetime"", ""content"": ""actual message text only""}}],
+  ""summary"": ""2-3 sentence summary"",
+  ""unansweredQuestions"": [{{""question"": ""exact question ending with ?"", ""askedBy"": ""name""}}],
+  ""tensionPoints"": [{{""description"": ""what tension exists"", ""severity"": ""Low|Medium|High"", ""participants"": [""names""]}}],
+  ""misalignments"": [{{""topic"": ""what they disagree about"", ""severity"": ""Low|Medium|High"", ""participantsInvolved"": [""names""]}}],
+  ""conversationHealth"": {{""overallScore"": 75, ""riskLevel"": ""Low|Medium|High"", ""issues"": [], ""strengths"": []}},
+  ""suggestedActions"": [{{""action"": ""specific next step"", ""priority"": ""Low|Medium|High""}}]
+}}
+
+RULES:
+- participants: Extract real names, not email headers
+- messages: Include ONLY actual message text. EXCLUDE signatures, job titles, phone numbers, disclaimers
+- messages: Return in chronological order (oldest first)
+- unansweredQuestions: Only DIRECT questions with '?' that got no response
+- tensionPoints: Identify frustration, urgency, repeated requests, conflict
+- JSON only, no markdown.";
+        }
+
+        private ThreadCapsule ParseCompleteResponse(string json, string sourceType, string rawText)
+        {
+            var capsule = new ThreadCapsule
+            {
+                CapsuleId = Guid.NewGuid().ToString(),
+                CreatedAt = DateTime.UtcNow,
+                SourceType = sourceType,
+                RawText = rawText
+            };
+
+            capsule.Metadata["ParsingMode"] = "Advanced";
+            capsule.Metadata["DetectedSourceType"] = sourceType;
+
+            try
+            {
+                var cleanJson = JsonHelper.CleanJsonResponse(json);
+                using var doc = JsonDocument.Parse(cleanJson);
+                var root = doc.RootElement;
+
+                // Participants
+                capsule.Participants = new System.Collections.Generic.List<Participant>();
+                if (root.TryGetProperty("participants", out var participants))
+                {
+                    int pIndex = 1;
+                    foreach (var p in participants.EnumerateArray())
+                    {
+                        var name = p.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+                        if (string.IsNullOrWhiteSpace(name) || IsEmailHeader(name)) continue;
+
+                        capsule.Participants.Add(new Participant
+                        {
+                            Id = $"p{pIndex++}",
+                            Name = name,
+                            Email = p.TryGetProperty("email", out var e) ? e.GetString() : null
+                        });
+                    }
+                }
+
+                // Messages
+                capsule.Messages = new System.Collections.Generic.List<Message>();
+                if (root.TryGetProperty("messages", out var messages))
+                {
+                    int mIndex = 1;
+                    foreach (var m in messages.EnumerateArray())
+                    {
+                        var content = m.TryGetProperty("content", out var c) ? c.GetString() ?? "" : "";
+                        if (string.IsNullOrWhiteSpace(content)) continue;
+
+                        var sender = m.TryGetProperty("sender", out var s) ? s.GetString() ?? "Unknown" : "Unknown";
+
+                        var message = new Message
+                        {
+                            Id = $"msg{mIndex++}",
+                            ParticipantId = sender,
+                            Content = content,
+                            Timestamp = DateTime.UtcNow
+                        };
+
+                        if (m.TryGetProperty("timestamp", out var ts) && DateTime.TryParse(ts.GetString(), out var parsed))
+                            message.Timestamp = parsed;
+
+                        capsule.Messages.Add(message);
+                    }
+                }
+
+                LinkMessagesToParticipants(capsule);
+
+                // Summary
+                if (root.TryGetProperty("summary", out var summary))
+                    capsule.Summary = summary.GetString() ?? "";
+
+                // Analysis
+                capsule.Analysis = new ConversationAnalysis();
+
+                // Unanswered Questions
+                if (root.TryGetProperty("unansweredQuestions", out var uq))
+                {
+                    capsule.Analysis.UnansweredQuestions = uq.EnumerateArray()
+                        .Select(q => new UnansweredQuestion
+                        {
+                            Question = q.TryGetProperty("question", out var qt) ? qt.GetString() ?? "" : "",
+                            AskedBy = q.TryGetProperty("askedBy", out var ab) ? ab.GetString() ?? "" : "",
+                            TimesAsked = 1,
+                            AskedAt = DateTime.UtcNow
+                        })
+                        .Where(q => !string.IsNullOrWhiteSpace(q.Question) && q.Question.Contains("?"))
+                        .ToList();
+                }
+                else
+                {
+                    capsule.Analysis.UnansweredQuestions = new System.Collections.Generic.List<UnansweredQuestion>();
+                }
+
+                // Tension Points
+                if (root.TryGetProperty("tensionPoints", out var tp))
+                {
+                    capsule.Analysis.TensionPoints = tp.EnumerateArray()
+                        .Select(t => new TensionPoint
+                        {
+                            Description = t.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "",
+                            Severity = t.TryGetProperty("severity", out var sv) ? sv.GetString() ?? "Low" : "Low",
+                            Type = "Detected",
+                            Timestamp = DateTime.UtcNow,
+                            DetectedAt = DateTime.UtcNow,
+                            Participants = t.TryGetProperty("participants", out var ps)
+                                ? ps.EnumerateArray().Select(x => x.GetString() ?? "").ToList()
+                                : new System.Collections.Generic.List<string>()
+                        })
+                        .Where(t => !string.IsNullOrWhiteSpace(t.Description))
+                        .ToList();
+                }
+                else
+                {
+                    capsule.Analysis.TensionPoints = new System.Collections.Generic.List<TensionPoint>();
+                }
+
+                // Misalignments
+                if (root.TryGetProperty("misalignments", out var ma))
+                {
+                    capsule.Analysis.Misalignments = ma.EnumerateArray()
+                        .Select(m => new Misalignment
+                        {
+                            Type = m.TryGetProperty("topic", out var t) ? t.GetString() ?? "" : "",
+                            Severity = m.TryGetProperty("severity", out var sv) ? sv.GetString() ?? "Low" : "Low",
+                            ParticipantsInvolved = m.TryGetProperty("participantsInvolved", out var pi)
+                                ? pi.EnumerateArray().Select(x => x.GetString() ?? "").ToList()
+                                : new System.Collections.Generic.List<string>()
+                        })
+                        .Where(m => !string.IsNullOrWhiteSpace(m.Type))
+                        .ToList();
+                }
+                else
+                {
+                    capsule.Analysis.Misalignments = new System.Collections.Generic.List<Misalignment>();
+                }
+
+                // Conversation Health
+                if (root.TryGetProperty("conversationHealth", out var ch))
+                {
+                    capsule.Analysis.ConversationHealth = new ConversationHealth
+                    {
+                        HealthScore = ch.TryGetProperty("overallScore", out var os) ? os.GetInt32() / 100.0 : 0.5,
+                        RiskLevel = ch.TryGetProperty("riskLevel", out var rl) ? rl.GetString() ?? "Low" : "Low",
+                        ClarityScore = 0.5,
+                        ResponsivenessScore = 0.5,
+                        AlignmentScore = 0.5,
+                        Issues = ch.TryGetProperty("issues", out var iss)
+                            ? iss.EnumerateArray().Select(x => x.GetString()).ToList()
+                            : new System.Collections.Generic.List<string?>(),
+                        Strengths = ch.TryGetProperty("strengths", out var str)
+                            ? str.EnumerateArray().Select(x => x.GetString()).ToList()
+                            : new System.Collections.Generic.List<string?>(),
+                        Recommendations = new System.Collections.Generic.List<string?>()
+                    };
+                }
+                else
+                {
+                    capsule.Analysis.ConversationHealth = new ConversationHealth
+                    {
+                        HealthScore = 0.5,
+                        RiskLevel = "Unknown"
+                    };
+                }
+
+                // Suggested Actions
+                if (root.TryGetProperty("suggestedActions", out var sa))
+                {
+                    capsule.SuggestedActions = sa.EnumerateArray()
+                        .Select(a => new SuggestedActionItem
+                        {
+                            Action = a.TryGetProperty("action", out var act) ? act.GetString() ?? "" : "",
+                            Priority = a.TryGetProperty("priority", out var pr) ? pr.GetString() ?? "Medium" : "Medium",
+                            Reasoning = a.TryGetProperty("reasoning", out var r) ? r.GetString() : null
+                        })
+                        .Where(a => !string.IsNullOrWhiteSpace(a.Action))
+                        .ToList();
+                }
+                else
+                {
+                    capsule.SuggestedActions = new System.Collections.Generic.List<SuggestedActionItem>();
+                }
+
+                capsule.Analysis.Decisions = new System.Collections.Generic.List<DecisionPoint>();
+                capsule.Analysis.ActionItems = new System.Collections.Generic.List<ActionItem>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing AI response");
+                capsule.Participants = new System.Collections.Generic.List<Participant>();
+                capsule.Messages = new System.Collections.Generic.List<Message>();
+                capsule.Analysis = new ConversationAnalysis
+                {
+                    UnansweredQuestions = new System.Collections.Generic.List<UnansweredQuestion>(),
+                    TensionPoints = new System.Collections.Generic.List<TensionPoint>(),
+                    Misalignments = new System.Collections.Generic.List<Misalignment>(),
+                    ConversationHealth = new ConversationHealth { HealthScore = 0.5, RiskLevel = "Unknown" },
+                    Decisions = new System.Collections.Generic.List<DecisionPoint>(),
+                    ActionItems = new System.Collections.Generic.List<ActionItem>()
+                };
+                capsule.SuggestedActions = new System.Collections.Generic.List<SuggestedActionItem>();
+                capsule.Summary = "Unable to analyze conversation.";
+            }
+
+            return capsule;
+        }
+
+        private void LinkMessagesToParticipants(ThreadCapsule capsule)
+        {
+            foreach (var message in capsule.Messages)
+            {
+                var participant = capsule.Participants.FirstOrDefault(p =>
+                    string.Equals(p.Name, message.ParticipantId, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(p.Email, message.ParticipantId, StringComparison.OrdinalIgnoreCase));
+
+                if (participant != null)
+                {
+                    message.ParticipantId = participant.Id;
+                }
+            }
+        }
+
+        private bool IsEmailHeader(string name)
+        {
+            var headers = new[] { "From", "To", "Cc", "Bcc", "Subject", "Date", "Sent", "Re", "Fw", "Fwd", "Mobile" };
+            return headers.Contains(name, StringComparer.OrdinalIgnoreCase);
+        }
+
         private async Task StoreInsightAsync(User? user, ThreadCapsule capsule, string sourceType)
         {
             if (user == null)
@@ -214,7 +559,6 @@ namespace ThreadClear.Functions.Functions
 
             try
             {
-                // Get user's default organization
                 var userOrgs = await _organizationService.GetUserOrganizations(user.Id);
                 if (userOrgs == null || userOrgs.Count == 0)
                 {
@@ -222,16 +566,14 @@ namespace ThreadClear.Functions.Functions
                     return;
                 }
 
-                var orgId = userOrgs[0].Id; // Use default (first) organization
+                var orgId = userOrgs[0].Id;
 
-                // Store the insight (InsightService handles the transformation)
                 await _insightService.StoreInsight(orgId, user.Id, capsule);
 
                 _logger.LogInformation("Stored insight for user {UserId} in org {OrgId}", user.Id, orgId);
             }
             catch (Exception ex)
             {
-                // Log but don't fail the request - insight storage is secondary
                 _logger.LogError(ex, "Failed to store insight for user {UserId}", user?.Id);
             }
         }

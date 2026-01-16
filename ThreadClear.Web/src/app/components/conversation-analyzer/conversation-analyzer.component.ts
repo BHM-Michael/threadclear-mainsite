@@ -309,8 +309,9 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
       });
   }
 
-  private loadSectionParallel(section: string) {
-    // Check permissions before loading
+  private loadSectionParallel(section: string, text?: string) {
+    const conversationText = text || this.conversationText;
+
     if (!this.shouldLoadSection(section)) {
       this.sectionsComplete[section] = true;
       this.updateProgress();
@@ -319,7 +320,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
 
     this.sectionsLoading[section] = true;
 
-    this.apiService.analyzeSection(this.conversationText, section)
+    this.apiService.analyzeSection(conversationText, section)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
@@ -369,34 +370,41 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   private updateResultsSection(section: string, data: any) {
     if (!this.results) return;
 
-    console.log(`Updating section ${section} with data:`, data);
+    console.log(`Updating section ${section} with data:`, JSON.stringify(data));
 
     switch (section) {
       case 'summary':
-        this.results.Summary = data?.Summary || data?.summary || data;
+        const summary = data?.Summary || data?.summary || (typeof data === 'string' ? data : null);
+        console.log('Extracted summary:', summary);
+        // Force new object reference for change detection
+        this.results = { ...this.results, Summary: summary };
         break;
       case 'questions':
-        if (this.results.Analysis) {
-          this.results.Analysis.UnansweredQuestions = data?.UnansweredQuestions || data?.unansweredQuestions || [];
-        }
+        this.results = {
+          ...this.results,
+          Analysis: { ...this.results.Analysis, UnansweredQuestions: data?.UnansweredQuestions || data?.unansweredQuestions || [] }
+        };
         break;
       case 'tensions':
-        if (this.results.Analysis) {
-          this.results.Analysis.TensionPoints = data?.TensionPoints || data?.tensionPoints || [];
-        }
+        this.results = {
+          ...this.results,
+          Analysis: { ...this.results.Analysis, TensionPoints: data?.TensionPoints || data?.tensionPoints || [] }
+        };
         break;
       case 'health':
-        if (this.results.Analysis) {
-          this.results.Analysis.ConversationHealth = data?.ConversationHealth || data?.conversationHealth || data;
-        }
+        this.results = {
+          ...this.results,
+          Analysis: { ...this.results.Analysis, ConversationHealth: data?.ConversationHealth || data?.conversationHealth || data }
+        };
         break;
       case 'actions':
-        this.results.SuggestedActions = data?.SuggestedActions || data?.suggestedActions || [];
+        this.results = { ...this.results, SuggestedActions: data?.SuggestedActions || data?.suggestedActions || [] };
         break;
       case 'misalignments':
-        if (this.results.Analysis) {
-          this.results.Analysis.Misalignments = data?.Misalignments || data?.misalignments || [];
-        }
+        this.results = {
+          ...this.results,
+          Analysis: { ...this.results.Analysis, Misalignments: data?.Misalignments || data?.misalignments || [] }
+        };
         break;
     }
   }
@@ -490,37 +498,76 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
 
   analyzeImages() {
     this.loading = true;
-    this.loadingMessage = 'Parsing conversation...';
-    this.startProgressMessages();
+    this.loadingMessage = 'Extracting text from images...';
     this.error = '';
     this.results = null;
     this.draftAnalysis = null;
 
-    const perms = this.permissions;
-    const isAdmin = this.isAdmin;
+    // Reset section states
+    Object.keys(this.sectionsLoading).forEach(key => {
+      this.sectionsLoading[key] = false;
+      this.sectionsComplete[key] = false;
+      this.sectionsError[key] = '';
+    });
 
-    let enableFlags: any = {};
-    if (!isAdmin && perms) {
-      enableFlags = {
-        enableUnansweredQuestions: perms.UnansweredQuestions || perms.unansweredQuestions || false,
-        enableTensionPoints: perms.TensionPoints || perms.tensionPoints || false,
-        enableMisalignments: perms.Misalignments || perms.misalignments || false,
-        enableConversationHealth: perms.ConversationHealth || perms.conversationHealth || false,
-        enableSuggestedActions: perms.SuggestedActions || perms.suggestedActions || false
-      };
-    }
-
-    this.apiService.analyzeImages(this.selectedImages, this.sourceType, this.parsingMode, enableFlags)
+    // Step 1: Extract text from images
+    this.apiService.extractTextFromImages(this.selectedImages)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
-          this.results = this.filterResultsByPermissions(response.capsule);
-          this.draftAnalysis = this.normalizeDraftAnalysis(response.draftAnalysis);
-          this.loading = false;
+        next: (extractResponse) => {
+          if (!extractResponse.success || !extractResponse.text) {
+            this.error = extractResponse.error || 'Could not extract text from images';
+            this.loading = false;
+            return;
+          }
+
+          const extractedText = extractResponse.text;
+          this.loadingMessage = 'Parsing conversation...';
+
+          // Step 2: Quick parse (same as text flow)
+          this.apiService.quickParse(extractedText)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: (parseResult) => {
+                // Show results immediately
+                this.results = {
+                  CapsuleId: 'tc-' + Date.now(),
+                  SourceType: parseResult.sourceType || 'image',
+                  Participants: parseResult.participants || [],
+                  Messages: parseResult.messages || [],
+                  Metadata: parseResult.metadata || {},
+                  Summary: null,
+                  Analysis: {
+                    UnansweredQuestions: null,
+                    TensionPoints: null,
+                    Misalignments: null,
+                    ConversationHealth: null
+                  },
+                  SuggestedActions: null
+                };
+
+                // Hide loading overlay - show results with section spinners
+                this.loading = false;
+
+                // Step 3: Fire parallel AI analysis
+                this.loadSectionParallel('summary', extractedText);
+                this.loadSectionParallel('questions', extractedText);
+                this.loadSectionParallel('tensions', extractedText);
+                this.loadSectionParallel('health', extractedText);
+                this.loadSectionParallel('actions', extractedText);
+                this.loadSectionParallel('misalignments', extractedText);
+              },
+              error: (err) => {
+                console.error('QuickParse error:', err);
+                this.error = 'Error parsing extracted text';
+                this.loading = false;
+              }
+            });
         },
         error: (err) => {
-          this.error = 'Error analyzing images. Please try again.';
+          console.error('Image extraction error:', err);
+          this.error = 'Error extracting text from images. Please try again.';
           this.loading = false;
-          console.error(err);
         }
       });
   }
@@ -529,11 +576,17 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
     if (!this.selectedAudio) return;
 
     this.loading = true;
-    this.loadingMessage = 'Parsing conversation...';
-    this.startProgressMessages();
+    this.loadingMessage = 'Transcribing audio...';
     this.error = '';
     this.results = null;
     this.draftAnalysis = null;
+
+    // Reset section states
+    Object.keys(this.sectionsLoading).forEach(key => {
+      this.sectionsLoading[key] = false;
+      this.sectionsComplete[key] = false;
+      this.sectionsError[key] = '';
+    });
 
     const perms = this.permissions;
     const isAdmin = this.isAdmin;
@@ -550,9 +603,16 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
     }
 
     this.apiService.analyzeAudio(this.selectedAudio, this.sourceType, this.parsingMode, enableFlags)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
           this.results = this.filterResultsByPermissions(response.capsule);
+
+          // Mark all sections complete
+          Object.keys(this.sectionsComplete).forEach(key => {
+            this.sectionsComplete[key] = true;
+          });
+
           this.draftAnalysis = this.normalizeDraftAnalysis(response.draftAnalysis);
           this.loading = false;
         },

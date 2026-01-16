@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -12,7 +13,7 @@ using ThreadClear.Functions.Services.Interfaces;
 namespace ThreadClear.Functions.Services.Implementations
 {
     /// <summary>
-    /// AI Service implementation using Anthropic Claude API
+    /// AI Service implementation using Anthropic Claude API with streaming support
     /// </summary>
     public class AnthropicAIService : IAIService
     {
@@ -26,6 +27,7 @@ namespace ThreadClear.Functions.Services.Implementations
             _apiKey = apiKey ?? throw new ArgumentNullException(nameof(apiKey));
             _model = model;
             _httpClient = new HttpClient();
+            _httpClient.Timeout = TimeSpan.FromMinutes(5); // Longer timeout for streaming
             _httpClient.DefaultRequestHeaders.Add("x-api-key", _apiKey);
             _httpClient.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
         }
@@ -52,8 +54,7 @@ namespace ThreadClear.Functions.Services.Implementations
 
             var responseBody = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(JsonHelper.CleanJsonResponse(responseBody));
-            
-            // Extract text from Claude's response
+
             var contentArray = doc.RootElement.GetProperty("content");
             foreach (var item in contentArray.EnumerateArray())
             {
@@ -68,9 +69,90 @@ namespace ThreadClear.Functions.Services.Implementations
 
         public async Task<string> GenerateStructuredResponseAsync(string prompt)
         {
-            // For structured responses, we add explicit JSON formatting instructions
             var enhancedPrompt = prompt + "\n\nIMPORTANT: Return ONLY valid JSON with no additional text, explanations, or markdown formatting.";
             return await GenerateResponseAsync(enhancedPrompt);
+        }
+
+        /// <summary>
+        /// Stream response chunks from Claude API
+        /// </summary>
+        public async IAsyncEnumerable<string> StreamResponseAsync(string prompt)
+        {
+            var requestBody = new
+            {
+                model = _model,
+                max_tokens = 4096,
+                stream = true,
+                messages = new[]
+                {
+                    new { role = "user", content = prompt + "\n\nIMPORTANT: Return ONLY valid JSON with no additional text, explanations, or markdown formatting." }
+                }
+            };
+
+            var json = JsonSerializer.Serialize(requestBody);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var request = new HttpRequestMessage(HttpMethod.Post, ApiUrl)
+            {
+                Content = content
+            };
+
+            // Note: Headers are already set on HttpClient, but we need fresh ones for this request
+            // since we're creating a new HttpRequestMessage
+            request.Headers.Add("x-api-key", _apiKey);
+            request.Headers.Add("anthropic-version", "2023-06-01");
+
+            // Use a fresh client to avoid header conflicts
+            using var streamClient = new HttpClient();
+            streamClient.Timeout = TimeSpan.FromMinutes(5);
+
+            var response = await streamClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var reader = new StreamReader(stream);
+
+            while (!reader.EndOfStream)
+            {
+                var line = await reader.ReadLineAsync();
+
+                if (string.IsNullOrEmpty(line)) continue;
+                if (!line.StartsWith("data: ")) continue;
+
+                var data = line.Substring(6);
+                if (data == "[DONE]") break;
+
+                // Parse the SSE event
+                string? textChunk = null;
+                try
+                {
+                    using var doc = JsonDocument.Parse(data);
+                    var root = doc.RootElement;
+
+                    if (root.TryGetProperty("type", out var typeEl))
+                    {
+                        var eventType = typeEl.GetString();
+
+                        if (eventType == "content_block_delta")
+                        {
+                            if (root.TryGetProperty("delta", out var delta) &&
+                                delta.TryGetProperty("text", out var text))
+                            {
+                                textChunk = text.GetString();
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Skip malformed chunks
+                }
+
+                if (!string.IsNullOrEmpty(textChunk))
+                {
+                    yield return textChunk;
+                }
+            }
         }
 
         public async Task<string> AnalyzeTextAsync(string text)
@@ -152,14 +234,14 @@ Return suggestions as a JSON array:
             catch
             {
                 return new List<SuggestedActionItem>
-        {
-            new SuggestedActionItem
-            {
-                Action = "Review conversation for communication improvements",
-                Priority = "Medium",
-                Reasoning = "General recommendation based on conversation analysis"
-            }
-        };
+                {
+                    new SuggestedActionItem
+                    {
+                        Action = "Review conversation for communication improvements",
+                        Priority = "Medium",
+                        Reasoning = "General recommendation based on conversation analysis"
+                    }
+                };
             }
         }
 
@@ -167,29 +249,29 @@ Return suggestions as a JSON array:
         {
             var requestBody = new
             {
-                model = "claude-sonnet-4-20250514",
+                model = _model,
                 max_tokens = 4096,
                 messages = new[]
                 {
-            new
-            {
-                role = "user",
-                content = new object[]
-                {
                     new
                     {
-                        type = "image",
-                        source = new
+                        role = "user",
+                        content = new object[]
                         {
-                            type = "base64",
-                            media_type = mimeType,
-                            data = base64Image
-                        }
-                    },
-                    new
-                    {
-                        type = "text",
-                        text = @"Extract all conversation messages from this screenshot. 
+                            new
+                            {
+                                type = "image",
+                                source = new
+                                {
+                                    type = "base64",
+                                    media_type = mimeType,
+                                    data = base64Image
+                                }
+                            },
+                            new
+                            {
+                                type = "text",
+                                text = @"Extract all conversation messages from this screenshot. 
 
 Format the output as a conversation with each message on a new line:
 - Use the format 'Name: Message' for each message
@@ -198,21 +280,20 @@ Format the output as a conversation with each message on a new line:
 - If it's an email thread, include From/To/Subject headers
 
 Only output the extracted conversation text, nothing else."
+                            }
+                        }
                     }
                 }
-            }
-        }
             };
 
             var json = JsonSerializer.Serialize(requestBody);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync("https://api.anthropic.com/v1/messages", content);
+            var response = await _httpClient.PostAsync(ApiUrl, content);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
-                //_logger.LogError("Claude Vision API error: {Response}", responseBody);
                 throw new Exception($"Claude API error: {response.StatusCode}");
             }
 

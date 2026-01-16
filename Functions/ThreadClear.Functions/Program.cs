@@ -65,31 +65,11 @@ var host = new HostBuilder()
         }
 
         // ⭐ Register ConversationParser with mode selection
+        // * Register ConversationParser - always uses AI for parsing
         services.AddScoped<IConversationParser>(sp =>
         {
-            var modeString = configuration["Parsing:DefaultMode"] ?? "Auto";
-
-            if (!Enum.TryParse<ParsingMode>(modeString, true, out var mode))
-            {
-                mode = ParsingMode.Auto;
-            }
-
-            if (mode == ParsingMode.Basic)
-            {
-                return new ConversationParser();
-            }
-            else
-            {
-                try
-                {
-                    var aiService = sp.GetRequiredService<IAIService>();
-                    return new ConversationParser(aiService, mode);
-                }
-                catch (InvalidOperationException)
-                {
-                    return new ConversationParser();
-                }
-            }
+            var aiService = sp.GetRequiredService<IAIService>();
+            return new ConversationParser(aiService);
         });
 
         services.AddScoped<IThreadCapsuleBuilder, ThreadCapsuleBuilder>();

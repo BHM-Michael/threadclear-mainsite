@@ -11,64 +11,20 @@ using ThreadClear.Functions.Services.Interfaces;
 namespace ThreadClear.Functions.Services.Implementations
 {
     /// <summary>
-    /// Hybrid conversation parser supporting both regex (fast/free) and AI (smart/paid) parsing
+    /// AI-powered conversation parser - single call for parsing + analysis
     /// </summary>
     public class ConversationParser : IConversationParser
     {
-        private readonly IAIService? _aiService;
-        private readonly ParsingMode _defaultMode;
+        private readonly IAIService _aiService;
 
-        // Regex patterns for Basic mode
-        private static readonly Regex EmailHeaderPattern = new Regex(
-            @"^(From|To|Cc|Subject|Date):\s*(.+)$",
-            RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-        private static readonly Regex ParticipantPattern = new Regex(
-            @"^([A-Za-z][A-Za-z0-9\s]*?):\s*(.+)$",
-            RegexOptions.Multiline | RegexOptions.Compiled);
-
-        private static readonly Regex EmailAddressPattern = new Regex(
-            @"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
-            RegexOptions.Compiled);
-
-        private static readonly Regex EmailSeparatorPattern = new Regex(
-            @"^From:.*$",
-            RegexOptions.Multiline | RegexOptions.Compiled);
-
-        private static readonly Regex SlackMessagePattern = new Regex(
-            @"^(\w+)\s+\[(\d{1,2}:\d{2}\s*(?:AM|PM)?)\]:\s*(.+)$",
-            RegexOptions.Multiline | RegexOptions.Compiled);
-
-        private static readonly Regex SimpleMessagePattern = new Regex(
-            @"^(\w+):\s*(.+)$",
-            RegexOptions.Multiline | RegexOptions.Compiled);
-
-        /// <summary>
-        /// Constructor for Basic mode (no AI service needed)
-        /// </summary>
-        public ConversationParser() : this(null, ParsingMode.Basic)
+        public ConversationParser(IAIService aiService)
         {
-        }
-
-        /// <summary>
-        /// Constructor with AI service for Advanced/Auto modes
-        /// </summary>
-        public ConversationParser(IAIService? aiService, ParsingMode defaultMode = ParsingMode.Auto)
-        {
-            _aiService = aiService;
-            _defaultMode = defaultMode;
-
-            if (defaultMode != ParsingMode.Basic && aiService == null)
-            {
-                throw new ArgumentException(
-                    "AI service is required for Advanced or Auto parsing modes", 
-                    nameof(aiService));
-            }
+            _aiService = aiService ?? throw new ArgumentNullException(nameof(aiService));
         }
 
         public async Task<ThreadCapsule> ParseConversation(
-            string conversationText, 
-            string sourceType, 
+            string conversationText,
+            string sourceType,
             ParsingMode? mode = null)
         {
             if (string.IsNullOrWhiteSpace(conversationText))
@@ -76,841 +32,305 @@ namespace ThreadClear.Functions.Services.Implementations
                 throw new ArgumentException("Conversation text cannot be empty", nameof(conversationText));
             }
 
-            var effectiveMode = DetermineParsingMode(mode ?? _defaultMode, conversationText, sourceType);
+            var detectedSourceType = DetectSourceType(conversationText, sourceType);
 
             var capsule = new ThreadCapsule
             {
                 CapsuleId = Guid.NewGuid().ToString(),
                 CreatedAt = DateTime.UtcNow,
-                SourceType = sourceType,
+                SourceType = detectedSourceType,
                 RawText = conversationText,
             };
-            
-            capsule.Metadata["ParsingMode"] = effectiveMode.ToString();
 
-            // Parse based on mode
-            if (effectiveMode == ParsingMode.Advanced)
-            {
-                await ParseWithAI(capsule, conversationText, sourceType);
-            }
-            else
-            {
-                await ParseWithRegex(capsule, conversationText, sourceType);
-            }
+            capsule.Metadata["ParsingMode"] = "Advanced";
+            capsule.Metadata["DetectedSourceType"] = detectedSourceType;
+            capsule.Metadata["ProvidedSourceType"] = sourceType;
 
-            // Link messages to participants
-            LinkMessagesToParticipants(capsule);
+            await ParseAndAnalyzeWithAI(capsule, conversationText, detectedSourceType);
 
             return capsule;
         }
 
-        public async Task<List<Participant>> ExtractParticipants(
-            string conversationText, 
-            string sourceType,
-            ParsingMode? mode = null)
+        public async Task<List<Participant>> ExtractParticipants(string conversationText, string sourceType, ParsingMode? mode = null)
         {
-            var effectiveMode = DetermineParsingMode(mode ?? _defaultMode, conversationText, sourceType);
-
-            if (effectiveMode == ParsingMode.Advanced && _aiService != null)
-            {
-                return await ExtractParticipantsWithAI(conversationText, sourceType);
-            }
-            else
-            {
-                return await ExtractParticipantsWithRegex(conversationText, sourceType);
-            }
+            var capsule = await ParseConversation(conversationText, sourceType, mode);
+            return capsule.Participants;
         }
 
-        public async Task<List<Message>> ExtractMessages(
-            string conversationText, 
-            string sourceType,
-            ParsingMode? mode = null)
+        public async Task<List<Message>> ExtractMessages(string conversationText, string sourceType, ParsingMode? mode = null)
         {
-            var effectiveMode = DetermineParsingMode(mode ?? _defaultMode, conversationText, sourceType);
-
-            if (effectiveMode == ParsingMode.Advanced && _aiService != null)
-            {
-                return await ExtractMessagesWithAI(conversationText, sourceType);
-            }
-            else
-            {
-                return await ExtractMessagesWithRegex(conversationText, sourceType);
-            }
+            var capsule = await ParseConversation(conversationText, sourceType, mode);
+            return capsule.Messages;
         }
 
-        #region Mode Selection
-
-        private ParsingMode DetermineParsingMode(ParsingMode requestedMode, string text, string sourceType)
+        private string DetectSourceType(string conversationText, string providedSourceType)
         {
-            // If explicitly requested, honor it
-            if (requestedMode != ParsingMode.Auto)
-            {
-                return requestedMode;
-            }
+            if (!string.IsNullOrEmpty(providedSourceType) && providedSourceType.ToLower() != "simple")
+                return providedSourceType;
 
-            // Auto mode: decide based on complexity
-            var complexityScore = CalculateComplexityScore(text, sourceType);
+            var hasFrom = Regex.IsMatch(conversationText, @"^From:\s*.+", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+            var hasDate = Regex.IsMatch(conversationText, @"^Date:\s*.+\d{4}", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+            var hasSubject = Regex.IsMatch(conversationText, @"^Subject:\s*.+", RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
-            // Use Advanced for complex conversations
-            if (complexityScore > 0.6 && _aiService != null)
-            {
-                return ParsingMode.Advanced;
-            }
+            if (hasFrom && (hasDate || hasSubject))
+                return "email";
 
-            return ParsingMode.Basic;
+            var outlookPattern = new Regex(@"^(You|\w+\s+\w+)\s*\n\w{3}\s+\d{1,2}/\d{1,2}/\d{4}\s+\d{1,2}:\d{2}\s*(AM|PM)",
+                RegexOptions.Multiline | RegexOptions.IgnoreCase);
+            if (outlookPattern.Matches(conversationText).Count >= 2)
+                return "email";
+
+            var slackPattern = new Regex(@"^(\w+)\s+\[(\d{1,2}:\d{2}\s*(?:AM|PM)?)\]:\s*(.+)$", RegexOptions.Multiline);
+            if (slackPattern.Matches(conversationText).Count >= 2)
+                return "slack";
+
+            return "conversation";
         }
 
-        private double CalculateComplexityScore(string text, string sourceType)
+        private async Task ParseAndAnalyzeWithAI(ThreadCapsule capsule, string conversationText, string sourceType)
         {
-            double score = 0.0;
+            var prompt = $@"Analyze this {sourceType} conversation completely. Return a single JSON object.
 
-            // Check for non-standard format indicators
-            if (!EmailHeaderPattern.IsMatch(text) && sourceType?.ToLower() == "email")
-                score += 0.3; // Email without clear headers
-
-            if (text.Contains("...") || text.Contains("[unclear]"))
-                score += 0.2; // Potentially ambiguous content
-
-            // Check for mixed formats
-            var hasEmailFormat = EmailHeaderPattern.IsMatch(text);
-            var hasChatFormat = SlackMessagePattern.IsMatch(text);
-            if (hasEmailFormat && hasChatFormat)
-                score += 0.3; // Mixed format conversation
-
-            // Check for non-ASCII characters (might indicate foreign language)
-            if (text.Any(c => c > 127))
-                score += 0.2;
-
-            // Very short conversations are usually simple
-            if (text.Length < 200)
-                score -= 0.2;
-
-            return Math.Max(0, Math.Min(1, score));
-        }
-
-        #endregion
-
-        #region Basic (Regex) Parsing
-
-        private async Task ParseWithRegex(ThreadCapsule capsule, string conversationText, string sourceType)
-        {
-            capsule.Participants = await ExtractParticipantsWithRegex(conversationText, sourceType);
-            capsule.Messages = await ExtractMessagesWithRegex(conversationText, sourceType);
-        }
-
-        private async Task<List<Participant>> ExtractParticipantsWithRegex(string conversationText, string sourceType)
-        {
-            var participants = new HashSet<string>();
-
-            switch (sourceType?.ToLower())
-            {
-                case "email":
-                    participants.UnionWith(ExtractEmailParticipants(conversationText));
-                    break;
-
-                case "slack":
-                case "teams":
-                case "discord":
-                    participants.UnionWith(ExtractChatParticipants(conversationText));
-                    break;
-
-                case "sms":
-                case "simple":
-                default:
-                    participants.UnionWith(ExtractSimpleParticipants(conversationText));
-                    break;
-            }
-
-            return await Task.FromResult(participants.Select((name, index) => new Participant
-            {
-                Id = $"p{index + 1}",
-                Name = name,
-                Email = ExtractEmailFromName(name, conversationText)
-            }).ToList());
-        }
-
-        private async Task<List<Message>> ExtractMessagesWithRegex(string conversationText, string sourceType)
-        {
-            List<Message> messages;
-
-            switch (sourceType?.ToLower())
-            {
-                case "email":
-                    messages = ExtractEmailMessages(conversationText);
-                    break;
-
-                case "slack":
-                case "teams":
-                    messages = ExtractChatMessages(conversationText);
-                    break;
-
-                case "sms":
-                case "simple":
-                default:
-                    messages = ExtractSimpleMessages(conversationText);
-                    break;
-            }
-
-            // Use regex-based linguistic analysis for Basic mode
-            foreach (var message in messages)
-            {
-                message.LinguisticFeatures = AnalyzeLinguisticFeaturesWithRegex(message.Content);
-            }
-
-            return await Task.FromResult(messages);
-        }
-
-        private HashSet<string> ExtractEmailParticipants(string emailText)
-        {
-            var participants = new HashSet<string>();
-            var matches = EmailHeaderPattern.Matches(emailText);
-
-            foreach (Match match in matches)
-            {
-                var headerName = match.Groups[1].Value.ToLower();
-                var headerValue = match.Groups[2].Value;
-
-                if (headerName == "from" || headerName == "to" || headerName == "cc")
-                {
-                    var emails = EmailAddressPattern.Matches(headerValue);
-                    foreach (Match email in emails)
-                    {
-                        participants.Add(email.Value);
-                    }
-                }
-            }
-
-            return participants;
-        }
-
-        private List<Message> ExtractEmailMessages(string emailText)
-        {
-            var messages = new List<Message>();
-            var emailParts = EmailSeparatorPattern.Split(emailText);
-
-            foreach (var part in emailParts)
-            {
-                if (string.IsNullOrWhiteSpace(part)) continue;
-
-                var message = ParseEmailMessage("From: " + part);
-                if (message != null)
-                {
-                    messages.Add(message);
-                }
-            }
-
-            if (messages.Count == 0)
-            {
-                var singleMessage = ParseEmailMessage(emailText);
-                if (singleMessage != null)
-                {
-                    messages.Add(singleMessage);
-                }
-            }
-
-            return messages;
-        }
-
-        private Message? ParseEmailMessage(string emailText)
-        {
-            var message = new Message
-            {
-                Id = $"msg{Guid.NewGuid().ToString().Substring(0, 8)}",
-                Timestamp = DateTime.UtcNow
-            };
-
-            var headers = EmailHeaderPattern.Matches(emailText);
-            var bodyStart = 0;
-
-            foreach (Match match in headers)
-            {
-                var headerName = match.Groups[1].Value.ToLower();
-                var headerValue = match.Groups[2].Value;
-                bodyStart = Math.Max(bodyStart, match.Index + match.Length);
-
-                switch (headerName)
-                {
-                    case "from":
-                        message.ParticipantId = ExtractEmail(headerValue);
-                        break;
-                    case "date":
-                        message.Timestamp = ParseEmailDate(headerValue);
-                        break;
-                    case "subject":
-                        message.Metadata["Subject"] = headerValue;
-                        break;
-                }
-            }
-
-            if (bodyStart < emailText.Length)
-            {
-                var body = emailText.Substring(bodyStart).Trim();
-                message.Content = CleanEmailBody(body);
-            }
-
-            return string.IsNullOrEmpty(message.Content) ? null : message;
-        }
-
-        private HashSet<string> ExtractChatParticipants(string chatText)
-        {
-            var participants = new HashSet<string>();
-            var matches = SlackMessagePattern.Matches(chatText);
-
-            foreach (Match match in matches)
-            {
-                participants.Add(match.Groups[1].Value);
-            }
-
-            if (participants.Count == 0)
-            {
-                return ExtractSimpleParticipants(chatText);
-            }
-
-            return participants;
-        }
-
-        private List<Message> ExtractChatMessages(string chatText)
-        {
-            var messages = new List<Message>();
-            var matches = SlackMessagePattern.Matches(chatText);
-
-            foreach (Match match in matches)
-            {
-                messages.Add(new Message
-                {
-                    Id = $"msg{messages.Count + 1}",
-                    ParticipantId = match.Groups[1].Value,
-                    Timestamp = ParseChatTimestamp(match.Groups[2].Value),
-                    Content = match.Groups[3].Value.Trim()
-                });
-            }
-
-            if (messages.Count == 0)
-            {
-                return ExtractSimpleMessages(chatText);
-            }
-
-            return messages;
-        }
-
-        private HashSet<string> ExtractSimpleParticipants(string text)
-        {
-            var participants = new HashSet<string>();
-            var matches = SimpleMessagePattern.Matches(text);
-
-            foreach (Match match in matches)
-            {
-                participants.Add(match.Groups[1].Value);
-            }
-
-            return participants;
-        }
-
-        private List<Message> ExtractSimpleMessages(string text)
-        {
-            var messages = new List<Message>();
-            var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            var currentTimestamp = DateTime.UtcNow;
-
-            foreach (var line in lines)
-            {
-                var match = SimpleMessagePattern.Match(line.Trim());
-                if (match.Success)
-                {
-                    messages.Add(new Message
-                    {
-                        Id = $"msg{messages.Count + 1}",
-                        ParticipantId = match.Groups[1].Value,
-                        Timestamp = currentTimestamp.AddMinutes(messages.Count),
-                        Content = match.Groups[2].Value.Trim()
-                    });
-                }
-            }
-
-            return messages;
-        }
-
-        private LinguisticFeatures AnalyzeLinguisticFeaturesWithRegex(string content)
-        {
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                return new LinguisticFeatures();
-            }
-
-            var features = new LinguisticFeatures
-            {
-                Questions = ExtractQuestions(content),
-                ContainsQuestion = content.Contains("?"),
-                WordCount = content.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length,
-                SentenceCount = Regex.Matches(content, @"[.!?]+").Count + 1
-            };
-
-            features.Sentiment = DetectSentiment(content);
-            features.Urgency = DetectUrgency(content);
-            features.Politeness = DetectPoliteness(content);
-
-            return features;
-        }
-
-        private List<string> ExtractQuestions(string text)
-        {
-            var questions = new List<string>();
-            var sentences = Regex.Split(text, @"[.!?]+\s*");
-
-            foreach (var sentence in sentences)
-            {
-                var trimmed = sentence.Trim();
-                if (trimmed.EndsWith("?") ||
-                    Regex.IsMatch(trimmed, @"^\s*(what|when|where|who|why|how|can|could|would|should|is|are|do|does)\b", RegexOptions.IgnoreCase))
-                {
-                    questions.Add(trimmed.TrimEnd('?') + "?");
-                }
-            }
-
-            return questions;
-        }
-
-        private string DetectSentiment(string text)
-        {
-            var lower = text.ToLower();
-
-            if (Regex.IsMatch(lower, @"\b(frustrated|angry|disappointed|upset|annoyed|concerned)\b"))
-                return "Negative";
-
-            if (Regex.IsMatch(lower, @"\b(great|excellent|perfect|thank|appreciate|happy|glad)\b"))
-                return "Positive";
-
-            return "Neutral";
-        }
-
-        private string DetectUrgency(string text)
-        {
-            var lower = text.ToLower();
-
-            if (Regex.IsMatch(lower, @"\b(asap|urgent|immediately|critical|emergency|now)\b") ||
-                text.Contains("!!!"))
-                return "High";
-
-            if (Regex.IsMatch(lower, @"\b(soon|quickly|important|priority)\b") ||
-                text.Contains("!!"))
-                return "Medium";
-
-            return "Low";
-        }
-
-        private double DetectPoliteness(string text)
-        {
-            var lower = text.ToLower();
-            var score = 0.5;
-
-            if (Regex.IsMatch(lower, @"\b(please|thank|appreciate|kindly|would you)\b"))
-                score += 0.3;
-
-            if (Regex.IsMatch(lower, @"\b(must|need|have to|should have)\b") && !lower.Contains("please"))
-                score -= 0.2;
-
-            if (text.Contains("!"))
-                score -= 0.1;
-
-            return Math.Max(0, Math.Min(1, score));
-        }
-
-        #endregion
-
-        #region Advanced (AI) Parsing
-
-        private async Task ParseWithAI(ThreadCapsule capsule, string conversationText, string sourceType)
-        {
-            if (_aiService == null)
-            {
-                throw new InvalidOperationException("AI service not available for Advanced parsing");
-            }
-
-            var parsedData = await ParseConversationWithAI(conversationText, sourceType);
-            capsule.Participants = parsedData.Participants;
-            capsule.Messages = parsedData.Messages;
-        }
-
-        private async Task<(List<Participant> Participants, List<Message> Messages)> ParseConversationWithAI(
-            string conversationText, string sourceType)
-        {
-            var prompt = $@"Parse the following {sourceType} conversation and extract structured data.
-
-Conversation:
+CONVERSATION:
 {conversationText}
 
-Provide a JSON response with the following structure:
+Return this exact JSON structure:
 {{
   ""participants"": [
-    {{
-      ""name"": ""participant name"",
-      ""email"": ""email if available"",
-      ""identifier"": ""unique identifier""
-    }}
+    {{""name"": ""Full Name"", ""email"": ""email@example.com or null""}}
   ],
   ""messages"": [
-    {{
-      ""participantIdentifier"": ""who sent it"",
-      ""timestamp"": ""ISO 8601 timestamp if available"",
-      ""content"": ""message content""
-    }}
+    {{""sender"": ""Full Name"", ""timestamp"": ""2026-01-12T17:27:00"", ""content"": ""actual message text only""}}
+  ],
+  ""summary"": ""2-3 sentence summary"",
+  ""unansweredQuestions"": [
+    {{""question"": ""exact question ending with ?"", ""askedBy"": ""name""}}
+  ],
+  ""tensionPoints"": [
+    {{""description"": ""what tension exists"", ""severity"": ""Low|Medium|High"", ""participants"": [""names""]}}
+  ],
+  ""misalignments"": [
+    {{""topic"": ""what they disagree about"", ""severity"": ""Low|Medium|High"", ""participantsInvolved"": [""names""]}}
+  ],
+  ""conversationHealth"": {{
+    ""overallScore"": 75,
+    ""riskLevel"": ""Low|Medium|High"",
+    ""issues"": [],
+    ""strengths"": []
+  }},
+  ""suggestedActions"": [
+    {{""action"": ""specific next step"", ""priority"": ""Low|Medium|High"", ""reasoning"": ""why""}}
   ]
 }}
 
-Instructions:
-1. Identify all unique participants
-2. Extract each message with its sender and timestamp
-3. For emails, parse headers (From, To, Subject, Date)
-4. For chat messages, identify username and timestamp patterns
-5. Clean quoted text and signatures from email bodies
-6. Preserve chronological order
-7. If timestamps are not provided, use relative ordering
-8. Return ONLY valid JSON, no additional text";
+RULES:
+- participants: Extract real names, not email headers like 'From' or 'Date'
+- messages: Include ONLY the actual message text. EXCLUDE signatures, job titles, phone numbers, company names, disclaimers, email headers, legal notices
+- messages: Return in chronological order (oldest first)
+- unansweredQuestions: Only DIRECT questions with '?' that received no clear response. NOT statements like 'let me know if...'
+- tensionPoints: Identify frustration, urgency, repeated requests, or conflict
+- misalignments: Different expectations, disagreements, or miscommunication
+- suggestedActions: Specific, actionable next steps based on the analysis
 
-            var response = await _aiService!.GenerateStructuredResponseAsync(prompt);
-            return ParseStructuredConversation(response);
+Return ONLY valid JSON, no markdown or explanation.";
+
+            var response = await _aiService.GenerateStructuredResponseAsync(prompt);
+            ParseCompleteResponse(capsule, response);
         }
 
-        private async Task<List<Participant>> ExtractParticipantsWithAI(string conversationText, string sourceType)
-        {
-            var prompt = BuildParticipantExtractionPrompt(conversationText, sourceType);
-            var response = await _aiService!.GenerateStructuredResponseAsync(prompt);
-            return ParseParticipantsFromResponse(response);
-        }
-
-        private async Task<List<Message>> ExtractMessagesWithAI(string conversationText, string sourceType)
-        {
-            var prompt = BuildMessageExtractionPrompt(conversationText, sourceType);
-            var response = await _aiService!.GenerateStructuredResponseAsync(prompt);
-
-            var messages = ParseMessagesFromResponse(response);
-
-            foreach (var message in messages)
-            {
-                message.LinguisticFeatures = await AnalyzeLinguisticFeaturesWithAI(message.Content);
-            }
-
-            return messages;
-        }
-
-        private async Task<LinguisticFeatures> AnalyzeLinguisticFeaturesWithAI(string content)
-        {
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                return new LinguisticFeatures();
-            }
-
-            var prompt = $@"Analyze the following message and provide linguistic analysis.
-
-Message: ""{content}""
-
-Provide a JSON response with this structure:
-{{
-  ""questions"": [""list of questions""],
-  ""containsQuestion"": true/false,
-  ""wordCount"": number,
-  ""sentenceCount"": number,
-  ""sentiment"": ""Positive/Negative/Neutral"",
-  ""urgency"": ""High/Medium/Low"",
-  ""politenessScore"": 0.0-1.0
-}}
-
-Return ONLY valid JSON.";
-
-            var response = await _aiService!.GenerateStructuredResponseAsync(prompt);
-            return ParseLinguisticFeatures(response, content);
-        }
-
-        #endregion
-
-        #region JSON Parsing
-
-        private (List<Participant> Participants, List<Message> Messages) ParseStructuredConversation(string jsonResponse)
+        private void ParseCompleteResponse(ThreadCapsule capsule, string response)
         {
             try
             {
-                var json = ExtractJsonFromResponse(jsonResponse);
-                
-                using var doc = JsonDocument.Parse(JsonHelper.CleanJsonResponse(json));
+                var cleanJson = JsonHelper.CleanJsonResponse(response);
+                using var doc = JsonDocument.Parse(cleanJson);
                 var root = doc.RootElement;
 
-                var participants = new List<Participant>();
-                if (root.TryGetProperty("participants", out var participantsArray))
+                // Participants
+                capsule.Participants = new List<Participant>();
+                if (root.TryGetProperty("participants", out var participants))
                 {
-                    var index = 1;
-                    foreach (var p in participantsArray.EnumerateArray())
+                    int pIndex = 1;
+                    foreach (var p in participants.EnumerateArray())
                     {
-                        participants.Add(new Participant
+                        var name = p.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+                        if (string.IsNullOrWhiteSpace(name) || IsEmailHeader(name)) continue;
+
+                        capsule.Participants.Add(new Participant
                         {
-                            Id = $"p{index++}",
-                            Name = p.TryGetProperty("name", out var name) ? name.GetString() ?? "Unknown" : "Unknown",
-                            Email = p.TryGetProperty("email", out var email) ? email.GetString() : null
+                            Id = $"p{pIndex++}",
+                            Name = name,
+                            Email = p.TryGetProperty("email", out var e) ? e.GetString() : null
                         });
                     }
                 }
 
-                var messages = new List<Message>();
-                if (root.TryGetProperty("messages", out var messagesArray))
+                // Messages
+                capsule.Messages = new List<Message>();
+                if (root.TryGetProperty("messages", out var messages))
                 {
-                    var msgIndex = 1;
-                    foreach (var m in messagesArray.EnumerateArray())
+                    int mIndex = 1;
+                    foreach (var m in messages.EnumerateArray())
                     {
+                        var content = m.TryGetProperty("content", out var c) ? c.GetString() ?? "" : "";
+                        if (string.IsNullOrWhiteSpace(content)) continue;
+
+                        var sender = m.TryGetProperty("sender", out var s) ? s.GetString() ?? "Unknown" : "Unknown";
+
                         var message = new Message
                         {
-                            Id = $"msg{msgIndex++}",
-                            ParticipantId = m.TryGetProperty("participantIdentifier", out var pid) 
-                                ? pid.GetString() ?? "Unknown" : "Unknown",
-                            Content = m.TryGetProperty("content", out var content) 
-                                ? content.GetString() ?? "" : "",
+                            Id = $"msg{mIndex++}",
+                            ParticipantId = sender,
+                            Content = content,
                             Timestamp = DateTime.UtcNow
                         };
 
-                        if (m.TryGetProperty("timestamp", out var ts) && 
-                            DateTime.TryParse(ts.GetString(), out var timestamp))
+                        if (m.TryGetProperty("timestamp", out var ts) && DateTime.TryParse(ts.GetString(), out var parsed))
+                            message.Timestamp = parsed;
+
+                        capsule.Messages.Add(message);
+                    }
+                }
+
+                LinkMessagesToParticipants(capsule);
+
+                // Summary
+                if (root.TryGetProperty("summary", out var summary))
+                    capsule.Summary = summary.GetString() ?? "";
+
+                // Analysis
+                capsule.Analysis = new ConversationAnalysis();
+
+                // Unanswered Questions
+                if (root.TryGetProperty("unansweredQuestions", out var uq))
+                {
+                    capsule.Analysis.UnansweredQuestions = uq.EnumerateArray()
+                        .Select(q => new UnansweredQuestion
                         {
-                            message.Timestamp = timestamp;
-                        }
-                        else
+                            Question = q.TryGetProperty("question", out var qt) ? qt.GetString() ?? "" : "",
+                            AskedBy = q.TryGetProperty("askedBy", out var ab) ? ab.GetString() ?? "" : "",
+                            TimesAsked = 1,
+                            AskedAt = DateTime.UtcNow
+                        })
+                        .Where(q => !string.IsNullOrWhiteSpace(q.Question) && q.Question.Contains("?"))
+                        .ToList();
+                }
+                else
+                {
+                    capsule.Analysis.UnansweredQuestions = new List<UnansweredQuestion>();
+                }
+
+                // Tension Points
+                if (root.TryGetProperty("tensionPoints", out var tp))
+                {
+                    capsule.Analysis.TensionPoints = tp.EnumerateArray()
+                        .Select(t => new TensionPoint
                         {
-                            message.Timestamp = DateTime.UtcNow.AddMinutes(msgIndex - 1);
-                        }
-
-                        messages.Add(message);
-                    }
+                            Description = t.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "",
+                            Severity = t.TryGetProperty("severity", out var sv) ? sv.GetString() ?? "Low" : "Low",
+                            Type = "Detected",
+                            Timestamp = DateTime.UtcNow,
+                            DetectedAt = DateTime.UtcNow,
+                            Participants = t.TryGetProperty("participants", out var ps)
+                                ? ps.EnumerateArray().Select(x => x.GetString() ?? "").ToList()
+                                : new List<string>()
+                        })
+                        .Where(t => !string.IsNullOrWhiteSpace(t.Description))
+                        .ToList();
+                }
+                else
+                {
+                    capsule.Analysis.TensionPoints = new List<TensionPoint>();
                 }
 
-                return (participants, messages);
-            }
-            catch (JsonException)
-            {
-                return (new List<Participant>(), new List<Message>());
-            }
-        }
-
-        private List<Participant> ParseParticipantsFromResponse(string response)
-        {
-            try
-            {
-                var json = ExtractJsonFromResponse(response);
-                using var doc = JsonDocument.Parse(JsonHelper.CleanJsonResponse(json));
-                var root = doc.RootElement;
-
-                var participants = new List<Participant>();
-                var index = 1;
-
-                if (root.ValueKind == JsonValueKind.Array)
+                // Misalignments
+                if (root.TryGetProperty("misalignments", out var ma))
                 {
-                    foreach (var p in root.EnumerateArray())
+                    capsule.Analysis.Misalignments = ma.EnumerateArray()
+                        .Select(m => new Misalignment
+                        {
+                            Type = m.TryGetProperty("topic", out var t) ? t.GetString() ?? "" : "",
+                            Severity = m.TryGetProperty("severity", out var sv) ? sv.GetString() ?? "Low" : "Low",
+                            ParticipantsInvolved = m.TryGetProperty("participantsInvolved", out var pi)
+                                ? pi.EnumerateArray().Select(x => x.GetString() ?? "").ToList()
+                                : new List<string>()
+                        })
+                        .Where(m => !string.IsNullOrWhiteSpace(m.Type))
+                        .ToList();
+                }
+                else
+                {
+                    capsule.Analysis.Misalignments = new List<Misalignment>();
+                }
+
+                // Conversation Health
+                if (root.TryGetProperty("conversationHealth", out var ch))
+                {
+                    capsule.Analysis.ConversationHealth = new ConversationHealth
                     {
-                        participants.Add(ParseSingleParticipant(p, index++));
-                    }
+                        HealthScore = ch.TryGetProperty("overallScore", out var os) ? os.GetInt32() / 100.0 : 0.5,
+                        RiskLevel = ch.TryGetProperty("riskLevel", out var rl) ? rl.GetString() ?? "Low" : "Low",
+                        ClarityScore = 0.5,
+                        ResponsivenessScore = 0.5,
+                        AlignmentScore = 0.5,
+                        Issues = ch.TryGetProperty("issues", out var iss)
+                            ? iss.EnumerateArray().Select(x => x.GetString()).ToList()
+                            : new List<string?>(),
+                        Strengths = ch.TryGetProperty("strengths", out var str)
+                            ? str.EnumerateArray().Select(x => x.GetString()).ToList()
+                            : new List<string?>(),
+                        Recommendations = new List<string?>()
+                    };
                 }
-                else if (root.TryGetProperty("participants", out var participantsArray))
+                else
                 {
-                    foreach (var p in participantsArray.EnumerateArray())
+                    capsule.Analysis.ConversationHealth = new ConversationHealth
                     {
-                        participants.Add(ParseSingleParticipant(p, index++));
-                    }
+                        HealthScore = 0.5,
+                        RiskLevel = "Unknown"
+                    };
                 }
 
-                return participants;
-            }
-            catch
-            {
-                return new List<Participant>();
-            }
-        }
-
-        private Participant ParseSingleParticipant(JsonElement element, int index)
-        {
-            return new Participant
-            {
-                Id = $"p{index}",
-                Name = element.TryGetProperty("name", out var name) ? name.GetString() ?? "Unknown" : "Unknown",
-                Email = element.TryGetProperty("email", out var email) ? email.GetString() : null
-            };
-        }
-
-        private List<Message> ParseMessagesFromResponse(string response)
-        {
-            try
-            {
-                var json = ExtractJsonFromResponse(response);
-                using var doc = JsonDocument.Parse(JsonHelper.CleanJsonResponse(json));
-                var root = doc.RootElement;
-
-                var messages = new List<Message>();
-                var index = 1;
-
-                if (root.ValueKind == JsonValueKind.Array)
+                // Suggested Actions
+                if (root.TryGetProperty("suggestedActions", out var sa))
                 {
-                    foreach (var m in root.EnumerateArray())
-                    {
-                        messages.Add(ParseSingleMessage(m, index++));
-                    }
+                    capsule.SuggestedActions = sa.EnumerateArray()
+                        .Select(a => new SuggestedActionItem
+                        {
+                            Action = a.TryGetProperty("action", out var act) ? act.GetString() ?? "" : "",
+                            Priority = a.TryGetProperty("priority", out var pr) ? pr.GetString() ?? "Medium" : "Medium",
+                            Reasoning = a.TryGetProperty("reasoning", out var r) ? r.GetString() : null
+                        })
+                        .Where(a => !string.IsNullOrWhiteSpace(a.Action))
+                        .ToList();
                 }
-                else if (root.TryGetProperty("messages", out var messagesArray))
+                else
                 {
-                    foreach (var m in messagesArray.EnumerateArray())
-                    {
-                        messages.Add(ParseSingleMessage(m, index++));
-                    }
+                    capsule.SuggestedActions = new List<SuggestedActionItem>();
                 }
 
-                return messages;
+                // Initialize empty collections
+                capsule.Analysis.Decisions = new List<DecisionPoint>();
+                capsule.Analysis.ActionItems = new List<ActionItem>();
             }
-            catch
+            catch (Exception)
             {
-                return new List<Message>();
-            }
-        }
-
-        private Message ParseSingleMessage(JsonElement element, int index)
-        {
-            var message = new Message
-            {
-                Id = $"msg{index}",
-                ParticipantId = element.TryGetProperty("participantIdentifier", out var pid) 
-                    ? pid.GetString() ?? "Unknown" : "Unknown",
-                Content = element.TryGetProperty("content", out var content) 
-                    ? content.GetString() ?? "" : "",
-                Timestamp = DateTime.UtcNow.AddMinutes(index - 1)
-            };
-
-            if (element.TryGetProperty("timestamp", out var ts) && 
-                DateTime.TryParse(ts.GetString(), out var timestamp))
-            {
-                message.Timestamp = timestamp;
-            }
-
-            return message;
-        }
-
-        private LinguisticFeatures ParseLinguisticFeatures(string response, string originalContent)
-        {
-            try
-            {
-                var json = ExtractJsonFromResponse(response);
-                using var doc = JsonDocument.Parse(JsonHelper.CleanJsonResponse(json));
-                var root = doc.RootElement;
-
-                var features = new LinguisticFeatures
+                // Fallback on parse error
+                capsule.Participants = new List<Participant>();
+                capsule.Messages = new List<Message>();
+                capsule.Analysis = new ConversationAnalysis
                 {
-                    Questions = new List<string>(),
-                    ContainsQuestion = originalContent.Contains("?"),
-                    WordCount = originalContent.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length,
-                    SentenceCount = 1
+                    UnansweredQuestions = new List<UnansweredQuestion>(),
+                    TensionPoints = new List<TensionPoint>(),
+                    Misalignments = new List<Misalignment>(),
+                    ConversationHealth = new ConversationHealth { HealthScore = 0.5, RiskLevel = "Unknown" },
+                    Decisions = new List<DecisionPoint>(),
+                    ActionItems = new List<ActionItem>()
                 };
-
-                if (root.TryGetProperty("questions", out var questions))
-                {
-                    foreach (var q in questions.EnumerateArray())
-                    {
-                        var question = q.GetString();
-                        if (!string.IsNullOrEmpty(question))
-                        {
-                            features.Questions.Add(question);
-                        }
-                    }
-                }
-
-                if (root.TryGetProperty("containsQuestion", out var containsQ))
-                {
-                    features.ContainsQuestion = containsQ.GetBoolean();
-                }
-
-                if (root.TryGetProperty("wordCount", out var wc))
-                {
-                    features.WordCount = wc.GetInt32();
-                }
-
-                if (root.TryGetProperty("sentenceCount", out var sc))
-                {
-                    features.SentenceCount = sc.GetInt32();
-                }
-
-                if (root.TryGetProperty("sentiment", out var sentiment))
-                {
-                    features.Sentiment = sentiment.GetString() ?? "Neutral";
-                }
-
-                if (root.TryGetProperty("urgency", out var urgency))
-                {
-                    features.Urgency = urgency.GetString() ?? "Low";
-                }
-
-                if (root.TryGetProperty("politenessScore", out var politeness))
-                {
-                    features.Politeness = politeness.GetDouble();
-                }
-
-                return features;
-            }
-            catch
-            {
-                return new LinguisticFeatures
-                {
-                    Questions = new List<string>(),
-                    ContainsQuestion = originalContent.Contains("?"),
-                    WordCount = originalContent.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length,
-                    SentenceCount = 1,
-                    Sentiment = "Neutral",
-                    Urgency = "Low",
-                    Politeness = 0.5
-                };
+                capsule.SuggestedActions = new List<SuggestedActionItem>();
+                capsule.Summary = "Unable to analyze conversation.";
             }
         }
-
-        private string ExtractJsonFromResponse(string response)
-        {
-            response = response.Trim();
-            
-            if (response.StartsWith("```json"))
-            {
-                response = response.Substring(7);
-            }
-            else if (response.StartsWith("```"))
-            {
-                response = response.Substring(3);
-            }
-
-            if (response.EndsWith("```"))
-            {
-                response = response.Substring(0, response.Length - 3);
-            }
-
-            return response.Trim();
-        }
-
-        #endregion
-
-        #region Prompt Building
-
-        private string BuildParticipantExtractionPrompt(string conversationText, string sourceType)
-        {
-            return $@"Extract all participants from the following {sourceType} conversation.
-
-Conversation:
-{conversationText}
-
-Return a JSON array: [{{""name"": ""..."", ""email"": ""...""}}]
-Return ONLY the JSON array.";
-        }
-
-        private string BuildMessageExtractionPrompt(string conversationText, string sourceType)
-        {
-            return $@"Extract all messages from the following {sourceType} conversation.
-
-Conversation:
-{conversationText}
-
-Return a JSON array: [{{""participantIdentifier"": ""..."", ""timestamp"": ""..."", ""content"": ""...""}}]
-Return ONLY the JSON array.";
-        }
-
-        #endregion
-
-        #region Helper Methods
 
         private void LinkMessagesToParticipants(ThreadCapsule capsule)
         {
@@ -918,8 +338,7 @@ Return ONLY the JSON array.";
             {
                 var participant = capsule.Participants.FirstOrDefault(p =>
                     string.Equals(p.Name, message.ParticipantId, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(p.Email, message.ParticipantId, StringComparison.OrdinalIgnoreCase) ||
-                    p.Id == message.ParticipantId);
+                    string.Equals(p.Email, message.ParticipantId, StringComparison.OrdinalIgnoreCase));
 
                 if (participant != null)
                 {
@@ -928,60 +347,10 @@ Return ONLY the JSON array.";
             }
         }
 
-        private string ExtractEmail(string text)
+        private bool IsEmailHeader(string name)
         {
-            var match = EmailAddressPattern.Match(text);
-            return match.Success ? match.Value : text.Trim();
+            var headers = new[] { "From", "To", "Cc", "Bcc", "Subject", "Date", "Sent", "Re", "Fw", "Fwd", "Mobile" };
+            return headers.Contains(name, StringComparer.OrdinalIgnoreCase);
         }
-
-        private string? ExtractEmailFromName(string name, string conversationText)
-        {
-            if (EmailAddressPattern.IsMatch(name))
-                return name;
-
-            var pattern = new Regex($@"\b{Regex.Escape(name)}\b.*?({EmailAddressPattern})", RegexOptions.IgnoreCase);
-            var match = pattern.Match(conversationText);
-            return match.Success && match.Groups.Count > 1 ? match.Groups[1].Value : null;
-        }
-
-        private DateTime ParseEmailDate(string dateStr)
-        {
-            if (DateTime.TryParse(dateStr, out var result))
-                return result;
-
-            return DateTime.UtcNow;
-        }
-
-        private DateTime ParseChatTimestamp(string timeStr)
-        {
-            var today = DateTime.Today;
-            if (DateTime.TryParse(timeStr, out var time))
-            {
-                return today.Add(time.TimeOfDay);
-            }
-
-            return DateTime.UtcNow;
-        }
-
-        private string CleanEmailBody(string body)
-        {
-            var lines = body.Split('\n');
-            var cleanLines = new List<string>();
-
-            foreach (var line in lines)
-            {
-                if (line.TrimStart().StartsWith(">"))
-                    continue;
-
-                if (line.Contains("--") && cleanLines.Count > 0)
-                    break;
-
-                cleanLines.Add(line);
-            }
-
-            return string.Join("\n", cleanLines).Trim();
-        }
-
-        #endregion
     }
 }

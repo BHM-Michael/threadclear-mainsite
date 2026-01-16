@@ -47,5 +47,8 @@ namespace ThreadClear.Functions.Services.Interfaces
         Task<List<SuggestedActionItem>> GenerateSuggestedActions(ThreadCapsule capsule);
 
         Task<string> ExtractTextFromImage(string base64Image, string mimeType);
+
+        // NEW: Streaming support
+        IAsyncEnumerable<string> StreamResponseAsync(string prompt);
     }
 }

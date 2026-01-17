@@ -250,3 +250,123 @@ h1 {
     color: #28a745;
     font-weight: 600;
 }
+
+// Edit buttons
+.btn-edit {
+    background: none;
+    border: none;
+    color: #4285f4;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-left: 10px;
+    padding: 2px 8px;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+// Edit mode
+.edit-mode {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    input {
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 0.95em;
+    }
+}
+
+.btn-save {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+
+    &:hover {
+        background: #218838;
+    }
+
+    &:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+}
+
+.btn-cancel {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+
+    &:hover {
+        background: #5a6268;
+    }
+}
+
+// Password form
+.password-form {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.form-group {
+    margin-bottom: 15px;
+
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    input {
+        width: 100%;
+        max-width: 300px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1em;
+    }
+}
+
+.password-error {
+    color: #dc3545;
+    margin-bottom: 10px;
+}
+
+.password-success {
+    color: #28a745;
+    margin-bottom: 10px;
+}
+
+.btn-change-password {
+    background: #4285f4;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+
+    &:hover {
+        background: #3367d6;
+    }
+
+    &:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+}

@@ -22,7 +22,8 @@ namespace ThreadClear.Functions.Services.Interfaces
         Task<User> UpdateUser(User user);
         Task UpdateUserPermissions(Guid userId, UserPermissions permissions);
         Task<bool> DeleteUser(Guid userId);
-        
+        Task UpdatePassword(Guid userId, string newPassword);
+
         // Feature pricing
         Task<List<FeaturePricing>> GetFeaturePricing();
         Task UpdateFeaturePricing(string featureName, decimal price, Guid updatedBy);

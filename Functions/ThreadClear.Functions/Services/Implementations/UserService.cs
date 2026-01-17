@@ -376,6 +376,22 @@ namespace ThreadClear.Functions.Services.Implementations
             }
         }
 
+        public async Task UpdatePassword(Guid userId, string newPassword)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+
+            var sql = "UPDATE Users SET PasswordHash = @PasswordHash WHERE Id = @UserId";
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            await cmd.ExecuteNonQueryAsync();
+
+            _logger.LogInformation("Password updated for user {UserId}", userId);
+        }
+
         #endregion
 
         #region Feature Pricing

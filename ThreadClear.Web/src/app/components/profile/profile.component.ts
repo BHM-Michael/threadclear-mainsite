@@ -20,6 +20,20 @@ export class ProfileComponent implements OnInit {
   gmailConnecting = false;
   gmailStatus = ''; // 'connected' | 'error' | ''
 
+  // Edit mode
+  editingName = false;
+  editDisplayName = '';
+  savingName = false;
+
+  // Password change
+  showPasswordForm = false;
+  currentPassword = '';
+  newPassword = '';
+  confirmPassword = '';
+  savingPassword = false;
+  passwordError = '';
+  passwordSuccess = '';
+
   // Stripe price IDs
   readonly PRO_PRICE_ID = 'price_1SqK1qFCegaUzUfPwrO5qEDF';
   readonly ENTERPRISE_PRICE_ID = 'price_1SqK2JFCegaUzUfPXooTuvHF';
@@ -76,6 +90,101 @@ export class ProfileComponent implements OnInit {
   connectGmail(): void {
     const userId = this.user?.id || this.user?.Id;
     window.location.href = `${environment.apiUrl}/gmail/connect?userId=${userId}`;
+  }
+
+  // Name editing
+  startEditName(): void {
+    this.editDisplayName = this.user?.displayName || '';
+    this.editingName = true;
+  }
+
+  cancelEditName(): void {
+    this.editingName = false;
+    this.editDisplayName = '';
+  }
+
+  saveName(): void {
+    if (!this.editDisplayName.trim()) return;
+
+    this.savingName = true;
+    const headers = this.getAuthHeaders();
+
+    this.http.put<any>(`${environment.apiUrl}/users/me/profile`,
+      { displayName: this.editDisplayName.trim() },
+      { headers }
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.user.displayName = response.displayName;
+          this.editingName = false;
+          // Update auth service so navbar reflects change
+          this.authService.updateCurrentUser({ ...this.user, displayName: response.displayName });
+        }
+        this.savingName = false;
+      },
+      error: (err) => {
+        console.error('Failed to update name', err);
+        this.savingName = false;
+      }
+    });
+  }
+
+  // Password change
+  togglePasswordForm(): void {
+    this.showPasswordForm = !this.showPasswordForm;
+    this.resetPasswordForm();
+  }
+
+  resetPasswordForm(): void {
+    this.currentPassword = '';
+    this.newPassword = '';
+    this.confirmPassword = '';
+    this.passwordError = '';
+    this.passwordSuccess = '';
+  }
+
+  changePassword(): void {
+    this.passwordError = '';
+    this.passwordSuccess = '';
+
+    if (!this.currentPassword || !this.newPassword || !this.confirmPassword) {
+      this.passwordError = 'All fields are required';
+      return;
+    }
+
+    if (this.newPassword !== this.confirmPassword) {
+      this.passwordError = 'New passwords do not match';
+      return;
+    }
+
+    if (this.newPassword.length < 8) {
+      this.passwordError = 'Password must be at least 8 characters';
+      return;
+    }
+
+    this.savingPassword = true;
+    const headers = this.getAuthHeaders();
+
+    this.http.put<any>(`${environment.apiUrl}/users/me/password`,
+      { currentPassword: this.currentPassword, newPassword: this.newPassword },
+      { headers }
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.passwordSuccess = 'Password changed successfully';
+          this.resetPasswordForm();
+          // Update stored credentials
+          const newCredentials = btoa(`${this.user.email}:${this.newPassword}`);
+          localStorage.setItem('userCredentials', newCredentials);
+        }
+        this.savingPassword = false;
+      },
+      error: (err) => {
+        console.error('Failed to change password', err);
+        this.passwordError = err.error?.error || 'Failed to change password';
+        this.savingPassword = false;
+      }
+    });
   }
 
   get currentPlan(): string {

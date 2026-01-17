@@ -11,7 +11,47 @@
             </div>
             <div class="info-row">
                 <span class="label">Name</span>
-                <span class="value">{{ user?.displayName || 'Not set' }}</span>
+                <span class="value" *ngIf="!editingName">
+                    {{ user?.displayName || 'Not set' }}
+                    <button class="btn-edit" (click)="startEditName()">Edit</button>
+                </span>
+                <span class="value edit-mode" *ngIf="editingName">
+                    <input type="text" [(ngModel)]="editDisplayName" placeholder="Enter your name" />
+                    <button class="btn-save" (click)="saveName()" [disabled]="savingName">
+                        {{ savingName ? 'Saving...' : 'Save' }}
+                    </button>
+                    <button class="btn-cancel" (click)="cancelEditName()">Cancel</button>
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="label">Password</span>
+                <span class="value">
+                    ••••••••
+                    <button class="btn-edit" (click)="togglePasswordForm()">
+                        {{ showPasswordForm ? 'Cancel' : 'Change' }}
+                    </button>
+                </span>
+            </div>
+
+            <!-- Password Change Form -->
+            <div class="password-form" *ngIf="showPasswordForm">
+                <div class="form-group">
+                    <label>Current Password</label>
+                    <input type="password" [(ngModel)]="currentPassword" />
+                </div>
+                <div class="form-group">
+                    <label>New Password</label>
+                    <input type="password" [(ngModel)]="newPassword" />
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" [(ngModel)]="confirmPassword" />
+                </div>
+                <div class="password-error" *ngIf="passwordError">{{ passwordError }}</div>
+                <div class="password-success" *ngIf="passwordSuccess">{{ passwordSuccess }}</div>
+                <button class="btn-change-password" (click)="changePassword()" [disabled]="savingPassword">
+                    {{ savingPassword ? 'Changing...' : 'Change Password' }}
+                </button>
             </div>
         </section>
 

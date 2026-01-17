@@ -106,6 +106,11 @@ export class AuthService {
         this.currentUserSubject.next(null);
     }
 
+    updateCurrentUser(user: User): void {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        this.currentUserSubject.next(user);
+    }
+
     // Admin functions
     private getAdminHeaders(): HttpHeaders {
         const credentials = localStorage.getItem('userCredentials');

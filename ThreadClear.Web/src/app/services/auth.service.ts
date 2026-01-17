@@ -10,6 +10,7 @@ export interface User {
     role: string;
     isActive: boolean;
     permissions: UserPermissions;
+    plan?: string;
 }
 
 export interface UserPermissions {

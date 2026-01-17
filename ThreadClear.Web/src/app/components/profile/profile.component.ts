@@ -33,6 +33,7 @@ export class ProfileComponent implements OnInit {
   savingPassword = false;
   passwordError = '';
   passwordSuccess = '';
+  selectedPlan: string = '';
 
   // Stripe price IDs
   readonly PRO_PRICE_ID = 'price_1SqK1qFCegaUzUfPwrO5qEDF';
@@ -51,6 +52,7 @@ export class ProfileComponent implements OnInit {
     this.authService.currentUser$.subscribe(user => {
       if (user) {
         this.user = user;
+        this.selectedPlan = user.plan || 'free';
         this.loadUsage();
         this.loadGmailStatus();
       }
@@ -165,17 +167,27 @@ export class ProfileComponent implements OnInit {
     this.savingPassword = true;
     const headers = this.getAuthHeaders();
 
+    // Save new password before async call
+    const newPasswordValue = this.newPassword;
+    const userEmail = this.user.email || this.user.Email;
+
     this.http.put<any>(`${environment.apiUrl}/users/me/password`,
       { currentPassword: this.currentPassword, newPassword: this.newPassword },
       { headers }
     ).subscribe({
       next: (response) => {
         if (response.success) {
-          this.passwordSuccess = 'Password changed successfully';
+          // Update stored credentials with saved values
+          const newCreds = btoa(`${userEmail}:${newPasswordValue}`);
+          localStorage.setItem('userCredentials', newCreds);
+
           this.resetPasswordForm();
-          // Update stored credentials
-          const newCredentials = btoa(`${this.user.email}:${this.newPassword}`);
-          localStorage.setItem('userCredentials', newCredentials);
+          this.showPasswordForm = false;
+          this.passwordSuccess = 'Password changed successfully';
+
+          setTimeout(() => {
+            this.passwordSuccess = '';
+          }, 5000);
         }
         this.savingPassword = false;
       },
@@ -185,6 +197,58 @@ export class ProfileComponent implements OnInit {
         this.savingPassword = false;
       }
     });
+  }
+
+  downgrade(): void {
+    if (!confirm('Are you sure you want to downgrade to the Free plan? Your subscription will be cancelled.')) {
+      return;
+    }
+
+    this.upgrading = true;
+    this.error = '';
+    const headers = this.getAuthHeaders();
+
+    this.http.post<any>(`${environment.apiUrl}/stripe/cancel`, {
+      userId: this.user.id || this.user.Id
+    }, { headers }).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.user.plan = 'free';
+          this.authService.updateCurrentUser({ ...this.user, plan: 'free' });
+          this.loadUsage(); // Refresh usage limits
+        } else {
+          this.error = 'Failed to cancel subscription';
+        }
+        this.upgrading = false;
+      },
+      error: (err) => {
+        console.error('Downgrade error', err);
+        this.error = 'Failed to cancel subscription. Please try again.';
+        this.upgrading = false;
+      }
+    });
+  }
+
+  selectPlan(plan: string): void {
+    this.selectedPlan = plan;
+  }
+
+  savePlan(): void {
+    if (this.selectedPlan === this.currentPlan) {
+      return; // No change
+    }
+
+    if (this.selectedPlan === 'free') {
+      this.downgrade();
+    } else if (this.selectedPlan === 'pro') {
+      this.upgrade(this.PRO_PRICE_ID);
+    } else if (this.selectedPlan === 'enterprise') {
+      this.upgrade(this.ENTERPRISE_PRICE_ID);
+    }
+  }
+
+  get planChanged(): boolean {
+    return this.selectedPlan !== this.currentPlan;
   }
 
   get currentPlan(): string {

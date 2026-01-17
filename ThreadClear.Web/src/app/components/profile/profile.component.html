@@ -34,6 +34,9 @@
             </div>
 
             <!-- Password Change Form -->
+            <div class="password-success-banner" *ngIf="passwordSuccess && !showPasswordForm">
+                ✓ {{ passwordSuccess }}
+            </div>
             <div class="password-form" *ngIf="showPasswordForm">
                 <div class="form-group">
                     <label>Current Password</label>
@@ -52,14 +55,6 @@
                 <button class="btn-change-password" (click)="changePassword()" [disabled]="savingPassword">
                     {{ savingPassword ? 'Changing...' : 'Change Password' }}
                 </button>
-            </div>
-        </section>
-
-        <!-- Current Plan -->
-        <section class="profile-section">
-            <h2>Subscription</h2>
-            <div class="plan-badge" [ngClass]="currentPlan">
-                {{ currentPlan | titlecase }} Plan
             </div>
         </section>
 
@@ -99,22 +94,40 @@
             </div>
         </section>
 
-        <!-- Upgrade Options -->
-        <section class="profile-section" *ngIf="currentPlan === 'free'">
-            <h2>Upgrade</h2>
-            <div class="upgrade-options">
-                <div class="upgrade-card">
+        <!-- Plan Options -->
+        <section class="profile-section">
+            <h2>Plan</h2>
+            <div class="plan-options">
+                <!-- Free Plan -->
+                <div class="plan-card" [class.selected]="selectedPlan === 'free'"
+                    [class.current]="currentPlan === 'free'" (click)="selectPlan('free')">
+                    <div class="plan-check" *ngIf="selectedPlan === 'free'">✓</div>
+                    <h3>Free</h3>
+                    <div class="price">$0<span>/month</span></div>
+                    <ul>
+                        <li>10 analyses/month</li>
+                        <li>Basic features</li>
+                    </ul>
+                    <div class="current-label" *ngIf="currentPlan === 'free'">Current</div>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="plan-card" [class.selected]="selectedPlan === 'pro'" [class.current]="currentPlan === 'pro'"
+                    (click)="selectPlan('pro')">
+                    <div class="plan-check" *ngIf="selectedPlan === 'pro'">✓</div>
                     <h3>Pro</h3>
                     <div class="price">$19.99<span>/month</span></div>
                     <ul>
                         <li>100 analyses/month</li>
                         <li>Priority support</li>
                     </ul>
-                    <button class="btn-upgrade" (click)="upgrade(PRO_PRICE_ID)" [disabled]="upgrading">
-                        {{ upgrading ? 'Loading...' : 'Upgrade to Pro' }}
-                    </button>
+                    <div class="current-label" *ngIf="currentPlan === 'pro'">Current</div>
                 </div>
-                <div class="upgrade-card enterprise">
+
+                <!-- Enterprise Plan -->
+                <div class="plan-card" [class.selected]="selectedPlan === 'enterprise'"
+                    [class.current]="currentPlan === 'enterprise'" (click)="selectPlan('enterprise')">
+                    <div class="plan-check" *ngIf="selectedPlan === 'enterprise'">✓</div>
                     <h3>Enterprise</h3>
                     <div class="price">$99.99<span>/month</span></div>
                     <ul>
@@ -122,18 +135,23 @@
                         <li>Team management</li>
                         <li>Dedicated support</li>
                     </ul>
-                    <button class="btn-upgrade" (click)="upgrade(ENTERPRISE_PRICE_ID)" [disabled]="upgrading">
-                        {{ upgrading ? 'Loading...' : 'Upgrade to Enterprise' }}
-                    </button>
+                    <div class="current-label" *ngIf="currentPlan === 'enterprise'">Current</div>
                 </div>
             </div>
-            <p class="error" *ngIf="error">{{ error }}</p>
-        </section>
 
-        <!-- Already subscribed -->
-        <section class="profile-section" *ngIf="currentPlan !== 'free'">
-            <p class="subscribed-note">Manage your subscription in the <a href="https://billing.stripe.com/p/login/test"
-                    target="_blank">billing portal</a>.</p>
+            <div class="plan-actions">
+                <button class="btn-save-plan" (click)="savePlan()" [disabled]="!planChanged || upgrading">
+                    {{ upgrading ? 'Processing...' : 'Save Plan' }}
+                </button>
+                <span class="plan-hint" *ngIf="!planChanged">Select a different plan to make changes</span>
+            </div>
+
+            <p class="error" *ngIf="error">{{ error }}</p>
+
+            <p class="billing-note" *ngIf="currentPlan !== 'free'">
+                Manage billing details in the <a href="https://billing.stripe.com/p/login/test_00w7sL3GYdcC3yw9jleIw00"
+                    target="_blank">billing portal</a>.
+            </p>
         </section>
     </div>
 

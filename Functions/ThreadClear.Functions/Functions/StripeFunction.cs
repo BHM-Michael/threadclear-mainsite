@@ -1,7 +1,8 @@
-﻿using System.Net;
-using Microsoft.Azure.Functions.Worker;
+﻿using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using Stripe;
+using System.Net;
 using System.Text.Json;
 using ThreadClear.Functions.Services.Implementations;
 
@@ -78,6 +79,58 @@ namespace ThreadClear.Functions.Functions
             var response = req.CreateResponse(success ? HttpStatusCode.OK : HttpStatusCode.BadRequest);
             return response;
         }
+
+        [Function("StripeCancel")]
+        public async Task<HttpResponseData> CancelSubscription(
+    [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "stripe/cancel")] HttpRequestData req)
+        {
+            try
+            {
+                var body = await req.ReadAsStringAsync();
+                var request = JsonSerializer.Deserialize<CancelRequest>(body, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (request == null || string.IsNullOrEmpty(request.UserId))
+                {
+                    var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badRequest.WriteAsJsonAsync(new { error = "UserId required" });
+                    return badRequest;
+                }
+
+                // Get user's subscription ID from database
+                var subscriptionId = await _stripeService.GetUserSubscriptionId(Guid.Parse(request.UserId));
+
+                if (string.IsNullOrEmpty(subscriptionId))
+                {
+                    var notFound = req.CreateResponse(HttpStatusCode.NotFound);
+                    await notFound.WriteAsJsonAsync(new { error = "No active subscription found" });
+                    return notFound;
+                }
+
+                // Cancel subscription in Stripe
+                var service = new SubscriptionService();
+                await service.CancelAsync(subscriptionId);
+
+                // Update user's plan to free
+                await _stripeService.UpdateUserPlan(Guid.Parse(request.UserId), "free", null);
+
+                _logger.LogInformation("Cancelled subscription {SubscriptionId} for user {UserId}",
+                    subscriptionId, request.UserId);
+
+                var response = req.CreateResponse(HttpStatusCode.OK);
+                await response.WriteAsJsonAsync(new { success = true });
+                return response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to cancel subscription");
+                var error = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await error.WriteAsJsonAsync(new { error = "Failed to cancel subscription" });
+                return error;
+            }
+        }
     }
 
     public class CheckoutRequest
@@ -87,5 +140,10 @@ namespace ThreadClear.Functions.Functions
         public string PriceId { get; set; } = "";
         public string? SuccessUrl { get; set; }
         public string? CancelUrl { get; set; }
+    }
+
+    public class CancelRequest
+    {
+        public string UserId { get; set; } = "";
     }
 }

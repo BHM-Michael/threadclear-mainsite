@@ -168,5 +168,35 @@ namespace ThreadClear.Functions.Services.Implementations
 
             await command.ExecuteNonQueryAsync();
         }
+
+        public async Task<string?> GetUserSubscriptionId(Guid userId)
+        {
+            var sql = "SELECT StripeSubscriptionId FROM Users WHERE Id = @UserId";
+
+            using var connection = new Microsoft.Data.SqlClient.SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var command = new Microsoft.Data.SqlClient.SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@UserId", userId);
+
+            var result = await command.ExecuteScalarAsync();
+            return result?.ToString();
+        }
+
+        public async Task UpdateUserPlan(Guid userId, string tier, string? subscriptionId)
+        {
+            var sql = @"UPDATE Users 
+                SET [Plan] = @Plan, 
+                    StripeSubscriptionId = @SubscriptionId 
+                WHERE Id = @UserId";
+
+            using var connection = new Microsoft.Data.SqlClient.SqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var command = new Microsoft.Data.SqlClient.SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@Plan", tier);
+            command.Parameters.AddWithValue("@SubscriptionId", (object?)subscriptionId ?? DBNull.Value);
+            command.Parameters.AddWithValue("@UserId", userId);
+
+            await command.ExecuteNonQueryAsync();
+        }
     }
 }

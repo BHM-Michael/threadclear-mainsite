@@ -15,6 +15,11 @@ export class ProfileComponent implements OnInit {
   upgrading = false;
   error = '';
 
+  gmailConnected = false;
+  gmailEmail = '';
+  gmailConnecting = false;
+  gmailStatus = ''; // 'connected' | 'error' | ''
+
   // Stripe price IDs
   readonly PRO_PRICE_ID = 'price_1SqK1qFCegaUzUfPwrO5qEDF';
   readonly ENTERPRISE_PRICE_ID = 'price_1SqK2JFCegaUzUfPXooTuvHF';
@@ -25,10 +30,15 @@ export class ProfileComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    // Check for gmail callback status
+    const urlParams = new URLSearchParams(window.location.search);
+    this.gmailStatus = urlParams.get('gmail') || '';
+
     this.authService.currentUser$.subscribe(user => {
       if (user) {
         this.user = user;
         this.loadUsage();
+        this.loadGmailStatus();
       }
     });
   }
@@ -46,6 +56,26 @@ export class ProfileComponent implements OnInit {
           this.loading = false;
         }
       });
+  }
+
+  loadGmailStatus(): void {
+    const headers = this.getAuthHeaders();
+    const userId = this.user?.id || this.user?.Id;
+    this.http.get<any>(`${environment.apiUrl}/integrations/${userId}/gmail`, { headers })
+      .subscribe({
+        next: (response) => {
+          this.gmailConnected = response.connected;
+          this.gmailEmail = response.email || '';
+        },
+        error: () => {
+          this.gmailConnected = false;
+        }
+      });
+  }
+
+  connectGmail(): void {
+    const userId = this.user?.id || this.user?.Id;
+    window.location.href = `${environment.apiUrl}/gmail/connect?userId=${userId}`;
   }
 
   get currentPlan(): string {

@@ -20,9 +20,7 @@ namespace ThreadClear.Functions.Functions
         {
             _logger = logger;
             _configuration = configuration;
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? configuration["ConnectionStrings:DefaultConnection"]
-                ?? throw new InvalidOperationException("Connection string not found");
+            _connectionString = configuration["SqlConnectionString"] ?? throw new InvalidOperationException("Connection string not found");
         }
 
         [Function("GmailCallback")]

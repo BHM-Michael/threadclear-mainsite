@@ -34,6 +34,31 @@
             </div>
         </section>
 
+        <!-- Integrations -->
+        <section class="profile-section">
+            <h2>Integrations</h2>
+
+            <div class="integration-status" *ngIf="gmailStatus === 'connected'">
+                ✓ Gmail connected successfully!
+            </div>
+            <div class="integration-error" *ngIf="gmailStatus === 'error'">
+                Failed to connect Gmail. Please try again.
+            </div>
+
+            <div class="integration-row">
+                <div class="integration-info">
+                    <span class="integration-name">Gmail</span>
+                    <span class="integration-detail" *ngIf="gmailConnected">{{ gmailEmail }}</span>
+                    <span class="integration-detail" *ngIf="!gmailConnected">Not connected</span>
+                </div>
+                <button *ngIf="!gmailConnected" class="btn-connect" (click)="connectGmail()"
+                    [disabled]="gmailConnecting">
+                    Connect Gmail
+                </button>
+                <span *ngIf="gmailConnected" class="connected-badge">✓ Connected</span>
+            </div>
+        </section>
+
         <!-- Upgrade Options -->
         <section class="profile-section" *ngIf="currentPlan === 'free'">
             <h2>Upgrade</h2>

@@ -184,3 +184,69 @@ h1 {
     padding: 2rem;
     color: #666;
 }
+
+// Integrations
+.integration-status {
+    background: #d4edda;
+    color: #155724;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.integration-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.integration-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.integration-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.integration-name {
+    font-weight: 600;
+    color: #333;
+}
+
+.integration-detail {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 4px;
+}
+
+.btn-connect {
+    background: #4285f4;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+
+    &:hover {
+        background: #3367d6;
+    }
+
+    &:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+}
+
+.connected-badge {
+    color: #28a745;
+    font-weight: 600;
+}

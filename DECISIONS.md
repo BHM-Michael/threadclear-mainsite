@@ -14,8 +14,10 @@
 - Properties: `email`, `role`, `displayName`, `permissions`, `plan`, `stripeCustomerId`, `stripeSubscriptionId`
 - Roles: `user`, `admin`
 - **API returns PascalCase** (e.g., `Role`, `DisplayName`) - must normalize to camelCase in `auth.service.ts`
-- Normalized properties: `role`, `displayName`, `permissions` (add more as needed)
+- Normalized properties: `role`, `displayName`, `permissions`, `plan` (add more as needed)
 - User plan is used when user has no organization
+- Added `plan?: string` to User interface in auth.service.ts
+- Added `updateCurrentUser(user)` method to AuthService for syncing profile changes to navbar
 
 ### Organization
 - **Organizations are optional** - users can operate without one
@@ -34,6 +36,12 @@
 - Columns: TierName, MonthlyAnalyses, MonthlyGmailThreads, MonthlySpellChecks, MonthlyAITokens, PriceMonthly, StripePriceId
 - Tiers: free (10 analyses), pro (100 analyses, $19.99), enterprise (10000 analyses, $99.99)
 
+### UserIntegrations Table
+- Columns: Id, UserId (UNIQUEIDENTIFIER), Provider, Email, RefreshToken, AccessToken, TokenExpiry, Scopes, CreatedAt, UpdatedAt
+- UserId matches Users.Id type (UNIQUEIDENTIFIER, not INT)
+- Unique constraint on (UserId, Provider)
+- Provider values: 'gmail', 'outlook', 'slack' (future)
+
 ## Frontend (Angular)
 
 ### Navigation
@@ -47,7 +55,7 @@
 - `/dashboard` - org dashboard
 - `/settings` - org settings (admin only)
 - `/admin` - system admin (admin only)
-- `/profile` - user profile with plan/usage/upgrade (all users)
+- `/profile` - user profile with plan/usage/upgrade/integrations (all users)
 
 ### Features Implemented
 - Spell check: checkbox toggle, wavy underlines for errors
@@ -55,11 +63,16 @@
 - Progressive loading: 2-3 second time-to-first-content
 - Conversation Health: bar chart styling complete
 - Profile page with usage display and Stripe upgrade
+- Profile: Edit display name (inline edit, syncs to navbar)
+- Profile: Change password (with validation, success banner)
+- Profile: Selection-based plan picker (select then save)
+- Profile: Gmail integration status and connect button
 
 ### Patterns
 - Use `*ngIf` for conditional rendering
 - Subscribe to observables in `ngOnInit`
 - Guard against null user emissions resetting state (wrap in `if (user)`)
+- Save form values to local variables BEFORE async calls (avoid closure issues)
 
 ## Backend (Azure Functions C#)
 
@@ -73,10 +86,21 @@
 - **`Plan` is a reserved SQL keyword** - always use `[Plan]` in queries
 - DatabaseKeepAlive timer function runs every 5 minutes to prevent sleep
 
+### Configuration
+- **Use `configuration["SqlConnectionString"]`** - NOT `GetConnectionString("SqlConnectionString")`
+- Azure config keys are at root level, not in ConnectionStrings section
+- For local development, add secrets to `local.settings.json` (gitignored)
+
 ### Endpoints
 - `/api/stripe/checkout` - creates Stripe checkout session
 - `/api/stripe/webhook` - handles Stripe events
+- `/api/stripe/cancel` - cancels subscription, downgrades to free
 - `/api/usage/me` - returns user's current usage and limits
+- `/api/users/me/profile` - update display name (PUT)
+- `/api/users/me/password` - change password (PUT)
+- `/api/gmail/connect` - initiates Gmail OAuth flow
+- `/api/gmail/callback` - handles Google OAuth redirect, stores tokens
+- `/api/integrations/{userId}/gmail` - returns Gmail connection status
 
 ### Stripe Integration
 - **Test mode** - switch to live when ready with EIN
@@ -86,7 +110,18 @@
 - Pro price ID: `price_1SqK1qFCegaUzUfPwrO5qEDF`
 - Enterprise price ID: `price_1SqK2JFCegaUzUfPXooTuvHF`
 - Webhook URL: `https://threadclear-functions-fsewbzcsd8fuegdj.eastus-01.azurewebsites.net/api/stripe/webhook`
+- Billing Portal URL (test): `https://billing.stripe.com/p/login/test_00w7sL3GYdcC3yw9jleIw00`
 - Events: checkout.session.completed, customer.subscription.deleted, invoice.payment_failed
+
+### Gmail/Google Integration
+- Google Cloud project: `ThreadClear` (under bhm-it.com temporarily)
+- **TODO**: Transfer project ownership to michael@threadclear.com when Workspace unlocks
+- Gmail API enabled
+- OAuth scopes: `gmail.readonly`, `userinfo.email`
+- OAuth consent screen: External, Testing mode
+- Test users: michael@bhm-it.com
+- Azure config keys: `GoogleClientId`, `GoogleClientSecret`, `GoogleRedirectUri`
+- Redirect URI: `https://threadclear-functions-fsewbzcsd8fuegdj.eastus-01.azurewebsites.net/api/gmail/callback`
 
 ## Working Patterns with Claude
 
@@ -97,18 +132,26 @@
 - When in doubt, ask before suggesting large changes
 - **User makes changes independently** - don't assume code is the same as last seen; ask or request current version before editing
 
+### Git Commits
+- Provide full runnable `git add` and `git commit` commands
+- Windows Command Prompt doesn't handle multi-line commits well - use single line
+- Example: `git commit -m "feat: add Gmail OAuth integration"`
+
+### Deployment
+- Frontend: `ng build --configuration=production` then `swa deploy`
+- Backend: Visual Studio → Publish (NOT `func azure functionapp publish`)
+
 ## Rejected Approaches
-<!-- Add things we tried and decided against -->
+- Full file replacements in code suggestions (too risky)
+- `GetConnectionString()` for Azure config (keys are at root level)
+- Multi-step upgrade buttons per plan (use selection-based picker instead)
 
 ## Deferred Features
 - **User invite emails**: Manual link copy/paste for MVP, SendGrid integration later
-- **Gmail integration**: Estimated 12-18 hours total
-  - Part 1: Daily digest email (4-6 hours) - Gmail API OAuth, timer function, SendGrid
-  - Part 2: Gmail Add-on sidebar (8-12 hours) - Apps Script, Marketplace submission
-  - Dependencies: Google Cloud Console project, Gmail API, OAuth consent screen, SendGrid account
-  - Recommendation: Start with Part 1 (daily digest)
+- **Gmail Add-on sidebar**: Apps Script, Marketplace submission (8-12 hours)
+- **Google Workspace**: michael@threadclear.com account locked, needs review (up to 72 hours)
 
-## Completed This Session (Jan 16, 2026)
+## Completed (Jan 16, 2026)
 - ✅ Fixed navbar user display (displayName, org name)
 - ✅ Fixed admin visibility (Settings/Admin nav items)
 - ✅ Database keep-alive timer function (every 5 min)
@@ -118,5 +161,29 @@
 - ✅ Profile page with usage and upgrade buttons
 - ✅ /usage/me endpoint
 
+## Completed (Jan 17, 2026)
+- ✅ Google Cloud project setup (Gmail API, OAuth consent, credentials)
+- ✅ UserIntegrations table for OAuth tokens
+- ✅ Gmail OAuth flow (connect, callback, status endpoints)
+- ✅ "Connect Gmail" button on profile page
+- ✅ Profile: Edit display name with navbar sync
+- ✅ Profile: Change password functionality
+- ✅ Profile: Selection-based plan picker (select then save)
+- ✅ Stripe cancel subscription endpoint
+- ✅ IUserService.UpdatePassword method
+- ✅ AuthService.updateCurrentUser method
+- ✅ StripeService: GetUserSubscriptionId, UpdateUserPlan overload
+
+## Next Up (Gmail Integration Remaining)
+- Phase 1C: Fetch & analyze Gmail threads (~1.5 hours)
+  - Service to fetch recent threads using stored tokens
+  - Token refresh logic
+  - Run threads through ConversationAnalyzer
+  - Aggregate results
+- Phase 1D: Daily digest email via SendGrid (~1 hour)
+  - SendGrid account setup + API key
+  - Email template with analysis summary
+  - Timer-triggered Azure Function
+
 ---
-*Last updated: January 16, 2026*
+*Last updated: January 17, 2026*

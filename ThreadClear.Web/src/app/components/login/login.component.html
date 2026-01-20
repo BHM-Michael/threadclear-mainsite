@@ -3,7 +3,7 @@
         <div class="login-gradient"></div>
         <div class="login-grid"></div>
     </div>
-    
+
     <div class="login-card">
         <div class="login-header">
             <a href="https://threadclear.com" class="login-logo">
@@ -28,7 +28,8 @@
 
             <div class="error" *ngIf="error">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 8v4M12 16h.01" />
                 </svg>
                 {{ error }}
             </div>
@@ -36,9 +37,10 @@
             <button type="submit" [disabled]="loading" class="btn-login">
                 <span *ngIf="!loading">Sign In</span>
                 <span *ngIf="loading" class="loading-state">
-                    <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
-                        <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
+                    <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <circle cx="12" cy="12" r="10" stroke-opacity="0.25" />
+                        <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round" />
                     </svg>
                     Signing in...
                 </span>
@@ -46,7 +48,7 @@
         </form>
 
         <div class="login-footer">
-            <p>Don't have an account? <a href="https://threadclear.com/#contact">Request Access</a></p>
+            <p>Don't have an account? <a routerLink="/register">Sign Up</a></p>
         </div>
     </div>
 </div>

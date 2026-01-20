@@ -73,6 +73,10 @@ namespace ThreadClear.Functions.Services.Implementations
             if (user == null || !user.IsActive)
                 return null;
 
+            // Add this check
+            if (string.IsNullOrEmpty(user.PasswordHash))
+                return null;
+
             if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 user.PasswordHash = ""; // Don't return hash
@@ -183,13 +187,14 @@ namespace ThreadClear.Functions.Services.Implementations
             try
             {
                 var userSql = @"
-                    INSERT INTO Users (Id, Email, PasswordHash, Role, IsActive, CreatedAt, CreatedBy)
-                    VALUES (@Id, @Email, @PasswordHash, 'user', 1, GETUTCDATE(), @CreatedBy)";
+                    INSERT INTO Users (Id, Email, DisplayName, PasswordHash, Role, IsActive, CreatedAt, CreatedBy, [Plan])
+                    VALUES (@Id, @Email, @DisplayName, @PasswordHash, 'user', 1, GETUTCDATE(), @CreatedBy, 'free')";
 
                 using (var cmd = new SqlCommand(userSql, connection, transaction))
                 {
                     cmd.Parameters.AddWithValue("@Id", userId);
                     cmd.Parameters.AddWithValue("@Email", request.Email);
+                    cmd.Parameters.AddWithValue("@DisplayName", request.DisplayName);
                     cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
                     cmd.Parameters.AddWithValue("@CreatedBy", createdBy.HasValue ? createdBy.Value : DBNull.Value);
                     await cmd.ExecuteNonQueryAsync();

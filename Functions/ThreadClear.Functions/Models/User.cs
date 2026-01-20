@@ -129,6 +129,16 @@ namespace ThreadClear.Functions.Models
         public string Password { get; set; } = string.Empty;
     }
 
+    // Registration request from signup form
+    public class RegisterRequest
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string? DisplayName { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+    }
+
     // EXISTING - Keep exactly as is
     public class LoginResponse
     {
@@ -142,6 +152,7 @@ namespace ThreadClear.Functions.Models
     public class CreateUserRequest
     {
         public string Email { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public bool UnansweredQuestions { get; set; }
         public bool TensionPoints { get; set; }

@@ -82,13 +82,12 @@ John: What's the timeline for review?" rows="12">
                                     <path d="M12 20h9" />
                                     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                                 </svg>
-                                Your Draft Reply
+                                Draft to Check (won't send)
                             </label>
                             <span class="draft-optional">Optional</span>
                         </div>
-                        <textarea [(ngModel)]="draftMessage"
-                            placeholder="Paste your draft response to get feedback before sending..." rows="4"
-                            class="draft-textarea">
+                        <textarea [(ngModel)]="draftMessage" placeholder="Paste your reply to check before sending..."
+                            rows="4" class="draft-textarea">
                         </textarea>
                         <p class="draft-hint">We'll check if you've addressed all questions and flag any potential
                             issues</p>

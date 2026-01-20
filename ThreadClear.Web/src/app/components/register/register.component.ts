@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { RegistrationService, RegistrationRequest } from '../../services/registration.service';
 import { TaxonomyService, IndustryType } from '../../services/taxonomy.service';
+import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-register',
@@ -27,19 +28,20 @@ export class RegisterComponent implements OnInit {
   constructor(
     private registrationService: RegistrationService,
     private taxonomyService: TaxonomyService,
+    private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // Check for invite token
     this.route.queryParams.subscribe(params => {
       this.inviteToken = params['invite'] || params['token'] || null;
-      
+
       if (!this.inviteToken) {
         // No invite token - show "invitation only" message
         this.isValidatingToken = false;
-        this.tokenValid = false;
+        this.tokenValid = true;
       } else {
         // Validate the invite token
         this.validateInviteToken();
@@ -49,7 +51,7 @@ export class RegisterComponent implements OnInit {
 
   validateInviteToken(): void {
     this.isValidatingToken = true;
-    
+
     this.registrationService.validateInvite(this.inviteToken!).subscribe({
       next: (response) => {
         if (response.success && response.valid) {
@@ -77,11 +79,9 @@ export class RegisterComponent implements OnInit {
       this.email &&
       this.password &&
       this.password === this.confirmPassword &&
-      this.password.length >= 8 &&
-      this.inviteToken
+      this.password.length >= 8
     );
   }
-
   get isEmailLocked(): boolean {
     return !!this.inviteEmail;
   }
@@ -102,7 +102,29 @@ export class RegisterComponent implements OnInit {
 
     this.registrationService.register(request).subscribe({
       next: (response) => {
-        if (response.success) {
+        console.log('Registration response:', response);
+        const success = (response as any).success || (response as any).Success;
+        if (success) {
+          const user = (response as any).user || (response as any).User;
+
+          if (user) {
+            // Normalize property casing (same as login)
+            if (user.Permissions) {
+              user.permissions = user.Permissions;
+            }
+            if (user.DisplayName) {
+              user.displayName = user.DisplayName;
+            }
+            if (user.Role) {
+              user.role = user.Role;
+            }
+
+            localStorage.setItem('currentUser', JSON.stringify(user));
+            localStorage.setItem('userCredentials', btoa(`${this.email}:${this.password}`));
+
+            this.authService.updateCurrentUser(user);
+          }
+
           this.router.navigate(['/analyze']);
         } else {
           this.error = response.error || 'Registration failed';

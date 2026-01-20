@@ -185,5 +185,89 @@ namespace ThreadClear.Functions.Functions
                 return error;
             }
         }
+
+        [Function("Register")]
+        public async Task<HttpResponseData> Register(
+    [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "auth/register")] HttpRequestData req)
+        {
+            _logger.LogInformation("Registration attempt");
+
+            try
+            {
+                var body = await req.ReadAsStringAsync();
+                var registerRequest = JsonSerializer.Deserialize<RegisterRequest>(body, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (registerRequest == null ||
+                    string.IsNullOrEmpty(registerRequest.Email) ||
+                    string.IsNullOrEmpty(registerRequest.Password))
+                {
+                    var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badRequest.WriteAsJsonAsync(new LoginResponse { Success = false, Error = "Email, password, and display name required" });
+                    return badRequest;
+                }
+
+                // Check if email already exists
+                var existingUser = await _userService.GetUserByEmail(registerRequest.Email);
+                if (existingUser != null)
+                {
+                    var conflict = req.CreateResponse(HttpStatusCode.Conflict);
+                    await conflict.WriteAsJsonAsync(new LoginResponse { Success = false, Error = "Email already registered" });
+                    return conflict;
+                }
+
+                // Build display name from available fields
+                var displayName = registerRequest.DisplayName;
+                if (string.IsNullOrEmpty(displayName))
+                {
+                    displayName = $"{registerRequest.FirstName} {registerRequest.LastName}".Trim();
+                }
+                if (string.IsNullOrEmpty(displayName))
+                {
+                    displayName = registerRequest.Email.Split('@')[0];
+                }
+
+                // Create the user
+                var createRequest = new CreateUserRequest
+                {
+                    Email = registerRequest.Email,
+                    Password = registerRequest.Password,
+                    UnansweredQuestions = true,
+                    TensionPoints = true,
+                    Misalignments = true,
+                    ConversationHealth = true,
+                    SuggestedActions = true,
+                    DisplayName = displayName,
+                };
+                var user = await _userService.CreateUser(createRequest);
+
+                // Create token so they're logged in immediately
+                var token = await _userService.CreateUserToken(user.Id, "web-app");
+
+                var response = req.CreateResponse(HttpStatusCode.OK);
+                await response.WriteAsJsonAsync(new LoginResponse
+                {
+                    Success = true,
+                    Token = token,
+                    User = user
+                });
+
+                _logger.LogInformation("User registered successfully: {Email}", user.Email);
+                return response;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Registration error: {Message}", ex.Message);
+                var error = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await error.WriteAsJsonAsync(new LoginResponse
+                {
+                    Success = false,
+                    Error = "Registration failed"
+                });
+                return error;
+            }
+        }
     }
 }

@@ -56,12 +56,30 @@ export interface IndustryType {
 export class TaxonomyService {
   private apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   private getAuthHeaders(): HttpHeaders {
+    // Try Bearer token first
     const token = localStorage.getItem('authToken');
+    if (token) {
+      return new HttpHeaders({
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      });
+    }
+
+    // Fall back to email/password credentials
+    const credentials = localStorage.getItem('userCredentials');
+    if (credentials) {
+      const [email, password] = atob(credentials).split(':');
+      return new HttpHeaders({
+        'X-User-Email': email,
+        'X-User-Password': password,
+        'Content-Type': 'application/json'
+      });
+    }
+
     return new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     });
   }

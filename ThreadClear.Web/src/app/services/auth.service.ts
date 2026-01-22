@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap, retry } from 'rxjs';
+import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 
 export interface User {
@@ -47,14 +48,50 @@ export class AuthService {
     public currentUser$ = this.currentUserSubject.asObservable();
 
     private idleTimeout: any;
-    private readonly IDLE_TIME = 30 * 60 * 1000; // 30 minutes in ms
+    private readonly IDLE_TIME = 30 * 60 * 1000; // 30 minutes
+    private readonly SESSION_KEY = 'sessionExpiry';
 
-    constructor(private http: HttpClient) {
-        // Check for stored user on startup
+    constructor(
+        private http: HttpClient,
+        private router: Router  // ADD THIS
+    ) {
+        this.restoreSession();
+    }
+
+    private restoreSession(): void {
         const storedUser = localStorage.getItem('currentUser');
-        if (storedUser) {
-            this.currentUserSubject.next(JSON.parse(storedUser));
+        const sessionExpiry = localStorage.getItem(this.SESSION_KEY);
+
+        if (storedUser && sessionExpiry) {
+            const expiryTime = parseInt(sessionExpiry, 10);
+
+            if (Date.now() < expiryTime) {
+                // Session still valid
+                this.currentUserSubject.next(JSON.parse(storedUser));
+                this.startIdleTimer();
+            } else {
+                // Session expired - clear and redirect
+                console.log('Session expired');
+                this.clearSession();
+                // Redirect after a tick to ensure router is ready
+                setTimeout(() => {
+                    this.router.navigate(['/login']);
+                }, 0);
+            }
         }
+    }
+
+    private clearSession(): void {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('userCredentials');
+        localStorage.removeItem('currentOrgId');
+        localStorage.removeItem(this.SESSION_KEY);
+        this.currentUserSubject.next(null);
+    }
+
+    private updateSessionExpiry(): void {
+        const newExpiry = Date.now() + this.IDLE_TIME;
+        localStorage.setItem(this.SESSION_KEY, newExpiry.toString());
     }
 
     get currentUser(): User | null {
@@ -73,7 +110,7 @@ export class AuthService {
     login(email: string, password: string): Observable<any> {
         return this.http.post<any>(`${this.apiUrl}/auth/login`, { email, password })
             .pipe(
-                retry({ count: 2, delay: 1000 }), // Retry up to 2 times with 1 second delay
+                retry({ count: 2, delay: 1000 }),
                 tap((response: any) => {
                     const success = response.success || response.Success;
                     const user = response.user || response.User;
@@ -84,27 +121,28 @@ export class AuthService {
                         if (user.Permissions) {
                             user.permissions = user.Permissions;
                         }
-
                         if (user.DisplayName) {
                             user.displayName = user.DisplayName;
                         }
-
                         if (user.Role) {
                             user.role = user.Role;
                         }
 
                         localStorage.setItem('currentUser', JSON.stringify(user));
                         localStorage.setItem('userCredentials', btoa(`${email}:${password}`));
+                        console.log('Saved credentials:', localStorage.getItem('userCredentials'));
+                        this.updateSessionExpiry();  // ADD THIS
                         this.currentUserSubject.next(user);
+                        this.startIdleTimer();  // ADD THIS
                     }
                 })
             );
     }
+
     logout(): void {
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('userCredentials');
         clearTimeout(this.idleTimeout);
-        this.currentUserSubject.next(null);
+        this.clearSession();
+        this.router.navigate(['/login']);  // ADD REDIRECT
     }
 
     updateCurrentUser(user: User): void {
@@ -112,7 +150,8 @@ export class AuthService {
         this.currentUserSubject.next(user);
     }
 
-    // Admin functions
+    // Admin functions - add these after updateCurrentUser()
+
     private getAdminHeaders(): HttpHeaders {
         const credentials = localStorage.getItem('userCredentials');
         if (!credentials) return new HttpHeaders();
@@ -154,20 +193,6 @@ export class AuthService {
         );
     }
 
-    getFeaturePricing(): Observable<{ success: boolean; pricing: any[] }> {
-        return this.http.get<{ success: boolean; pricing: any[] }>(
-            `${this.apiUrl}/manage/pricing`
-        );
-    }
-
-    updateFeaturePricing(featureName: string, price: number): Observable<{ success: boolean }> {
-        return this.http.put<{ success: boolean }>(
-            `${this.apiUrl}/manage/pricing/${featureName}`,
-            { price },
-            { headers: this.getAdminHeaders() }
-        );
-    }
-
     startIdleTimer(): void {
         this.resetIdleTimer();
 
@@ -183,6 +208,8 @@ export class AuthService {
         }
 
         if (this.currentUserSubject.value) {
+            this.updateSessionExpiry();  // ADD THIS - extend session on activity
+
             this.idleTimeout = setTimeout(() => {
                 console.log('Session timeout due to inactivity');
                 this.logout();

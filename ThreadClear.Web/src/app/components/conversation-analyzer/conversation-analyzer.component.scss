@@ -1041,6 +1041,47 @@ $color-danger: #ef4444;
     }
 }
 
+.draft-input-section {
+    .draft-header {
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        &:hover {
+            opacity: 0.8;
+        }
+    }
+
+    .draft-header-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .chevron {
+        transition: transform 0.2s ease;
+    }
+
+    .draft-content {
+        max-height: 500px;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.2s ease;
+        opacity: 1;
+    }
+
+    &.collapsed {
+        .chevron {
+            transform: rotate(-90deg);
+        }
+
+        .draft-content {
+            max-height: 0;
+            opacity: 0;
+        }
+    }
+}
+
 // Responsive
 @media (max-width: 768px) {
     .analyzer-wrapper {

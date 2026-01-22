@@ -25,6 +25,7 @@ namespace ThreadClear.Functions.Functions
         private readonly IOrganizationService _organizationService;
         private readonly IInsightService _insightService;
         private readonly IAIService _aiService;
+        private readonly ITaxonomyService _taxonomyService;
 
         public AnalyzeConversation(
             ILoggerFactory loggerFactory,
@@ -34,7 +35,8 @@ namespace ThreadClear.Functions.Functions
             IUserService userService,
             IOrganizationService organizationService,
             IInsightService insightService,
-            IAIService aiService)
+            IAIService aiService,
+            ITaxonomyService taxonomyService)
         {
             _logger = loggerFactory.CreateLogger<AnalyzeConversation>();
             _parser = parser;
@@ -44,6 +46,7 @@ namespace ThreadClear.Functions.Functions
             _organizationService = organizationService;
             _insightService = insightService;
             _aiService = aiService;
+            _taxonomyService = taxonomyService;
         }
 
         [Function("AnalyzeConversation")]
@@ -91,6 +94,37 @@ namespace ThreadClear.Functions.Functions
 
                 _logger.LogInformation("TIMING: ParseConversation took {Ms}ms", sw.ElapsedMilliseconds);
                 sw.Restart();
+
+                // Load taxonomy for user's organization
+                TaxonomyData? taxonomy = null;
+                if (authenticatedUser != null)
+                {
+                    try
+                    {
+                        var userOrgs = await _organizationService.GetUserOrganizations(authenticatedUser.Id);
+                        if (userOrgs?.Count > 0)
+                        {
+                            taxonomy = await _taxonomyService.GetTaxonomyForOrganization(userOrgs[0].Id);
+                            _logger.LogInformation("Loaded taxonomy for org {OrgId}", userOrgs[0].Id);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to load taxonomy, proceeding without it");
+                    }
+                }
+
+                // Run analysis with taxonomy context
+                var options = new AnalysisOptions
+                {
+                    EnableUnansweredQuestions = authenticatedUser?.Permissions?.UnansweredQuestions ?? true,
+                    EnableTensionPoints = authenticatedUser?.Permissions?.TensionPoints ?? true,
+                    EnableMisalignments = authenticatedUser?.Permissions?.Misalignments ?? true,
+                    EnableConversationHealth = authenticatedUser?.Permissions?.ConversationHealth ?? true,
+                    EnableSuggestedActions = authenticatedUser?.Permissions?.SuggestedActions ?? true
+                };
+
+                await _analyzer.AnalyzeConversation(capsule, options, taxonomy);
 
                 var modeUsed = capsule.Metadata.TryGetValue("ParsingMode", out var pm) ? pm : "Advanced";
 

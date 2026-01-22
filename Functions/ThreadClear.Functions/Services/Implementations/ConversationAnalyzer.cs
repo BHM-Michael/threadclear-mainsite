@@ -22,6 +22,7 @@ namespace ThreadClear.Functions.Services.Implementations
         private readonly IAIService _aiService;
         private readonly ILogger<ConversationAnalyzer> _logger;
         private readonly AnalysisPatternsLoader _patterns;
+        private TaxonomyData? _currentTaxonomy;
 
         // Only keep regex patterns that need complex matching (not just word lists)
         private static readonly Regex QuestionPattern = new Regex(
@@ -50,8 +51,10 @@ namespace ThreadClear.Functions.Services.Implementations
         {
         }
 
-        public async Task AnalyzeConversation(ThreadCapsule capsule, AnalysisOptions? options = null)
+        public async Task AnalyzeConversation(ThreadCapsule capsule, AnalysisOptions? options = null, TaxonomyData? taxonomy = null)
         {
+            _currentTaxonomy = taxonomy;  // Store for use in prompt building
+
             if (capsule.Analysis == null)
             {
                 capsule.Analysis = new ConversationAnalysis();
@@ -82,6 +85,8 @@ namespace ThreadClear.Functions.Services.Implementations
                     await AnalyzeConversationFullWithPatterns(capsule);
                 }
             }
+
+            _currentTaxonomy = null;  // Clear after use
         }
 
         /// <summary>
@@ -798,6 +803,39 @@ namespace ThreadClear.Functions.Services.Implementations
             var sb = new StringBuilder();
             sb.AppendLine("Analyze the following conversation and provide a JSON response.");
             sb.AppendLine();
+
+            // ADD TAXONOMY CONTEXT
+            if (_currentTaxonomy != null)
+            {
+                sb.AppendLine("ORGANIZATION CONTEXT:");
+
+                if (_currentTaxonomy.Topics?.Any() == true)
+                {
+                    sb.AppendLine("Pay special attention to these topics relevant to this organization:");
+                    foreach (var topic in _currentTaxonomy.Topics.Take(10))
+                    {
+                        var keywords = topic.Keywords?.Any() == true
+                            ? $" (keywords: {string.Join(", ", topic.Keywords.Take(5))})"
+                            : "";
+                        sb.AppendLine($"  - {topic.DisplayName}{keywords}");
+                    }
+                }
+
+                if (_currentTaxonomy.Roles?.Any() == true)
+                {
+                    sb.AppendLine("Participant roles to identify:");
+                    foreach (var role in _currentTaxonomy.Roles.Take(8))
+                    {
+                        var keywords = role.Keywords?.Any() == true
+                            ? $" (indicators: {string.Join(", ", role.Keywords.Take(5))})"
+                            : "";
+                        sb.AppendLine($"  - {role.DisplayName}{keywords}");
+                    }
+                }
+
+                sb.AppendLine();
+            }
+
             sb.AppendLine("CONVERSATION:");
             sb.AppendLine(capsule.RawText);
             sb.AppendLine();

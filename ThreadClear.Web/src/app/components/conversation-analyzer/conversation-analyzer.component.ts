@@ -39,6 +39,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   spellCheckLoading = false;
   spellCheckResults: Map<string, SpellCheckIssue[]> = new Map();
   totalSpellIssues = 0;
+  draftCollapsed = true;
 
   // Section loading states - for progressive UI updates
   sectionsLoading: { [key: string]: boolean } = {

@@ -7,7 +7,6 @@
     <div class="tabs">
         <button [class.active]="activeTab === 'users'" (click)="setTab('users')">Users</button>
         <button [class.active]="activeTab === 'organizations'" (click)="setTab('organizations')">Organizations</button>
-        <button [class.active]="activeTab === 'pricing'" (click)="setTab('pricing')">Pricing</button>
     </div>
 
     <div class="messages">
@@ -199,9 +198,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let org of organizations">
+                    <tr *ngFor="let org of organizations" [class.my-org]="isMyOrg(org.id)">
                         <td>
                             <strong>{{ org.name }}</strong>
+                            <span *ngIf="isMyOrg(org.id)" class="mine-badge">Mine</span>
                             <small class="slug">{{ org.slug }}</small>
                         </td>
                         <td>{{ org.industryType }}</td>
@@ -432,22 +432,4 @@
             </div>
         </div>
     </div>
-
-    <!-- ==================== PRICING TAB ==================== -->
-
-    <!-- ==================== PRICING TAB ==================== -->
-    <section class="section" *ngIf="activeTab === 'pricing'">
-        <h2>Feature Pricing</h2>
-        <div class="pricing-grid">
-            <div class="pricing-card" *ngFor="let feature of pricing">
-                <h4>{{ getFeatureDisplayName(feature.FeatureName) }}</h4>
-                <div class="price-input">
-                    <span class="currency">$</span>
-                    <input type="number" [(ngModel)]="feature.PricePerUse" step="0.01" min="0">
-                    <span class="per-use">per use</span>
-                </div>
-                <button class="btn-small" (click)="updatePricing(feature)">Update</button>
-            </div>
-        </div>
-    </section>
 </div>

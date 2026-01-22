@@ -436,7 +436,7 @@ namespace ThreadClear.Functions.Services.Implementations
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var sql = @"SELECT Id, Name, Slug, IndustryType, Plan, Settings, IsActive, CreatedAt, UpdatedAt 
+            var sql = @"SELECT Id, Name, Slug, IndustryType, [Plan], Settings, IsActive, CreatedAt, UpdatedAt 
                 FROM Organizations 
                 ORDER BY CreatedAt DESC";
 

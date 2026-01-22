@@ -25,7 +25,7 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, u.DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM Users u
@@ -49,7 +49,7 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, u.DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM Users u
@@ -92,7 +92,7 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, u.DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM Users u
@@ -479,7 +479,7 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, u.DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM UserTokens t
@@ -593,24 +593,24 @@ namespace ThreadClear.Functions.Services.Implementations
                 Id = reader.GetGuid(0),
                 Email = reader.GetString(1),
                 DisplayName = reader.GetString(2),
-                PasswordHash = reader.GetString(3),
+                PasswordHash = reader.IsDBNull(3) ? "" : reader.GetString(3),  // FIX: null check
                 Role = reader.GetString(4),
                 IsActive = reader.GetBoolean(5),
                 CreatedAt = reader.GetDateTime(6),
-                CreatedBy = reader.IsDBNull(7) ? null : reader.GetGuid(6)
+                CreatedBy = reader.IsDBNull(7) ? null : reader.GetGuid(7)  // FIX: was GetGuid(6)
             };
 
-            if (!reader.IsDBNull(7))
+            if (!reader.IsDBNull(8))  // FIX: was index 7, should be 8 (PermId)
             {
                 user.Permissions = new UserPermissions
                 {
-                    Id = reader.GetGuid(7),
+                    Id = reader.GetGuid(8),           // FIX: was index 7
                     UserId = user.Id,
-                    UnansweredQuestions = reader.GetBoolean(8),
-                    TensionPoints = reader.GetBoolean(9),
-                    Misalignments = reader.GetBoolean(10),
-                    ConversationHealth = reader.GetBoolean(11),
-                    SuggestedActions = reader.GetBoolean(12)
+                    UnansweredQuestions = reader.GetBoolean(9),   // FIX: was 8
+                    TensionPoints = reader.GetBoolean(10),         // FIX: was 9
+                    Misalignments = reader.GetBoolean(11),         // FIX: was 10
+                    ConversationHealth = reader.GetBoolean(12),    // FIX: was 11
+                    SuggestedActions = reader.GetBoolean(13)       // FIX: was 12
                 };
             }
 

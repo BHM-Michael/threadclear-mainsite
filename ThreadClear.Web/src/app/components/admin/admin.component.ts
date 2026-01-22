@@ -12,10 +12,9 @@ import { OrganizationService } from '../../services/organization.service';
 })
 export class AdminComponent implements OnInit {
   // Tab management
-  activeTab: 'users' | 'organizations' | 'pricing' = 'users';
+  activeTab: 'users' | 'organizations' = 'users';
 
   users: any[] = [];
-  pricing: any[] = [];
   loading = false;
   error = '';
   success = '';
@@ -37,6 +36,7 @@ export class AdminComponent implements OnInit {
 
   // Organizations
   organizations: AdminOrganization[] = [];
+  myOrgIds: Set<string> = new Set();
   showNewOrgForm = false;
   newOrg: CreateOrgRequest = {
     name: '',
@@ -110,11 +110,11 @@ export class AdminComponent implements OnInit {
       return;
     }
     this.loadUsers();
-    this.loadPricing();
     this.loadOrganizations();
+    this.loadMyOrganizations();  // ADD THIS
   }
 
-  setTab(tab: 'users' | 'organizations' | 'pricing') {
+  setTab(tab: 'users' | 'organizations') {
     this.activeTab = tab;
     this.clearMessages();
   }
@@ -161,7 +161,7 @@ export class AdminComponent implements OnInit {
         this.loadUsers();
         setTimeout(() => this.success = '', 3000);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.loading = false;
         this.error = err.error?.error || 'Failed to create user';
         console.error(err);
@@ -197,7 +197,7 @@ export class AdminComponent implements OnInit {
         this.loadUsers();
         setTimeout(() => this.success = '', 3000);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.loading = false;
         this.error = 'Failed to update permissions';
         console.error(err);
@@ -220,7 +220,7 @@ export class AdminComponent implements OnInit {
         this.loadUsers();
         setTimeout(() => this.success = '', 3000);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.error = 'Failed to delete user';
         console.error(err);
       }
@@ -242,6 +242,21 @@ export class AdminComponent implements OnInit {
         console.error('Failed to load organizations', err);
       }
     });
+  }
+
+  loadMyOrganizations() {
+    this.orgService.getMyOrganizations().subscribe({
+      next: (response) => {
+        if (response.success && response.organizations) {
+          this.myOrgIds = new Set(response.organizations.map(o => o.id));
+        }
+      },
+      error: (err) => console.error('Failed to load my organizations', err)
+    });
+  }
+
+  isMyOrg(orgId: string): boolean {
+    return this.myOrgIds.has(orgId);
   }
 
   createOrganization() {
@@ -557,33 +572,6 @@ export class AdminComponent implements OnInit {
     setTimeout(() => this.success = '', 3000);
   }
 
-  // ============================================
-  // PRICING
-  // ============================================
-
-  loadPricing() {
-    this.authService.getFeaturePricing().subscribe({
-      next: (response) => {
-        this.pricing = response.pricing;
-      },
-      error: (err) => {
-        console.error('Failed to load pricing', err);
-      }
-    });
-  }
-
-  updatePricing(feature: any) {
-    this.authService.updateFeaturePricing(feature.FeatureName, feature.PricePerUse).subscribe({
-      next: () => {
-        this.success = 'Pricing updated';
-        setTimeout(() => this.success = '', 3000);
-      },
-      error: (err) => {
-        this.error = 'Failed to update pricing';
-        console.error(err);
-      }
-    });
-  }
 
   // ============================================
   // NAVIGATION
@@ -597,18 +585,6 @@ export class AdminComponent implements OnInit {
     this.authService.logout();
     this.router.navigate(['/login']);
   }
-
-  getFeatureDisplayName(featureName: string): string {
-    const names: { [key: string]: string } = {
-      'UnansweredQuestions': 'Unanswered Questions',
-      'TensionPoints': 'Tension Points',
-      'Misalignments': 'Misalignments',
-      'ConversationHealth': 'Conversation Health',
-      'SuggestedActions': 'Suggested Actions'
-    };
-    return names[featureName] || featureName;
-  }
-
   getMemberStatusClass(status: string): string {
     switch (status) {
       case 'Active': return 'status-active';

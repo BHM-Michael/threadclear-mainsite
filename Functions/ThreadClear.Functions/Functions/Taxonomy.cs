@@ -299,18 +299,30 @@ namespace ThreadClear.Functions.Functions
 
         private async Task<User?> ValidateRequest(HttpRequestData req)
         {
-            if (!req.Headers.TryGetValues("Authorization", out var authHeaders))
+            // Try Bearer token first
+            if (req.Headers.TryGetValues("Authorization", out var authHeaders))
             {
-                return null;
+                var token = authHeaders.FirstOrDefault()?.Replace("Bearer ", "");
+                if (!string.IsNullOrEmpty(token) && token != "null")
+                {
+                    return await _userService.ValidateToken(token);
+                }
             }
 
-            var token = authHeaders.FirstOrDefault()?.Replace("Bearer ", "");
-            if (string.IsNullOrEmpty(token))
+            // Fall back to email/password headers
+            if (req.Headers.TryGetValues("X-User-Email", out var emailHeaders) &&
+                req.Headers.TryGetValues("X-User-Password", out var passwordHeaders))
             {
-                return null;
+                var email = emailHeaders.FirstOrDefault();
+                var password = passwordHeaders.FirstOrDefault();
+
+                if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(password))
+                {
+                    return await _userService.ValidateLogin(email, password);
+                }
             }
 
-            return await _userService.ValidateToken(token);
+            return null;
         }
 
         private async Task<HttpResponseData> UnauthorizedResponse(HttpRequestData req)

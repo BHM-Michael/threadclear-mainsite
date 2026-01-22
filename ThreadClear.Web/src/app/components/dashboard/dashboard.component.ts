@@ -32,6 +32,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.currentOrg = org;
         if (org) {
           this.loadDashboardData();
+        } else {
+          this.isLoading = false;
         }
       });
   }

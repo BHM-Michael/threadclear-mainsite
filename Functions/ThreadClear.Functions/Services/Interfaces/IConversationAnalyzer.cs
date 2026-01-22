@@ -12,7 +12,7 @@ namespace ThreadClear.Functions.Services.Interfaces
         /// <summary>
         /// Perform complete conversation analysis (hero features)
         /// </summary>
-        Task AnalyzeConversation(ThreadCapsule capsule, AnalysisOptions? options = null);
+        Task AnalyzeConversation(ThreadCapsule capsule, AnalysisOptions? options = null, TaxonomyData? taxonomy = null);
 
         /// <summary>
         /// ⭐ HERO: Analyze a draft reply in context of the conversation

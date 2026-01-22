@@ -1,15 +1,15 @@
 // ThreadClear Analyzer - Modern Design
 // Matches marketing site aesthetic
 
-$color-primary: #0ea5e9;
-$color-primary-dark: #0284c7;
-$color-primary-light: #7dd3fc;
+$color-primary: #8469d4;
+$color-primary-dark: #6b4fb8;
+$color-primary-light: #a890e0;
 $color-text: #0f172a;
 $color-text-secondary: #475569;
 $color-text-muted: #94a3b8;
 $color-border: #e2e8f0;
 $color-border-light: #f1f5f9;
-$color-bg: #f8fafc;
+$color-bg: #F8F7FC;
 $color-success: #10b981;
 $color-warning: #f59e0b;
 $color-danger: #ef4444;
@@ -141,10 +141,10 @@ $color-danger: #ef4444;
         }
 
         &.active {
-            background: linear-gradient(135deg, $color-primary 0%, #3b82f6 100%);
+            background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
             color: white;
             border-color: transparent;
-            box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
+            box-shadow: 0 2px 8px rgba(132, 105, 212, 0.25);
 
             svg {
                 opacity: 1;
@@ -174,7 +174,7 @@ $color-danger: #ef4444;
         &:focus {
             outline: none;
             border-color: $color-primary;
-            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+            box-shadow: 0 0 0 3px rgba(132, 105, 212, 0.15);
         }
 
         &::placeholder {
@@ -234,7 +234,7 @@ $color-danger: #ef4444;
         &:focus {
             outline: none;
             border-color: $color-primary;
-            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+            box-shadow: 0 0 0 3px rgba(132, 105, 212, 0.15);
         }
 
         &::placeholder {

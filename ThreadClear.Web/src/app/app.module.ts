@@ -11,7 +11,6 @@ import { LoginComponent } from './components/login/login.component';
 import { AdminComponent } from './components/admin/admin.component';
 import { RegisterComponent } from './components/register/register.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
-import { OrganizationSettingsComponent } from './components/organization-settings/organization-settings.component';
 
 import { OrganizationService } from './services/organization.service';
 import { TaxonomyService } from './services/taxonomy.service';
@@ -30,7 +29,6 @@ import { ProfileComponent } from './components/profile/profile.component';
     AdminComponent,
     RegisterComponent,
     DashboardComponent,
-    OrganizationSettingsComponent,
     HighlightSpellingPipe,
     ProfileComponent
   ],

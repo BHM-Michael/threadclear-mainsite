@@ -3,6 +3,116 @@
 > Paste this at the start of Claude sessions to maintain context.
 
 ## Data Models
+## Architecture
+
+### Project Structure
+```
+ThreadClear/
+├── Extension/                    # Chrome Extension
+├── Functions/ThreadClear.Functions/   # .NET Backend (Azure Functions)
+├── ThreadClear.Web/              # Angular Frontend
+├── index.html, styles.css, etc.  # Marketing site (static)
+└── DECISIONS.md                  # This file
+```
+
+### Backend (.NET Azure Functions)
+```
+Functions/ThreadClear.Functions/
+├── Functions/                    # HTTP endpoints
+│   ├── AnalyzeConversation.cs    # Main analysis endpoint
+│   ├── AnalyzeImage.cs, AnalyzeImages.cs, AnalyzeAudio.cs
+│   ├── Auth.cs                   # Login/logout
+│   ├── Registration.cs           # User signup
+│   ├── UserProfileFunction.cs    # Profile updates
+│   ├── StripeFunction.cs         # Payments
+│   ├── GmailConnectFunction.cs, GmailCallbackFunction.cs, GmailStatusFunction.cs
+│   ├── SlackFunction.cs, TeamsFunction.cs
+│   ├── Organizations.cs          # Org management
+│   ├── AdminFunctions.cs         # Admin operations
+│   ├── Insights.cs, StoreInsight.cs
+│   ├── Spellcheck.cs, QuickParse.cs
+│   └── Helpers/                  # AuthHelper, JsonHelper
+├── Services/
+│   ├── Interfaces/               # Contracts
+│   │   ├── IConversationAnalyzer.cs, IConversationParser.cs
+│   │   ├── IAIService.cs         # AI provider abstraction
+│   │   ├── IUserService.cs, IAuthService.cs
+│   │   ├── IOrganizationService.cs, IOrganizationRepository.cs
+│   │   ├── IInsightService.cs, IInsightRepository.cs
+│   │   ├── IThreadCapsuleBuilder.cs
+│   │   └── IUsageService.cs, ISpellCheckService.cs, ITaxonomyService.cs
+│   └── Implementations/
+│       ├── ConversationAnalyzer.cs    # Core analysis logic
+│       ├── ConversationParser.cs      # Text parsing
+│       ├── ThreadCapsuleBuilder.cs    # Builds ThreadCapsule data structure
+│       ├── ClaudeAIService.cs         # Claude API (primary)
+│       ├── AnthropicAIService.cs, OpenAIService.cs, GeminiAIService.cs
+│       ├── UserService.cs, AuthService.cs
+│       ├── OrganizationService.cs, OrganizationRepository.cs
+│       ├── StripeService.cs, UsageService.cs
+│       └── SpellCheckService.cs, TaxonomyService.cs, InsightService.cs
+├── Models/
+│   ├── ThreadCapsule.cs          # Core data structure
+│   ├── Message.cs, Participant.cs
+│   ├── DraftAnalysis.cs, AnalysisRequest.cs, AnalysisOptions.cs
+│   ├── User.cs, Organization.cs, OrganizationMembership.cs
+│   └── TierLimits.cs, StorableInsight.cs
+├── Data/
+│   └── IndustryTemplates.cs
+└── Program.cs                    # DI configuration
+```
+
+### Frontend (Angular)
+```
+ThreadClear.Web/src/app/
+├── app.component.ts              # Root + nav bar
+├── app.module.ts                 # Module imports
+├── app-routing.module.ts         # Routes
+├── components/
+│   ├── conversation-analyzer/    # Main input UI
+│   ├── results-display/          # Analysis results
+│   ├── dashboard/                # Org dashboard
+│   ├── profile/                  # User profile, usage, integrations
+│   ├── login/, register/         # Auth pages
+│   ├── admin/                    # System admin
+│   ├── organization-settings/    # Org admin
+│   ├── connect/                  # OAuth callbacks
+│   ├── privacy/, terms/          # Legal pages
+├── services/
+│   ├── api.service.ts            # HTTP calls to backend
+│   ├── auth.service.ts           # Auth state, user observable
+│   ├── admin.service.ts          # Admin operations
+│   ├── organization.service.ts   # Org operations
+│   ├── registration.service.ts   # Signup
+│   ├── taxonomy.service.ts       # Categories
+│   └── insights.service.ts       # Stored insights
+├── pipes/
+│   └── highlight-spelling.pipe.ts
+└── environments/
+    ├── environment.ts            # Local API URL
+    └── environment.prod.ts       # Prod API URL
+```
+
+### Chrome Extension
+```
+Extension/
+├── manifest.json                 # Extension config
+├── popup.html, popup.js, popup.css   # Popup UI
+├── content.js                    # Page content script
+└── icons/                        # Extension icons
+```
+
+### Key Data Flow
+1. User pastes conversation → `conversation-analyzer.component.ts`
+2. Calls `api.service.ts` → POST `/api/analyze`
+3. `AnalyzeConversation.cs` → `ConversationParser` → `ThreadCapsuleBuilder` → `ConversationAnalyzer`
+4. `ConversationAnalyzer` uses `ClaudeAIService` for AI analysis
+5. Returns `ThreadCapsule` → `results-display.component.ts` renders results
+
+### AI Service Abstraction
+- `IAIService` interface allows swapping providers
+- Implementations: Claude (primary), Anthropic, OpenAI, Gemini
+- Hybrid approach: 80-90% regex parsing, 10-20% AI enhancement
 
 ### Authentication
 - Session timeout: 30 minutes of inactivity
@@ -125,6 +235,13 @@
 
 ## Working Patterns with Claude
 
+### Before Making Changes
+1. **Commit first** - `git add . && git commit -m "before changes"`
+2. **Upload current files** - not old copies from Downloads
+3. **Ask for line-by-line edits** - not full file replacements
+4. **Test one file at a time** - don't replace 4 files at once
+5. **If something breaks** - `git restore .` to undo uncommitted changes
+
 ### Code Changes
 - **Never paste full file replacements** - too easy to overwrite existing changes
 - Provide only the specific lines/sections changing
@@ -136,6 +253,7 @@
 - Provide full runnable `git add` and `git commit` commands
 - Windows Command Prompt doesn't handle multi-line commits well - use single line
 - Example: `git commit -m "feat: add Gmail OAuth integration"`
+- **Commit after each successful change** - small commits are easier to revert
 
 ### Deployment
 - Frontend: `ng build --configuration=production` then `swa deploy`
@@ -184,6 +302,13 @@
   - SendGrid account setup + API key
   - Email template with analysis summary
   - Timer-triggered Azure Function
+  
+## Completed (Jan 22, 2026)
+- ✅ Purple theme: header, analyzer, results display
+- ✅ Updated nav icons (line chart, person)
+- ✅ Transparent logo
+- ✅ Added Architecture section to DECISIONS.md
+- ✅ Added git workflow guidelines (Before Making Changes)  
 
 ---
-*Last updated: January 17, 2026*
+*Last updated: January 22, 2026*

@@ -71,9 +71,9 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    console.log("Current user:", this.authService.currentUser);
-    console.log("Is logged in:", this.authService.isLoggedIn);
-    console.log("Is admin:", this.authService.isAdmin);
+
+
+
 
     if (!this.authService.isLoggedIn) {
       this.router.navigate(['/login']);
@@ -99,7 +99,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
         if (file) {
           this.inputMode = 'image';
           this.addImages([file]);
-          console.log('Image pasted from clipboard');
+
         }
         break;
       }
@@ -270,7 +270,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (parseResult) => {
-          console.log('QuickParse result:', parseResult);
+
 
           // Initialize results with parsed data - user sees this immediately
           this.results = {
@@ -332,7 +332,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          console.log(`Section ${section} response:`, response);
+
           if (response.success) {
             this.updateResultsSection(section, response.data);
           } else {
@@ -378,12 +378,12 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   private updateResultsSection(section: string, data: any) {
     if (!this.results) return;
 
-    console.log(`Updating section ${section} with data:`, JSON.stringify(data));
+
 
     switch (section) {
       case 'summary':
         const summary = data?.Summary || data?.summary || (typeof data === 'string' ? data : null);
-        console.log('Extracted summary:', summary);
+
         // Force new object reference for change detection
         this.results = { ...this.results, Summary: summary };
         break;
@@ -458,7 +458,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          console.log('Insight storage result:', response);
+
         },
         error: (err) => {
           console.warn('Failed to store insight:', err);
@@ -673,7 +673,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   filterResultsByPermissions(capsule: any) {
     if (!capsule) return capsule;
 
-    console.log("Filtering results. isAdmin:", this.isAdmin, "permissions:", this.permissions);
+
 
     if (this.isAdmin || !this.permissions) {
       return capsule;
@@ -796,7 +796,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
           }
 
           this.spellCheckLoading = false;
-          console.log(`Spell check complete: ${this.totalSpellIssues} issues found`);
+
         },
         error: (err) => {
           console.error('Spell check error:', err);

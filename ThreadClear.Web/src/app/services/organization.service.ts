@@ -60,7 +60,7 @@ export class OrganizationService {
   ) {
     // Load orgs when user logs in
     this.authService.currentUser$.subscribe(user => {
-      console.log('OrganizationService: currentUser$ emitted:', user);  // ADD THIS
+      // ADD THIS
       if (user) {
         this.loadUserOrganizations();
       } else {
@@ -100,31 +100,31 @@ export class OrganizationService {
   }
 
   loadUserOrganizations(): void {
-    console.log('loadUserOrganizations called');
+
     this.getMyOrganizations().subscribe({
       next: (response) => {
-        console.log('getMyOrganizations response:', response);
+
         if (response.success && response.organizations) {
           this.userOrgsSubject.next(response.organizations);
 
           const savedOrgId = localStorage.getItem('currentOrgId');
-          console.log('savedOrgId from localStorage:', savedOrgId);  // ADD THIS
+          // ADD THIS
 
           if (savedOrgId) {
             const savedOrg = response.organizations.find(o => o.id === savedOrgId);
-            console.log('Found savedOrg:', savedOrg);  // ADD THIS
+            // ADD THIS
             if (savedOrg) {
-              console.log('Setting currentOrg to savedOrg');  // ADD THIS
+              // ADD THIS
               this.currentOrgSubject.next(savedOrg);
               return;
             }
           }
 
-          console.log('currentOrgSubject.value:', this.currentOrgSubject.value);  // ADD THIS
-          console.log('organizations.length:', response.organizations.length);  // ADD THIS
+          // ADD THIS
+          // ADD THIS
 
           if (!this.currentOrgSubject.value && response.organizations.length > 0) {
-            console.log('Setting currentOrg to first org');  // ADD THIS
+            // ADD THIS
             this.setCurrentOrganization(response.organizations[0]);
           }
         }

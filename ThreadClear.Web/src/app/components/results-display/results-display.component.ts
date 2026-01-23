@@ -269,7 +269,7 @@ export class ResultsDisplayComponent {
           }
 
           this.spellCheckLoading = false;
-          console.log(`Spell check complete: ${this.totalSpellIssues} issues found`);
+
         },
         error: (err) => {
           console.error('Spell check error:', err);

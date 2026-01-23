@@ -37,10 +37,10 @@ export class LoginComponent {
         this.loading = false;
         const success = response.success || response.Success;
 
-        console.log("Success value:", success);
+
 
         if (success) {
-          console.log("About to navigate...");
+
           this.handleRedirect();
         } else {
           const error = response.error || response.Error;
@@ -61,15 +61,15 @@ export class LoginComponent {
 
     if (returnUrl) {
       localStorage.removeItem('returnUrl');
-      console.log("Redirecting to returnUrl:", returnUrl);
+
       this.router.navigateByUrl(returnUrl).then(
-        (navigated) => console.log("Navigation result:", navigated),
-        (error) => console.log("Navigation error:", error)
+        (navigated) => ,
+        (error) => 
       );
     } else {
       this.router.navigate(['/analyze']).then(
-        (navigated) => console.log("Navigation result:", navigated),
-        (error) => console.log("Navigation error:", error)
+        (navigated) => ,
+        (error) => 
       );
     }
   }

@@ -71,7 +71,7 @@ export class AuthService {
                 this.startIdleTimer();
             } else {
                 // Session expired - clear and redirect
-                console.log('Session expired');
+
                 this.clearSession();
                 // Redirect after a tick to ensure router is ready
                 setTimeout(() => {
@@ -114,7 +114,7 @@ export class AuthService {
                 tap((response: any) => {
                     const success = response.success || response.Success;
                     const user = response.user || response.User;
-                    console.log('Login response:', response);
+
 
                     if (success && user) {
                         // Normalize the permissions property casing
@@ -130,7 +130,7 @@ export class AuthService {
 
                         localStorage.setItem('currentUser', JSON.stringify(user));
                         localStorage.setItem('userCredentials', btoa(`${email}:${password}`));
-                        console.log('Saved credentials:', localStorage.getItem('userCredentials'));
+
                         this.updateSessionExpiry();  // ADD THIS
                         this.currentUserSubject.next(user);
                         this.startIdleTimer();  // ADD THIS
@@ -211,7 +211,7 @@ export class AuthService {
             this.updateSessionExpiry();  // ADD THIS - extend session on activity
 
             this.idleTimeout = setTimeout(() => {
-                console.log('Session timeout due to inactivity');
+
                 this.logout();
             }, this.IDLE_TIME);
         }

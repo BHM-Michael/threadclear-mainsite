@@ -532,7 +532,7 @@ export class AdminComponent implements OnInit {
           this.loadOrgMembers(this.selectedOrg!.id);
 
           // Show results in console for debugging
-          console.log('Bulk invite results:', response.results);
+
         }
       },
       error: (err) => {

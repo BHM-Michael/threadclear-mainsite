@@ -102,7 +102,7 @@ export class RegisterComponent implements OnInit {
 
     this.registrationService.register(request).subscribe({
       next: (response) => {
-        console.log('Registration response:', response);
+
         const success = (response as any).success || (response as any).Success;
         if (success) {
           const user = (response as any).user || (response as any).User;

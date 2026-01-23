@@ -275,8 +275,8 @@ export class ApiService {
       ? `${this.apiUrl}/insights/store?code=${this.functionKey}`
       : `${this.apiUrl}/insights/store`;
 
-    console.log('Storing insight with capsule:', capsule);
-    console.log('Storing insight with url:', url);
+
+
 
     return this.http.post<{ success: boolean; stored: boolean; reason?: string }>(
       url,

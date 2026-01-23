@@ -61,16 +61,9 @@ export class LoginComponent {
 
     if (returnUrl) {
       localStorage.removeItem('returnUrl');
-
-      this.router.navigateByUrl(returnUrl).then(
-        (navigated) => ,
-        (error) => 
-      );
+      this.router.navigateByUrl(returnUrl);
     } else {
-      this.router.navigate(['/analyze']).then(
-        (navigated) => ,
-        (error) => 
-      );
+      this.router.navigate(['/analyze']);
     }
   }
 }

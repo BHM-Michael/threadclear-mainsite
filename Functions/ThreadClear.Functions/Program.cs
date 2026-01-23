@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using ThreadClear.Functions.Models;
 using ThreadClear.Functions.Services.Implementations;
 using ThreadClear.Functions.Services.Interfaces;
+using ThreadClear.Functions.Extensions;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults()
@@ -124,6 +125,8 @@ var host = new HostBuilder()
 
         services.AddScoped<ISlackWorkspaceRepository, SlackWorkspaceRepository>();
         services.AddScoped<ITeamsWorkspaceRepository, TeamsWorkspaceRepository>();
+
+        services.AddGmailDigestServices();
 
         // ============================================
         // APPLICATION INSIGHTS

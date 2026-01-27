@@ -1,0 +1,156 @@
+.slack-install-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.install-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 3rem;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.tc-logo {
+    height: 48px;
+    width: auto;
+}
+
+.plus {
+    font-size: 1.5rem;
+    color: #666;
+    font-weight: 300;
+}
+
+.slack-logo {
+    height: 48px;
+    width: 48px;
+}
+
+h1 {
+    text-align: center;
+    color: #1a1a2e;
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+}
+
+.description {
+    text-align: center;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.features {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.feature {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: #333;
+    font-size: 0.95rem;
+
+    .icon {
+        font-size: 1.25rem;
+    }
+}
+
+.slack-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem 2rem;
+    background: #4A154B;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+
+    &:hover {
+        background: #611f69;
+    }
+
+    .btn-slack-icon {
+        height: 24px;
+        width: 24px;
+    }
+}
+
+.privacy-note {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 1.5rem;
+
+    a {
+        color: #4A154B;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.how-it-works {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid #eee;
+
+    h2 {
+        font-size: 1.1rem;
+        color: #1a1a2e;
+        margin-bottom: 1rem;
+    }
+
+    ol {
+        padding-left: 1.25rem;
+        color: #555;
+        line-height: 1.8;
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #4A154B;
+        }
+    }
+}
+
+@media (max-width: 540px) {
+    .install-card {
+        padding: 2rem 1.5rem;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+}

@@ -647,3 +647,142 @@ select:focus {
 .footer a:hover {
   text-decoration: underline;
 }
+
+/* ============================================================
+   PROGRESSIVE LOADING STYLES
+   Add these to your existing popup.css
+   ============================================================ */
+
+/* Section spinner container */
+.section-spinner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  color: #8469d4;
+}
+
+.section-spinner.hidden {
+  display: none;
+}
+
+/* Animated dots */
+.spinner-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.spinner-dots span {
+  width: 8px;
+  height: 8px;
+  background-color: #8469d4;
+  border-radius: 50%;
+  animation: bounce 1.4s ease-in-out infinite both;
+}
+
+.spinner-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.spinner-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.spinner-dots span:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.spinner-text {
+  font-size: 13px;
+  color: #666;
+}
+
+/* Section content wrapper */
+.section-content {
+  transition: opacity 0.3s ease;
+}
+
+.section-content.hidden {
+  display: none;
+}
+
+/* Section error state */
+.section-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: #fef2f2;
+  border-left: 3px solid #ef4444;
+  color: #991b1b;
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.section-error.hidden {
+  display: none;
+}
+
+.section-error .error-icon {
+  color: #ef4444;
+}
+
+/* Empty state for sections with no results */
+.empty-state {
+  padding: 12px 16px;
+  color: #059669;
+  font-size: 13px;
+  background-color: #ecfdf5;
+  border-radius: 6px;
+  margin: 8px 0;
+}
+
+/* Fade-in animation for content */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-content:not(.hidden) {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Optional: Skeleton loading placeholder (alternative style) */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  height: 16px;
+  margin: 8px 0;
+}
+
+.skeleton.large {
+  height: 60px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

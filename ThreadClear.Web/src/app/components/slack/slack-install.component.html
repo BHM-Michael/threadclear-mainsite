@@ -1,0 +1,82 @@
+<div class="slack-install-container">
+    <div class="install-card">
+        <div class="logo-section">
+            <img src="assets/threadclear-logo.svg" alt="ThreadClear" class="tc-logo"
+                onerror="this.style.display='none'">
+            <span class="plus">+</span>
+            <svg class="slack-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127 127">
+                <path
+                    d="M27.2 80c0 7.3-5.9 13.2-13.2 13.2S.8 87.3.8 80s5.9-13.2 13.2-13.2h13.2V80zm6.6 0c0-7.3 5.9-13.2 13.2-13.2s13.2 5.9 13.2 13.2v33c0 7.3-5.9 13.2-13.2 13.2s-13.2-5.9-13.2-13.2V80z"
+                    fill="#E01E5A" />
+                <path
+                    d="M47 27c-7.3 0-13.2-5.9-13.2-13.2S39.7.6 47 .6s13.2 5.9 13.2 13.2V27H47zm0 6.7c7.3 0 13.2 5.9 13.2 13.2s-5.9 13.2-13.2 13.2H14c-7.3 0-13.2-5.9-13.2-13.2S6.7 33.7 14 33.7h33z"
+                    fill="#36C5F0" />
+                <path
+                    d="M99.9 46.9c0-7.3 5.9-13.2 13.2-13.2s13.2 5.9 13.2 13.2-5.9 13.2-13.2 13.2H99.9V46.9zm-6.6 0c0 7.3-5.9 13.2-13.2 13.2s-13.2-5.9-13.2-13.2V14c0-7.3 5.9-13.2 13.2-13.2s13.2 5.9 13.2 13.2v32.9z"
+                    fill="#2EB67D" />
+                <path
+                    d="M80.1 99.8c7.3 0 13.2 5.9 13.2 13.2s-5.9 13.2-13.2 13.2-13.2-5.9-13.2-13.2V99.8h13.2zm0-6.6c-7.3 0-13.2-5.9-13.2-13.2s5.9-13.2 13.2-13.2h33c7.3 0 13.2 5.9 13.2 13.2s-5.9 13.2-13.2 13.2h-33z"
+                    fill="#ECB22E" />
+            </svg>
+        </div>
+
+        <h1>Add ThreadClear to Slack</h1>
+
+        <p class="description">
+            Analyze conversations directly in Slack. Identify unanswered questions,
+            tension points, and communication risks with a simple slash command.
+        </p>
+
+        <div class="features">
+            <div class="feature">
+                <span class="icon">❓</span>
+                <span>Surface unanswered questions</span>
+            </div>
+            <div class="feature">
+                <span class="icon">⚡</span>
+                <span>Detect tension and misalignment</span>
+            </div>
+            <div class="feature">
+                <span class="icon">🔒</span>
+                <span>Zero data retention — completely ephemeral</span>
+            </div>
+            <div class="feature">
+                <span class="icon">💬</span>
+                <span>Works in channels, DMs, and group messages</span>
+            </div>
+        </div>
+
+        <button class="slack-button" (click)="installSlack()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127 127" class="btn-slack-icon">
+                <path
+                    d="M27.2 80c0 7.3-5.9 13.2-13.2 13.2S.8 87.3.8 80s5.9-13.2 13.2-13.2h13.2V80zm6.6 0c0-7.3 5.9-13.2 13.2-13.2s13.2 5.9 13.2 13.2v33c0 7.3-5.9 13.2-13.2 13.2s-13.2-5.9-13.2-13.2V80z"
+                    fill="#E01E5A" />
+                <path
+                    d="M47 27c-7.3 0-13.2-5.9-13.2-13.2S39.7.6 47 .6s13.2 5.9 13.2 13.2V27H47zm0 6.7c7.3 0 13.2 5.9 13.2 13.2s-5.9 13.2-13.2 13.2H14c-7.3 0-13.2-5.9-13.2-13.2S6.7 33.7 14 33.7h33z"
+                    fill="#36C5F0" />
+                <path
+                    d="M99.9 46.9c0-7.3 5.9-13.2 13.2-13.2s13.2 5.9 13.2 13.2-5.9 13.2-13.2 13.2H99.9V46.9zm-6.6 0c0 7.3-5.9 13.2-13.2 13.2s-13.2-5.9-13.2-13.2V14c0-7.3 5.9-13.2 13.2-13.2s13.2 5.9 13.2 13.2v32.9z"
+                    fill="#2EB67D" />
+                <path
+                    d="M80.1 99.8c7.3 0 13.2 5.9 13.2 13.2s-5.9 13.2-13.2 13.2-13.2-5.9-13.2-13.2V99.8h13.2zm0-6.6c-7.3 0-13.2-5.9-13.2-13.2s5.9-13.2 13.2-13.2h33c7.3 0 13.2 5.9 13.2 13.2s-5.9 13.2-13.2 13.2h-33z"
+                    fill="#ECB22E" />
+            </svg>
+            Add to Slack
+        </button>
+
+        <p class="privacy-note">
+            ThreadClear processes conversations ephemerally — no message data is stored.
+            <a routerLink="/privacy">View our privacy policy</a>
+        </p>
+
+        <div class="how-it-works">
+            <h2>How it works</h2>
+            <ol>
+                <li>Install ThreadClear in your workspace</li>
+                <li>Invite the app to a channel or use in DMs</li>
+                <li>Type <code>/threadclear</code> to analyze recent messages</li>
+                <li>Or paste any conversation: <code>/threadclear [your text]</code></li>
+            </ol>
+        </div>
+    </div>
+</div>

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ThreadClear",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Analyze conversations for unanswered questions, tension points, and more. Check your draft replies before sending.",
   "permissions": [
     "activeTab",

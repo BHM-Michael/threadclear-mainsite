@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThreadClear Installed - Success</title>
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 3rem;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            color: #1a1a2e;
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .next-steps {
+            text-align: left;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .next-steps h2 {
+            font-size: 1rem;
+            color: #1a1a2e;
+            margin-bottom: 1rem;
+        }
+
+        .next-steps ol {
+            padding-left: 1.25rem;
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .next-steps code {
+            background: #e9ecef;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #4A154B;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 0.875rem 2rem;
+            background: #4A154B;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+
+        .button:hover {
+            background: #611f69;
+        }
+
+        .secondary-link {
+            display: block;
+            margin-top: 1rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .secondary-link a {
+            color: #4A154B;
+            text-decoration: none;
+        }
+
+        .secondary-link a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 540px) {
+            .card {
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="success-icon">✅</div>
+        
+        <h1>ThreadClear Installed!</h1>
+        
+        <p class="description">
+            ThreadClear has been successfully added to your Slack workspace. 
+            You can now analyze conversations directly from any channel or DM.
+        </p>
+
+        <div class="next-steps">
+            <h2>Get started:</h2>
+            <ol>
+                <li>Go to any Slack channel or DM</li>
+                <li>Type <code>/threadclear</code> to analyze recent messages</li>
+                <li>Or paste text: <code>/threadclear [conversation]</code></li>
+            </ol>
+        </div>
+
+        <a href="https://slack.com" class="button">Open Slack</a>
+        
+        <p class="secondary-link">
+            Need help? <a href="mailto:admin@threadclear.com">Contact support</a>
+        </p>
+    </div>
+</body>
+</html>

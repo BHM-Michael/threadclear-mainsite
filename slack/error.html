@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThreadClear Installation Error</title>
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 3rem;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            color: #1a1a2e;
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .error-details {
+            background: #fff3f3;
+            border: 1px solid #ffcdd2;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            color: #c62828;
+        }
+
+        .error-details code {
+            background: #ffebee;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 0.875rem 2rem;
+            background: #4A154B;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+
+        .button:hover {
+            background: #611f69;
+        }
+
+        .secondary-link {
+            display: block;
+            margin-top: 1rem;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .secondary-link a {
+            color: #4A154B;
+            text-decoration: none;
+        }
+
+        .secondary-link a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 540px) {
+            .card {
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+    <script>
+        function getErrorReason() {
+            const params = new URLSearchParams(window.location.search);
+            const reason = params.get('reason');
+            
+            const errorMessages = {
+                'access_denied': 'You cancelled the installation or denied access.',
+                'no_code': 'No authorization code was received from Slack.',
+                'token_exchange_failed': 'Failed to complete authentication with Slack.',
+                'internal_error': 'An unexpected error occurred on our end.'
+            };
+            
+            return errorMessages[reason] || reason || 'An unknown error occurred.';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const errorElement = document.getElementById('error-reason');
+            if (errorElement) {
+                errorElement.textContent = getErrorReason();
+            }
+        });
+    </script>
+</head>
+<body>
+    <div class="card">
+        <div class="error-icon">❌</div>
+        
+        <h1>Installation Failed</h1>
+        
+        <p class="description">
+            We couldn't complete the ThreadClear installation for your Slack workspace.
+        </p>
+
+        <div class="error-details">
+            <span id="error-reason">An error occurred during installation.</span>
+        </div>
+
+        <a href="install.html" class="button">Try Again</a>
+        
+        <p class="secondary-link">
+            Still having trouble? <a href="mailto:admin@threadclear.com">Contact support</a>
+        </p>
+    </div>
+</body>
+</html>

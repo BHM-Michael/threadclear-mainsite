@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add ThreadClear to Slack</title>
+    <meta name="description" content="Install ThreadClear in your Slack workspace to analyze conversations for unanswered questions, tension points, and communication risks.">
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .install-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 3rem;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .tc-logo {
+            height: 48px;
+            width: auto;
+        }
+
+        .plus {
+            font-size: 1.5rem;
+            color: #666;
+            font-weight: 300;
+        }
+
+        .slack-logo {
+            height: 48px;
+            width: 48px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1a1a2e;
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .description {
+            text-align: center;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .features {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .feature .icon {
+            font-size: 1.25rem;
+        }
+
+        .slack-button {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            background: #4A154B;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            text-decoration: none;
+        }
+
+        .slack-button:hover {
+            background: #611f69;
+        }
+
+        .slack-button svg {
+            height: 24px;
+            width: 24px;
+        }
+
+        .privacy-note {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 1.5rem;
+        }
+
+        .privacy-note a {
+            color: #4A154B;
+            text-decoration: none;
+        }
+
+        .privacy-note a:hover {
+            text-decoration: underline;
+        }
+
+        .how-it-works {
+            margin-top: 2.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+        }
+
+        .how-it-works h2 {
+            font-size: 1.1rem;
+            color: #1a1a2e;
+            margin-bottom: 1rem;
+        }
+
+        .how-it-works ol {
+            padding-left: 1.25rem;
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .how-it-works li {
+            margin-bottom: 0.5rem;
+        }
+
+        .how-it-works code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #4A154B;
+        }
+
+        @media (max-width: 540px) {
+            .install-card {
+                padding: 2rem 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="install-card">
+        <div class="logo-section">
+            <img src="../TC_logo.png" alt="ThreadClear" class="tc-logo">
+            <span class="plus">+</span>
+            <svg class="slack-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127 127">
+                <path d="M27.2 80c0 7.3-5.9 13.2-13.2 13.2S.8 87.3.8 80s5.9-13.2 13.2-13.2h13.2V80zm6.6 0c0-7.3 5.9-13.2 13.2-13.2s13.2 5.9 13.2 13.2v33c0 7.3-5.9 13.2-13.2 13.2s-13.2-5.9-13.2-13.2V80z" fill="#E01E5A"/>
+                <path d="M47 27c-7.3 0-13.2-5.9-13.2-13.2S39.7.6 47 .6s13.2 5.9 13.2 13.2V27H47zm0 6.7c7.3 0 13.2 5.9 13.2 13.2s-5.9 13.2-13.2 13.2H14c-7.3 0-13.2-5.9-13.2-13.2S6.7 33.7 14 33.7h33z" fill="#36C5F0"/>
+                <path d="M99.9 46.9c0-7.3 5.9-13.2 13.2-13.2s13.2 5.9 13.2 13.2-5.9 13.2-13.2 13.2H99.9V46.9zm-6.6 0c0 7.3-5.9 13.2-13.2 13.2s-13.2-5.9-13.2-13.2V14c0-7.3 5.9-13.2 13.2-13.2s13.2 5.9 13.2 13.2v32.9z" fill="#2EB67D"/>
+                <path d="M80.1 99.8c7.3 0 13.2 5.9 13.2 13.2s-5.9 13.2-13.2 13.2-13.2-5.9-13.2-13.2V99.8h13.2zm0-6.6c-7.3 0-13.2-5.9-13.2-13.2s5.9-13.2 13.2-13.2h33c7.3 0 13.2 5.9 13.2 13.2s-5.9 13.2-13.2 13.2h-33z" fill="#ECB22E"/>
+            </svg>
+        </div>
+
+        <h1>Add ThreadClear to Slack</h1>
+        
+        <p class="description">
+            Analyze conversations directly in Slack. Identify unanswered questions, 
+            tension points, and communication risks with a simple slash command.
+        </p>
+
+        <div class="features">
+            <div class="feature">
+                <span class="icon">❓</span>
+                <span>Surface unanswered questions</span>
+            </div>
+            <div class="feature">
+                <span class="icon">⚡</span>
+                <span>Detect tension and misalignment</span>
+            </div>
+            <div class="feature">
+                <span class="icon">🔒</span>
+                <span>Zero data retention — completely ephemeral</span>
+            </div>
+            <div class="feature">
+                <span class="icon">💬</span>
+                <span>Works in channels, DMs, and group messages</span>
+            </div>
+        </div>
+
+        <a href="https://slack.com/oauth/v2/authorize?client_id=10213956882343.10251286890417&scope=channels:history,chat:write,commands,groups:history,im:history,mpim:history,users:read&redirect_uri=https://threadclear-functions-fsewbzcsd8fuegdj.eastus-01.azurewebsites.net/api/slack-oauth" class="slack-button">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127 127">
+                <path d="M27.2 80c0 7.3-5.9 13.2-13.2 13.2S.8 87.3.8 80s5.9-13.2 13.2-13.2h13.2V80zm6.6 0c0-7.3 5.9-13.2 13.2-13.2s13.2 5.9 13.2 13.2v33c0 7.3-5.9 13.2-13.2 13.2s-13.2-5.9-13.2-13.2V80z" fill="#E01E5A"/>
+                <path d="M47 27c-7.3 0-13.2-5.9-13.2-13.2S39.7.6 47 .6s13.2 5.9 13.2 13.2V27H47zm0 6.7c7.3 0 13.2 5.9 13.2 13.2s-5.9 13.2-13.2 13.2H14c-7.3 0-13.2-5.9-13.2-13.2S6.7 33.7 14 33.7h33z" fill="#36C5F0"/>
+                <path d="M99.9 46.9c0-7.3 5.9-13.2 13.2-13.2s13.2 5.9 13.2 13.2-5.9 13.2-13.2 13.2H99.9V46.9zm-6.6 0c0 7.3-5.9 13.2-13.2 13.2s-13.2-5.9-13.2-13.2V14c0-7.3 5.9-13.2 13.2-13.2s13.2 5.9 13.2 13.2v32.9z" fill="#2EB67D"/>
+                <path d="M80.1 99.8c7.3 0 13.2 5.9 13.2 13.2s-5.9 13.2-13.2 13.2-13.2-5.9-13.2-13.2V99.8h13.2zm0-6.6c-7.3 0-13.2-5.9-13.2-13.2s5.9-13.2 13.2-13.2h33c7.3 0 13.2 5.9 13.2 13.2s-5.9 13.2-13.2 13.2h-33z" fill="#ECB22E"/>
+            </svg>
+            Add to Slack
+        </a>
+
+        <p class="privacy-note">
+            ThreadClear processes conversations ephemerally — no message data is stored. 
+            <a href="../privacy.html">View our privacy policy</a>
+        </p>
+
+        <div class="how-it-works">
+            <h2>How it works</h2>
+            <ol>
+                <li>Install ThreadClear in your workspace</li>
+                <li>Invite the app to a channel or use in DMs</li>
+                <li>Type <code>/threadclear</code> to analyze recent messages</li>
+                <li>Or paste any conversation: <code>/threadclear [your text]</code></li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>

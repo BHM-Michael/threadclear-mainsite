@@ -62,19 +62,19 @@ namespace ThreadClear.Functions.Functions
                 if (!string.IsNullOrEmpty(error))
                 {
                     _logger.LogWarning("OAuth error: {Error}", error);
-                    return await CreateRedirectResponse(req, "https://threadclear.com/slack/error?reason=" + error);
+                    return await CreateRedirectResponse(req, "https://threadclear.com/slack/error.html?reason=" + error);
                 }
 
                 if (string.IsNullOrEmpty(code))
                 {
-                    return await CreateRedirectResponse(req, "https://threadclear.com/slack/error?reason=no_code");
+                    return await CreateRedirectResponse(req, "https://threadclear.com/slack/error.html?reason=no_code");
                 }
 
                 // Exchange code for token
                 var tokenResponse = await ExchangeCodeForToken(code);
                 if (tokenResponse == null)
                 {
-                    return await CreateRedirectResponse(req, "https://threadclear.com/slack/error?reason=token_exchange_failed");
+                    return await CreateRedirectResponse(req, "https://threadclear.com/slack/error.html?reason=token_exchange_failed");
                 }
 
                 // Store or update workspace
@@ -108,12 +108,12 @@ namespace ThreadClear.Functions.Functions
                 }
 
                 // Redirect to success page
-                return await CreateRedirectResponse(req, "https://threadclear.com/slack/success");
+                return await CreateRedirectResponse(req, "https://threadclear.com/slack/success.html");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in OAuth callback");
-                return await CreateRedirectResponse(req, "https://threadclear.com/slack/error?reason=internal_error");
+                return await CreateRedirectResponse(req, "https://threadclear.com/slack/error.html?reason=internal_error");
             }
         }
 

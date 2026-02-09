@@ -1140,3 +1140,21 @@ $color-danger: #ef4444;
         height: 80px;
     }
 }
+
+.draft-hint {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: #94a3b8;
+    background: #f1f5f9;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+.draft-label-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}

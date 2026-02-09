@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService, User, CreateUserRequest, UserPermissions } from '../../services/auth.service';
 import { AdminService, AdminOrganization, AdminOrgMember, CreateOrgRequest, InviteUserRequest } from '../../services/admin.service';
@@ -30,9 +30,6 @@ export class AdminComponent implements OnInit {
     conversationHealth: true,
     suggestedActions: true
   };
-
-  // Edit user
-  editingUser: any | null = null;
 
   // Organizations
   organizations: AdminOrganization[] = [];
@@ -114,6 +111,13 @@ export class AdminComponent implements OnInit {
     this.loadMyOrganizations();  // ADD THIS
   }
 
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscapeKey(event: KeyboardEvent) {
+    if (this.selectedOrg) {
+      this.closeOrgDetails();
+    }
+  }
+
   setTab(tab: 'users' | 'organizations') {
     this.activeTab = tab;
     this.clearMessages();
@@ -181,40 +185,32 @@ export class AdminComponent implements OnInit {
     };
   }
 
-  editUser(user: User) {
-    this.editingUser = { ...user, Permissions: { ...user.permissions } };
+  resetPassword(user: any) {
+    const email = user.Email || user.email;
+    const tempPassword = Math.random().toString(36).slice(-8) + 'A1!';
+
+    // For now, show the temp password - later connect to backend
+    if (confirm(`Generate new password for ${email}?`)) {
+      this.success = `New password for ${email}: ${tempPassword} (Copy this now - implement backend reset later)`;
+      // TODO: Call this.authService.resetPassword(user.Id || user.id, tempPassword)
+    }
   }
 
-  savePermissions() {
-    if (!this.editingUser) return;
-
-    this.loading = true;
-    this.authService.updateUserPermissions(this.editingUser.Id, this.editingUser.Permissions).subscribe({
-      next: () => {
-        this.loading = false;
-        this.success = 'Permissions updated';
-        this.editingUser = null;
-        this.loadUsers();
-        setTimeout(() => this.success = '', 3000);
-      },
-      error: (err: any) => {
-        this.loading = false;
-        this.error = 'Failed to update permissions';
-        console.error(err);
-      }
-    });
+  getVisibleOrgs(): AdminOrganization[] {
+    // Filter to only orgs user belongs to (unless super admin logic added later)
+    if (this.myOrgIds.size === 0) {
+      return this.organizations; // Still loading
+    }
+    return this.organizations.filter(org => this.myOrgIds.has(org.id));
   }
 
-  cancelEdit() {
-    this.editingUser = null;
-  }
-
-  deleteUser(user: User) {
-    if (!confirm(`Are you sure you want to delete ${user.email}?`)) {
+  deleteUser(user: any) {
+    const email = user.Email || user.email || 'this user';
+    if (!confirm(`Are you sure you want to delete ${email}?`)) {
       return;
     }
 
-    this.authService.deleteUser(user.id).subscribe({
+    this.authService.deleteUser(user.Id || user.id).subscribe({
       next: () => {
         this.success = 'User deleted';
         this.loadUsers();
@@ -302,9 +298,9 @@ export class AdminComponent implements OnInit {
 
   viewOrganization(org: AdminOrganization) {
     this.selectedOrg = org;
-    this.orgName = org.name;
-    this.orgIndustry = org.industryType || 'default';
-    this.orgSettingsTab = 'members';
+    this.orgName = org.name;  // ADD THIS
+    this.orgIndustry = org.industryType || 'default';  // ADD THIS
+    this.orgSettingsTab = 'general';  // CHANGE from 'members' to 'general'
     this.loadOrgMembers(org.id);
     this.loadOrgTaxonomy(org.id);
   }

@@ -72,7 +72,7 @@
                     <tr>
                         <th>Email</th>
                         <th>Role</th>
-                        <th>Permissions</th>
+                        <th>Joined</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -81,22 +81,11 @@
                         <td>{{ user.Email }}</td>
                         <td><span class="role-badge" [class.admin]="user.Role === 'admin'">{{ user.Role }}</span></td>
                         <td>
-                            <div class="permission-badges" *ngIf="user.Permissions">
-                                <span class="perm-badge" [class.enabled]="user.Permissions.UnansweredQuestions"
-                                    title="Unanswered Questions">UQ</span>
-                                <span class="perm-badge" [class.enabled]="user.Permissions.TensionPoints"
-                                    title="Tension Points">TP</span>
-                                <span class="perm-badge" [class.enabled]="user.Permissions.Misalignments"
-                                    title="Misalignments">MA</span>
-                                <span class="perm-badge" [class.enabled]="user.Permissions.ConversationHealth"
-                                    title="Conversation Health">CH</span>
-                                <span class="perm-badge" [class.enabled]="user.Permissions.SuggestedActions"
-                                    title="Suggested Actions">SA</span>
-                            </div>
+                            {{ user.CreatedAt | date:'shortDate' }}
                         </td>
                         <td>
-                            <button class="btn-small" (click)="editUser(user)"
-                                *ngIf="user.Role !== 'admin'">Edit</button>
+                            <button class="btn-small" (click)="resetPassword(user)" *ngIf="user.Role !== 'admin'">Reset
+                                Pwd</button>
                             <button class="btn-small btn-danger" (click)="deleteUser(user)"
                                 *ngIf="user.Role !== 'admin'">Delete</button>
                         </td>
@@ -198,7 +187,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let org of organizations" [class.my-org]="isMyOrg(org.id)">
+                    <tr *ngFor="let org of getVisibleOrgs()" [class.my-org]="isMyOrg(org.id)">
                         <td>
                             <strong>{{ org.name }}</strong>
                             <span *ngIf="isMyOrg(org.id)" class="mine-badge">Mine</span>

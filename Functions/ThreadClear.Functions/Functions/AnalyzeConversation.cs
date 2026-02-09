@@ -11,7 +11,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ThreadClear.Functions.Models;
 using ThreadClear.Functions.Services.Interfaces;
-using ThreadClear.Functions.Services.Implementations;
 using ThreadClear.Functions.Helpers;
 
 namespace ThreadClear.Functions.Functions
@@ -27,7 +26,6 @@ namespace ThreadClear.Functions.Functions
         private readonly IInsightService _insightService;
         private readonly IAIService _aiService;
         private readonly ITaxonomyService _taxonomyService;
-        private readonly IAnalysisResultService _analysisResultService;
 
         public AnalyzeConversation(
             ILoggerFactory loggerFactory,
@@ -38,8 +36,7 @@ namespace ThreadClear.Functions.Functions
             IOrganizationService organizationService,
             IInsightService insightService,
             IAIService aiService,
-            ITaxonomyService taxonomyService,
-            IAnalysisResultService analysisResultService)
+            ITaxonomyService taxonomyService)
         {
             _logger = loggerFactory.CreateLogger<AnalyzeConversation>();
             _parser = parser;
@@ -50,7 +47,6 @@ namespace ThreadClear.Functions.Functions
             _insightService = insightService;
             _aiService = aiService;
             _taxonomyService = taxonomyService;
-            _analysisResultService = analysisResultService;
         }
 
         [Function("AnalyzeConversation")]
@@ -152,7 +148,6 @@ namespace ThreadClear.Functions.Functions
                 }
 
                 await StoreInsightAsync(authenticatedUser, capsule, request.SourceType ?? "simple");
-                await StoreAnalysisResultAsync(authenticatedUser, capsule, request.SourceType ?? "web");
 
                 var response = req.CreateResponse(HttpStatusCode.OK);
                 await response.WriteAsJsonAsync(new
@@ -617,96 +612,6 @@ RULES:
             }
         }
 
-        private async Task StoreAnalysisResultAsync(User? user, ThreadCapsule capsule, string source)
-        {
-            if (user == null)
-            {
-                _logger.LogDebug("Skipping analysis result storage - no authenticated user");
-                return;
-            }
-
-            try
-            {
-                // Get org if user has one
-                Guid? orgId = null;
-                var userOrgs = await _organizationService.GetUserOrganizations(user.Id);
-                if (userOrgs?.Count > 0)
-                {
-                    orgId = userOrgs[0].Id;
-                }
-
-                // Build the analysis result with aggregate metrics only
-                var result = new AnalysisRecord
-                {
-                    UserId = user.Id,
-                    OrganizationId = orgId,
-                    Source = source,
-                    HealthScore = (int)((capsule.Analysis?.ConversationHealth?.HealthScore ?? 0.5) * 100),
-                    RiskLevel = capsule.Analysis?.ConversationHealth?.RiskLevel ?? "Low",
-                    ParticipantCount = capsule.Participants?.Count ?? 0
-                };
-
-                // Add findings (type/category/severity only - no content)
-                if (capsule.Analysis?.UnansweredQuestions != null)
-                {
-                    foreach (var q in capsule.Analysis.UnansweredQuestions)
-                    {
-                        result.Findings.Add(new AnalysisFindingRecord
-                        {
-                            FindingType = "unanswered_question",
-                            Category = null,
-                            Severity = null
-                        });
-                    }
-                }
-
-                if (capsule.Analysis?.TensionPoints != null)
-                {
-                    foreach (var t in capsule.Analysis.TensionPoints)
-                    {
-                        result.Findings.Add(new AnalysisFindingRecord
-                        {
-                            FindingType = "tension",
-                            Category = t.Type,
-                            Severity = t.Severity
-                        });
-                    }
-                }
-
-                if (capsule.Analysis?.Misalignments != null)
-                {
-                    foreach (var m in capsule.Analysis.Misalignments)
-                    {
-                        result.Findings.Add(new AnalysisFindingRecord
-                        {
-                            FindingType = "misalignment",
-                            Category = m.Type,
-                            Severity = m.Severity
-                        });
-                    }
-                }
-
-                if (capsule.SuggestedActions != null)
-                {
-                    foreach (var s in capsule.SuggestedActions)
-                    {
-                        result.Findings.Add(new AnalysisFindingRecord
-                        {
-                            FindingType = "suggested_action",
-                            Category = null,
-                            Severity = s.Priority
-                        });
-                    }
-                }
-
-                await _analysisResultService.SaveAsync(result);
-                _logger.LogInformation("Stored analysis result {Id} for user {UserId}", result.Id, user.Id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to store analysis result for user {UserId}", user?.Id);
-            }
-        }
 
         private async Task<HttpResponseData> CreateErrorResponse(
             HttpRequestData req,

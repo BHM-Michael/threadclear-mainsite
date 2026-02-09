@@ -72,6 +72,27 @@ export interface SpellCheckResponse {
   totalIssues: number;
 }
 
+export interface AnalysisRecord {
+  id: string;
+  userId: string;
+  organizationId: string | null;
+  source: string;
+  channelLabel: string | null;
+  healthScore: number;
+  riskLevel: string;
+  participantCount: number;
+  createdAt: string;
+  findings: AnalysisFindingRecord[];
+}
+
+export interface AnalysisFindingRecord {
+  id: string;
+  analysisId: string;
+  findingType: string;  // unanswered_question, tension, misalignment, suggested_action
+  category: string | null;
+  severity: string | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -281,6 +302,30 @@ export class ApiService {
     return this.http.post<{ success: boolean; stored: boolean; reason?: string }>(
       url,
       { capsule },
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  // Analysis Hub - get user's analysis history
+  getMyAnalyses(limit: number = 50): Observable<{ success: boolean; analyses: AnalysisRecord[] }> {
+    const url = this.functionKey
+      ? `${this.apiUrl}/analyses/me?limit=${limit}&code=${this.functionKey}`
+      : `${this.apiUrl}/analyses/me?limit=${limit}`;
+
+    return this.http.get<{ success: boolean; analyses: AnalysisRecord[] }>(
+      url,
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  // Get org analyses (for org dashboard)
+  getOrgAnalyses(orgId: string, limit: number = 100): Observable<{ success: boolean; analyses: AnalysisRecord[] }> {
+    const url = this.functionKey
+      ? `${this.apiUrl}/analyses/org/${orgId}?limit=${limit}&code=${this.functionKey}`
+      : `${this.apiUrl}/analyses/org/${orgId}?limit=${limit}`;
+
+    return this.http.get<{ success: boolean; analyses: AnalysisRecord[] }>(
+      url,
       { headers: this.getAuthHeaders() }
     );
   }

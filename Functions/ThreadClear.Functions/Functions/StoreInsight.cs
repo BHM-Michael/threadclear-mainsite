@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using ThreadClear.Functions.Models;
 using ThreadClear.Functions.Services.Interfaces;
+using ThreadClear.Functions.Services;
 
 namespace ThreadClear.Functions.Functions
 {
@@ -19,19 +20,22 @@ namespace ThreadClear.Functions.Functions
         private readonly IOrganizationService _organizationService;
         private readonly IInsightService _insightService;
         private readonly IUsageService _usageService;
+        private readonly IAnalysisResultService _analysisResultService;
 
         public StoreInsight(
             ILoggerFactory loggerFactory,
             IUserService userService,
             IOrganizationService organizationService,
             IInsightService insightService,
-            IUsageService usageService)
+            IUsageService usageService,
+            IAnalysisResultService analysisResultService)
         {
             _logger = loggerFactory.CreateLogger<StoreInsight>();
             _userService = userService;
             _organizationService = organizationService;
             _insightService = insightService;
             _usageService = usageService;
+            _analysisResultService = analysisResultService;
         }
 
         [Function("StoreInsight")]
@@ -82,6 +86,9 @@ namespace ThreadClear.Functions.Functions
                 // Track usage (always, regardless of org)
                 await _usageService.IncrementAnalysisCount(user.Id, orgId);
 
+                // Store analysis record (aggregate metrics only - no content)
+                await StoreAnalysisRecordAsync(user, orgId, capsule, capsuleJson);
+
                 // Store insight only if user has an organization
                 // TODO: Add support for individual user insights later
                 if (orgId.HasValue)
@@ -113,6 +120,96 @@ namespace ThreadClear.Functions.Functions
             {
                 _logger.LogError(ex, "Error storing insight");
                 return await CreateErrorResponse(req, HttpStatusCode.InternalServerError, "Failed to store insight");
+            }
+        }
+
+        private async Task StoreAnalysisRecordAsync(User user, Guid? orgId, ThreadCapsule capsule, JsonElement capsuleJson)
+        {
+            try
+            {
+                var sourceType = capsule.SourceType ?? "web";
+
+                // Get health score and risk level
+                var healthScore = 50;
+                var riskLevel = "Low";
+                if (capsule.Analysis?.ConversationHealth != null)
+                {
+                    healthScore = (int)(capsule.Analysis.ConversationHealth.HealthScore * 100);
+                    riskLevel = capsule.Analysis.ConversationHealth.RiskLevel ?? "Low";
+                }
+
+                var record = new AnalysisRecord
+                {
+                    UserId = user.Id,
+                    OrganizationId = orgId,
+                    Source = sourceType,
+                    HealthScore = healthScore,
+                    RiskLevel = riskLevel,
+                    ParticipantCount = capsule.Participants?.Count ?? 0
+                };
+
+                // Add findings (type/category/severity only - no content)
+                if (capsule.Analysis?.UnansweredQuestions != null)
+                {
+                    foreach (var q in capsule.Analysis.UnansweredQuestions)
+                    {
+                        record.Findings.Add(new AnalysisFindingRecord
+                        {
+                            FindingType = "unanswered_question",
+                            Category = null,
+                            Severity = null
+                        });
+                    }
+                }
+
+                if (capsule.Analysis?.TensionPoints != null)
+                {
+                    foreach (var t in capsule.Analysis.TensionPoints)
+                    {
+                        record.Findings.Add(new AnalysisFindingRecord
+                        {
+                            FindingType = "tension",
+                            Category = t.Type,
+                            Severity = t.Severity
+                        });
+                    }
+                }
+
+                if (capsule.Analysis?.Misalignments != null)
+                {
+                    foreach (var m in capsule.Analysis.Misalignments)
+                    {
+                        record.Findings.Add(new AnalysisFindingRecord
+                        {
+                            FindingType = "misalignment",
+                            Category = m.Type,
+                            Severity = m.Severity
+                        });
+                    }
+                }
+
+                // Extract suggested actions from JSON since capsule doesn't have them
+                if (capsuleJson.TryGetProperty("SuggestedActions", out var sa) && sa.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var action in sa.EnumerateArray())
+                    {
+                        var priority = action.TryGetProperty("Priority", out var p) ? p.GetString() : "Medium";
+                        record.Findings.Add(new AnalysisFindingRecord
+                        {
+                            FindingType = "suggested_action",
+                            Category = null,
+                            Severity = priority
+                        });
+                    }
+                }
+
+                await _analysisResultService.SaveAsync(record);
+                _logger.LogInformation("Stored analysis record {Id} for user {UserId}", record.Id, user.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to store analysis record for user {UserId}", user.Id);
+                // Non-blocking - don't fail the request
             }
         }
 

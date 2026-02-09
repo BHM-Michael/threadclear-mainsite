@@ -27,7 +27,7 @@ namespace ThreadClear.Functions.Services.Implementations
             try
             {
                 var resultSql = @"
-                    INSERT INTO AnalysisRecords (Id, UserId, OrganizationId, Source, ChannelLabel, HealthScore, RiskLevel, ParticipantCount, CreatedAt)
+                    INSERT INTO AnalysisResults (Id, UserId, OrganizationId, Source, ChannelLabel, HealthScore, RiskLevel, ParticipantCount, CreatedAt)
                     VALUES (@Id, @UserId, @OrganizationId, @Source, @ChannelLabel, @HealthScore, @RiskLevel, @ParticipantCount, @CreatedAt)";
 
                 using (var cmd = new SqlCommand(resultSql, connection, transaction))
@@ -77,7 +77,7 @@ namespace ThreadClear.Functions.Services.Implementations
 
             var sql = @"
                 SELECT TOP (@Limit) Id, UserId, OrganizationId, Source, ChannelLabel, HealthScore, RiskLevel, ParticipantCount, CreatedAt
-                FROM AnalysisRecords
+                FROM AnalysisResults
                 WHERE UserId = @UserId
                 ORDER BY CreatedAt DESC";
 
@@ -107,7 +107,7 @@ namespace ThreadClear.Functions.Services.Implementations
 
             var sql = @"
                 SELECT TOP (@Limit) Id, UserId, OrganizationId, Source, ChannelLabel, HealthScore, RiskLevel, ParticipantCount, CreatedAt
-                FROM AnalysisRecords
+                FROM AnalysisResults
                 WHERE OrganizationId = @OrganizationId
                 ORDER BY CreatedAt DESC";
 
@@ -136,7 +136,7 @@ namespace ThreadClear.Functions.Services.Implementations
 
             var sql = @"
                 SELECT Id, UserId, OrganizationId, Source, ChannelLabel, HealthScore, RiskLevel, ParticipantCount, CreatedAt
-                FROM AnalysisRecords
+                FROM AnalysisResults
                 WHERE Id = @Id";
 
             using var cmd = new SqlCommand(sql, connection);

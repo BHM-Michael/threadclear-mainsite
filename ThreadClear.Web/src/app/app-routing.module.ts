@@ -9,6 +9,7 @@ import { ConnectComponent } from './components/connect/connect.component';
 import { PrivacyComponent } from './components/privacy/privacy.component';
 import { TermsComponent } from './components/terms/terms.component';
 import { ProfileComponent } from './components/profile/profile.component';
+import { AnalysisHubComponent } from './components/analysis-hub/analysis-hub.component';
 
 const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -21,6 +22,7 @@ const routes: Routes = [
   { path: 'privacy', component: PrivacyComponent },
   { path: 'terms', component: TermsComponent },
   { path: 'profile', component: ProfileComponent },
+  { path: 'hub', component: AnalysisHubComponent },
   { path: '**', redirectTo: '/login' }
 ];
 

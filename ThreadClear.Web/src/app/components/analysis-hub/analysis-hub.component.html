@@ -1,0 +1,149 @@
+<div class="hub-container">
+    <!-- Header -->
+    <div class="hub-header">
+        <div class="header-content">
+            <h1>Analysis Hub</h1>
+            <p>Your conversation analysis history</p>
+        </div>
+        <button class="btn-primary" (click)="goToAnalyzer()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14" />
+            </svg>
+            New Analysis
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-row" *ngIf="!loading && analyses.length > 0">
+        <div class="stat-card">
+            <div class="stat-value">{{ totalAnalyses }}</div>
+            <div class="stat-label">Total Analyses</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" [class]="getHealthClass(avgHealthScore)">{{ avgHealthScore }}%</div>
+            <div class="stat-label">Avg Health Score</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ totalFindings }}</div>
+            <div class="stat-label">Total Findings</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value risk-high">{{ highRiskCount }}</div>
+            <div class="stat-label">High Risk</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-row" *ngIf="!loading && analyses.length > 0">
+        <div class="filter-group">
+            <label>Source</label>
+            <select [(ngModel)]="sourceFilter" (change)="onFilterChange()">
+                <option value="all">All Sources</option>
+                <option *ngFor="let source of getUniqueSources()" [value]="source">{{ source | titlecase }}</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Risk Level</label>
+            <select [(ngModel)]="riskFilter" (change)="onFilterChange()">
+                <option value="all">All Risks</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Time Period</label>
+            <select [(ngModel)]="dateFilter" (change)="onFilterChange()">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">Last 7 Days</option>
+                <option value="month">Last 30 Days</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="loading">
+        <div class="spinner"></div>
+        <p>Loading your analysis history...</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-state" *ngIf="error && !loading">
+        <p>{{ error }}</p>
+        <button class="btn-secondary" (click)="loadAnalyses()">Try Again</button>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!loading && !error && analyses.length === 0">
+        <div class="empty-icon">📊</div>
+        <h2>No analyses yet</h2>
+        <p>Start analyzing conversations to see your history and trends here.</p>
+        <button class="btn-primary" (click)="goToAnalyzer()">Start Your First Analysis</button>
+    </div>
+
+    <!-- No Results After Filter -->
+    <div class="empty-state" *ngIf="!loading && !error && analyses.length > 0 && filteredAnalyses.length === 0">
+        <p>No analyses match your filters.</p>
+        <button class="btn-secondary"
+            (click)="sourceFilter='all'; riskFilter='all'; dateFilter='all'; applyFilters()">Clear Filters</button>
+    </div>
+
+    <!-- Analysis List -->
+    <div class="analysis-list" *ngIf="!loading && filteredAnalyses.length > 0">
+        <div class="analysis-card" *ngFor="let analysis of filteredAnalyses">
+            <div class="card-header">
+                <div class="source-badge">
+                    <span class="source-icon">{{ getSourceIcon(getSource(analysis)) }}</span>
+                    <span class="source-name">{{ getSource(analysis) | titlecase }}</span>
+                </div>
+                <div class="timestamp">{{ formatDate(getCreatedAt(analysis)) }}</div>
+            </div>
+
+            <div class="card-body">
+                <div class="health-section">
+                    <div class="health-score" [class]="getHealthClass(getHealthScore(analysis))">
+                        {{ getHealthScore(analysis) }}
+                    </div>
+                    <div class="health-details">
+                        <div class="health-label">Health Score</div>
+                        <div class="risk-badge" [class]="getRiskClass(getRiskLevel(analysis))">
+                            {{ getRiskLevel(analysis) }} Risk
+                        </div>
+                    </div>
+                </div>
+
+                <div class="findings-section">
+                    <div class="finding-item" *ngIf="getFindingCount(analysis, 'unanswered_question') > 0">
+                        <span class="finding-icon">❓</span>
+                        <span class="finding-count">{{ getFindingCount(analysis, 'unanswered_question') }}</span>
+                        <span class="finding-label">Unanswered</span>
+                    </div>
+                    <div class="finding-item" *ngIf="getFindingCount(analysis, 'tension') > 0">
+                        <span class="finding-icon">⚡</span>
+                        <span class="finding-count">{{ getFindingCount(analysis, 'tension') }}</span>
+                        <span class="finding-label">Tensions</span>
+                    </div>
+                    <div class="finding-item" *ngIf="getFindingCount(analysis, 'misalignment') > 0">
+                        <span class="finding-icon">🔀</span>
+                        <span class="finding-count">{{ getFindingCount(analysis, 'misalignment') }}</span>
+                        <span class="finding-label">Misalignments</span>
+                    </div>
+                    <div class="finding-item" *ngIf="getFindingCount(analysis, 'suggested_action') > 0">
+                        <span class="finding-icon">✅</span>
+                        <span class="finding-count">{{ getFindingCount(analysis, 'suggested_action') }}</span>
+                        <span class="finding-label">Actions</span>
+                    </div>
+                    <div class="finding-item muted" *ngIf="getTotalFindingCount(analysis) === 0">
+                        <span class="finding-label">No findings</span>
+                    </div>
+                </div>
+
+                <div class="participants-section" *ngIf="getParticipantCount(analysis) > 0">
+                    <span class="participants-icon">👤</span>
+                    <span class="participants-count">{{ getParticipantCount(analysis) }} participants</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

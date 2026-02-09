@@ -309,8 +309,8 @@ export class ApiService {
   // Analysis Hub - get user's analysis history
   getMyAnalyses(limit: number = 50): Observable<{ success: boolean; analyses: AnalysisRecord[] }> {
     const url = this.functionKey
-      ? `${this.apiUrl}/analyses/me?limit=${limit}&code=${this.functionKey}`
-      : `${this.apiUrl}/analyses/me?limit=${limit}`;
+      ? `${this.apiUrl}/my-analyses?limit=${limit}&code=${this.functionKey}`
+      : `${this.apiUrl}/my-analyses?limit=${limit}`;
 
     return this.http.get<{ success: boolean; analyses: AnalysisRecord[] }>(
       url,

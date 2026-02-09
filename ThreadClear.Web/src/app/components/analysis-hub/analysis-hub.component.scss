@@ -1,0 +1,376 @@
+$color-primary: #0ea5e9;
+$color-primary-dark: #0284c7;
+$color-text: #0f172a;
+$color-text-secondary: #475569;
+$color-text-muted: #94a3b8;
+$color-border: #e2e8f0;
+$color-bg: #f8fafc;
+$color-success: #10b981;
+$color-warning: #f59e0b;
+$color-danger: #ef4444;
+
+.hub-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px;
+}
+
+.hub-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+
+    .header-content {
+        h1 {
+            margin: 0 0 4px;
+            font-size: 28px;
+            font-weight: 700;
+            color: $color-text;
+        }
+
+        p {
+            margin: 0;
+            color: $color-text-secondary;
+        }
+    }
+
+    .btn-primary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: $color-primary;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &:hover {
+            background: $color-primary-dark;
+        }
+    }
+}
+
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+
+    @media (max-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid $color-border;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: $color-text;
+        margin-bottom: 4px;
+
+        &.health-good {
+            color: $color-success;
+        }
+
+        &.health-medium {
+            color: $color-warning;
+        }
+
+        &.health-poor {
+            color: $color-danger;
+        }
+
+        &.risk-high {
+            color: $color-danger;
+        }
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: $color-text-muted;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+}
+
+.filters-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        label {
+            font-size: 12px;
+            color: $color-text-muted;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select {
+            padding: 8px 12px;
+            border: 1px solid $color-border;
+            border-radius: 6px;
+            font-size: 14px;
+            color: $color-text;
+            background: white;
+            min-width: 140px;
+            cursor: pointer;
+
+            &:focus {
+                outline: none;
+                border-color: $color-primary;
+            }
+        }
+    }
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    background: white;
+    border: 1px solid $color-border;
+    border-radius: 12px;
+
+    p {
+        color: $color-text-secondary;
+        margin: 16px 0;
+    }
+}
+
+.loading-state {
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid $color-border;
+        border-top-color: $color-primary;
+        border-radius: 50%;
+        margin: 0 auto 16px;
+        animation: spin 1s linear infinite;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.empty-state {
+    .empty-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+        color: $color-text;
+    }
+}
+
+.btn-secondary {
+    padding: 10px 20px;
+    background: white;
+    color: $color-text;
+    border: 1px solid $color-border;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background: $color-bg;
+        border-color: $color-text-muted;
+    }
+}
+
+.analysis-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.analysis-card {
+    background: white;
+    border: 1px solid $color-border;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+
+    &:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: $color-bg;
+        border-bottom: 1px solid $color-border;
+
+        .source-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .source-icon {
+                font-size: 18px;
+            }
+
+            .source-name {
+                font-size: 14px;
+                font-weight: 500;
+                color: $color-text;
+            }
+        }
+
+        .timestamp {
+            font-size: 13px;
+            color: $color-text-muted;
+        }
+    }
+
+    .card-body {
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+
+        @media (max-width: 600px) {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+        }
+    }
+
+    .health-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .health-score {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+
+            &.health-good {
+                background: $color-success;
+            }
+
+            &.health-medium {
+                background: $color-warning;
+            }
+
+            &.health-poor {
+                background: $color-danger;
+            }
+        }
+
+        .health-details {
+            .health-label {
+                font-size: 12px;
+                color: $color-text-muted;
+                margin-bottom: 4px;
+            }
+
+            .risk-badge {
+                display: inline-block;
+                padding: 2px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 500;
+
+                &.risk-high {
+                    background: #fee2e2;
+                    color: $color-danger;
+                }
+
+                &.risk-medium {
+                    background: #fef3c7;
+                    color: $color-warning;
+                }
+
+                &.risk-low {
+                    background: #d1fae5;
+                    color: $color-success;
+                }
+            }
+        }
+    }
+
+    .findings-section {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        flex: 1;
+
+        .finding-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+
+            .finding-icon {
+                font-size: 16px;
+            }
+
+            .finding-count {
+                font-size: 16px;
+                font-weight: 600;
+                color: $color-text;
+            }
+
+            .finding-label {
+                font-size: 13px;
+                color: $color-text-secondary;
+            }
+
+            &.muted {
+                .finding-label {
+                    color: $color-text-muted;
+                    font-style: italic;
+                }
+            }
+        }
+    }
+
+    .participants-section {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: $color-text-muted;
+        padding-left: 16px;
+        border-left: 1px solid $color-border;
+
+        @media (max-width: 600px) {
+            padding-left: 0;
+            border-left: none;
+        }
+    }
+}

@@ -33,7 +33,7 @@ namespace ThreadClear.Functions.Functions
         /// </summary>
         [Function("GetMyAnalyses")]
         public async Task<HttpResponseData> GetMyAnalyses(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "options", Route = "analyses/me")] HttpRequestData req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "options", Route = "my-analyses")] HttpRequestData req)
         {
             if (req.Method == "OPTIONS")
             {

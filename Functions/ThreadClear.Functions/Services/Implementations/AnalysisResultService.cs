@@ -76,21 +76,24 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT TOP (@Limit) Id, UserId, OrganizationId, Source, ChannelLabel, HealthScore, RiskLevel, ParticipantCount, CreatedAt
-                FROM AnalysisResults
-                WHERE UserId = @UserId
-                ORDER BY CreatedAt DESC";
+        SELECT TOP (@Limit) Id, UserId, OrganizationId, Source, ChannelLabel, HealthScore, RiskLevel, ParticipantCount, CreatedAt
+        FROM AnalysisResults
+        WHERE UserId = @UserId
+        ORDER BY CreatedAt DESC";
 
-            using var cmd = new SqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@UserId", userId);
-            cmd.Parameters.AddWithValue("@Limit", limit);
-
-            using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            using (var cmd = new SqlCommand(sql, connection))
             {
-                results.Add(MapResult(reader));
-            }
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                cmd.Parameters.AddWithValue("@Limit", limit);
 
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(MapResult(reader));
+                }
+            } // Reader is closed here
+
+            // Now load findings for each result (reader is closed)
             foreach (var result in results)
             {
                 result.Findings = await GetFindingsAsync(connection, result.Id);
@@ -106,20 +109,22 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT TOP (@Limit) Id, UserId, OrganizationId, Source, ChannelLabel, HealthScore, RiskLevel, ParticipantCount, CreatedAt
-                FROM AnalysisResults
-                WHERE OrganizationId = @OrganizationId
-                ORDER BY CreatedAt DESC";
+        SELECT TOP (@Limit) Id, UserId, OrganizationId, Source, ChannelLabel, HealthScore, RiskLevel, ParticipantCount, CreatedAt
+        FROM AnalysisResults
+        WHERE OrganizationId = @OrganizationId
+        ORDER BY CreatedAt DESC";
 
-            using var cmd = new SqlCommand(sql, connection);
-            cmd.Parameters.AddWithValue("@OrganizationId", organizationId);
-            cmd.Parameters.AddWithValue("@Limit", limit);
-
-            using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            using (var cmd = new SqlCommand(sql, connection))
             {
-                results.Add(MapResult(reader));
-            }
+                cmd.Parameters.AddWithValue("@OrganizationId", organizationId);
+                cmd.Parameters.AddWithValue("@Limit", limit);
+
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(MapResult(reader));
+                }
+            } // Reader is closed here
 
             foreach (var result in results)
             {

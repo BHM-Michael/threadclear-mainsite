@@ -672,6 +672,50 @@ tr.my-org {
     vertical-align: middle;
 }
 
+.header-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 0.25rem;
+
+    button {
+        padding: 0.5rem 1rem;
+        border: 1px solid #ddd;
+        background: white;
+        cursor: pointer;
+
+        &.active {
+            background: #6366f1;
+            color: white;
+            border-color: #6366f1;
+        }
+    }
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.btn-success {
+    background: #10b981;
+    color: white;
+    border: none;
+
+    &:hover {
+        background: #059669;
+    }
+}
+
 @media (max-width: 480px) {
     .admin-container {
         padding: 10px;

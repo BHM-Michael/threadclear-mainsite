@@ -25,7 +25,7 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy, u.IsSuperAdmin,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM Users u
@@ -49,7 +49,7 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy, u.IsSuperAdmin,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM Users u
@@ -70,7 +70,7 @@ namespace ThreadClear.Functions.Services.Implementations
         public async Task<User?> ValidateLogin(string email, string password)
         {
             var user = await GetUserByEmail(email);
-            if (user == null || !user.IsActive)
+            if (user == null)
                 return null;
 
             // Add this check
@@ -92,7 +92,7 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy, u.IsSuperAdmin,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM Users u
@@ -106,6 +106,91 @@ namespace ThreadClear.Functions.Services.Implementations
             {
                 var user = MapUserFromReader(reader);
                 user.PasswordHash = ""; // Don't return hash
+                users.Add(user);
+            }
+            return users;
+        }
+
+        public async Task<List<User>> GetUsersByOrganization(Guid organizationId)
+        {
+            var users = new List<User>();
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy, u.IsSuperAdmin,
+                       p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
+                       p.ConversationHealth, p.SuggestedActions
+                FROM Users u
+                INNER JOIN OrganizationMemberships om ON u.Id = om.UserId
+                LEFT JOIN UserPermissions p ON u.Id = p.UserId
+                WHERE om.OrganizationId = @OrgId
+                ORDER BY u.CreatedAt DESC";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@OrgId", organizationId);
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                var user = MapUserFromReader(reader);
+                user.PasswordHash = "";
+                users.Add(user);
+            }
+            return users;
+        }
+
+        public async Task<List<User>> GetPendingUsers()
+        {
+            var users = new List<User>();
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy, u.IsSuperAdmin,
+                       p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
+                       p.ConversationHealth, p.SuggestedActions
+                FROM Users u
+                LEFT JOIN UserPermissions p ON u.Id = p.UserId
+                WHERE u.IsActive = 0
+                ORDER BY u.CreatedAt DESC";
+
+            using var cmd = new SqlCommand(sql, connection);
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                var user = MapUserFromReader(reader);
+                user.PasswordHash = "";
+                users.Add(user);
+            }
+            return users;
+        }
+
+        public async Task<List<User>> GetPendingUsersByOrganization(Guid organizationId)
+        {
+            var users = new List<User>();
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"
+                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy, u.IsSuperAdmin,
+                       p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
+                       p.ConversationHealth, p.SuggestedActions
+                FROM Users u
+                INNER JOIN OrganizationMemberships om ON u.Id = om.UserId
+                LEFT JOIN UserPermissions p ON u.Id = p.UserId
+                WHERE om.OrganizationId = @OrgId AND u.IsActive = 0
+                ORDER BY u.CreatedAt DESC";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@OrgId", organizationId);
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                var user = MapUserFromReader(reader);
+                user.PasswordHash = "";
                 users.Add(user);
             }
             return users;
@@ -186,16 +271,21 @@ namespace ThreadClear.Functions.Services.Implementations
             using var transaction = connection.BeginTransaction();
             try
             {
+                // New users are inactive by default (pending approval)
+                // If created by an admin (createdBy has value), they are pre-approved
+                var isActive = createdBy.HasValue ? 1 : 0;
+
                 var userSql = @"
                     INSERT INTO Users (Id, Email, DisplayName, PasswordHash, Role, IsActive, CreatedAt, CreatedBy, [Plan])
-                    VALUES (@Id, @Email, @DisplayName, @PasswordHash, 'user', 1, GETUTCDATE(), @CreatedBy, 'free')";
+                    VALUES (@Id, @Email, @DisplayName, @PasswordHash, 'user', @IsActive, GETUTCDATE(), @CreatedBy, 'free')";
 
                 using (var cmd = new SqlCommand(userSql, connection, transaction))
                 {
                     cmd.Parameters.AddWithValue("@Id", userId);
                     cmd.Parameters.AddWithValue("@Email", request.Email);
-                    cmd.Parameters.AddWithValue("@DisplayName", request.DisplayName);
+                    cmd.Parameters.AddWithValue("@DisplayName", request.DisplayName ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@PasswordHash", passwordHash);
+                    cmd.Parameters.AddWithValue("@IsActive", isActive);
                     cmd.Parameters.AddWithValue("@CreatedBy", createdBy.HasValue ? createdBy.Value : DBNull.Value);
                     await cmd.ExecuteNonQueryAsync();
                 }
@@ -217,14 +307,14 @@ namespace ThreadClear.Functions.Services.Implementations
 
                 transaction.Commit();
 
-                _logger.LogInformation("Created user: {Email}", request.Email);
+                _logger.LogInformation("Created user: {Email}, IsActive: {IsActive}", request.Email, isActive == 1);
 
                 return new User
                 {
                     Id = userId,
                     Email = request.Email,
                     Role = "user",
-                    IsActive = true,
+                    IsActive = isActive == 1,
                     Permissions = new UserPermissions
                     {
                         UserId = userId,
@@ -328,6 +418,24 @@ namespace ThreadClear.Functions.Services.Implementations
             return user;
         }
 
+        public async Task<bool> ApproveUser(Guid userId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = "UPDATE Users SET IsActive = 1 WHERE Id = @UserId";
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+
+            var rows = await cmd.ExecuteNonQueryAsync();
+            if (rows > 0)
+            {
+                _logger.LogInformation("User {UserId} approved", userId);
+                return true;
+            }
+            return false;
+        }
+
         public async Task UpdateUserPermissions(Guid userId, UserPermissions permissions)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -358,6 +466,14 @@ namespace ThreadClear.Functions.Services.Implementations
             using var transaction = connection.BeginTransaction();
             try
             {
+                // Delete from OrganizationMemberships first
+                var membershipSql = "DELETE FROM OrganizationMemberships WHERE UserId = @UserId";
+                using (var cmd = new SqlCommand(membershipSql, connection, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@UserId", userId);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
                 var permSql = "DELETE FROM UserPermissions WHERE UserId = @UserId";
                 using (var cmd = new SqlCommand(permSql, connection, transaction))
                 {
@@ -479,7 +595,7 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"
-                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
+                SELECT u.Id, u.Email, coalesce(u.DisplayName, '') DisplayName, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy, u.IsSuperAdmin,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM UserTokens t
@@ -537,7 +653,7 @@ namespace ThreadClear.Functions.Services.Implementations
             var sql = @"
                 SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
                        u.DisplayName, u.FirstName, u.LastName, u.LastLoginAt, u.EmailVerifiedAt,
-                       u.EmailVerificationToken, u.PasswordResetToken, u.PasswordResetExpires, u.Preferences,
+                       u.EmailVerificationToken, u.PasswordResetToken, u.PasswordResetExpires, u.Preferences, u.IsSuperAdmin,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM Users u
@@ -563,7 +679,7 @@ namespace ThreadClear.Functions.Services.Implementations
             var sql = @"
                 SELECT u.Id, u.Email, u.PasswordHash, u.Role, u.IsActive, u.CreatedAt, u.CreatedBy,
                        u.DisplayName, u.FirstName, u.LastName, u.LastLoginAt, u.EmailVerifiedAt,
-                       u.EmailVerificationToken, u.PasswordResetToken, u.PasswordResetExpires, u.Preferences,
+                       u.EmailVerificationToken, u.PasswordResetToken, u.PasswordResetExpires, u.Preferences, u.IsSuperAdmin,
                        p.Id as PermId, p.UnansweredQuestions, p.TensionPoints, p.Misalignments, 
                        p.ConversationHealth, p.SuggestedActions
                 FROM Users u
@@ -593,24 +709,25 @@ namespace ThreadClear.Functions.Services.Implementations
                 Id = reader.GetGuid(0),
                 Email = reader.GetString(1),
                 DisplayName = reader.GetString(2),
-                PasswordHash = reader.IsDBNull(3) ? "" : reader.GetString(3),  // FIX: null check
+                PasswordHash = reader.IsDBNull(3) ? "" : reader.GetString(3),
                 Role = reader.GetString(4),
                 IsActive = reader.GetBoolean(5),
                 CreatedAt = reader.GetDateTime(6),
-                CreatedBy = reader.IsDBNull(7) ? null : reader.GetGuid(7)  // FIX: was GetGuid(6)
+                CreatedBy = reader.IsDBNull(7) ? null : reader.GetGuid(7),
+                IsSuperAdmin = reader.GetBoolean(8)
             };
 
-            if (!reader.IsDBNull(8))  // FIX: was index 7, should be 8 (PermId)
+            if (!reader.IsDBNull(9))  // PermId
             {
                 user.Permissions = new UserPermissions
                 {
-                    Id = reader.GetGuid(8),           // FIX: was index 7
+                    Id = reader.GetGuid(9),
                     UserId = user.Id,
-                    UnansweredQuestions = reader.GetBoolean(9),   // FIX: was 8
-                    TensionPoints = reader.GetBoolean(10),         // FIX: was 9
-                    Misalignments = reader.GetBoolean(11),         // FIX: was 10
-                    ConversationHealth = reader.GetBoolean(12),    // FIX: was 11
-                    SuggestedActions = reader.GetBoolean(13)       // FIX: was 12
+                    UnansweredQuestions = reader.GetBoolean(10),
+                    TensionPoints = reader.GetBoolean(11),
+                    Misalignments = reader.GetBoolean(12),
+                    ConversationHealth = reader.GetBoolean(13),
+                    SuggestedActions = reader.GetBoolean(14)
                 };
             }
 
@@ -627,7 +744,8 @@ namespace ThreadClear.Functions.Services.Implementations
                 Role = reader.GetString(reader.GetOrdinal("Role")),
                 IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive")),
                 CreatedAt = reader.GetDateTime(reader.GetOrdinal("CreatedAt")),
-                CreatedBy = reader.IsDBNull(reader.GetOrdinal("CreatedBy")) ? null : reader.GetGuid(reader.GetOrdinal("CreatedBy"))
+                CreatedBy = reader.IsDBNull(reader.GetOrdinal("CreatedBy")) ? null : reader.GetGuid(reader.GetOrdinal("CreatedBy")),
+                IsSuperAdmin = reader.GetBoolean(reader.GetOrdinal("IsSuperAdmin"))
             };
 
             // Extended fields

@@ -29,6 +29,8 @@ namespace ThreadClear.Functions.Models
         public string? PasswordResetToken { get; set; }
         public DateTime? PasswordResetExpires { get; set; }
 
+        public bool IsSuperAdmin { get; set; } = false;
+
         // Preferences JSON (NEW)
         public string? PreferencesJson { get; set; }
 

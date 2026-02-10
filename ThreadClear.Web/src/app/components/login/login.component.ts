@@ -47,10 +47,16 @@ export class LoginComponent {
           this.error = error || 'Login failed';
         }
       },
+      // In your login submit handler, in the error callback:
       error: (err) => {
         this.loading = false;
-        this.error = 'Login failed. Please check your credentials.';
-        console.error(err);
+        const errorMsg = err.error?.error || err.error?.Error || 'Login failed';
+
+        if (errorMsg.includes('pending approval')) {
+          this.error = 'Your account is pending approval. You will receive an email once approved.';
+        } else {
+          this.error = errorMsg;
+        }
       }
     });
   }

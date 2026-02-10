@@ -73,6 +73,10 @@ export class AdminComponent implements OnInit {
   newRoleName = '';
   newRoleKeywords = '';
 
+  // User filtering
+  userFilter: 'all' | 'pending' | 'active' = 'pending';
+  filteredUsers: any[] = [];
+
   // Industry options
 
   // Industry options
@@ -137,12 +141,49 @@ export class AdminComponent implements OnInit {
     this.authService.getUsers().subscribe({
       next: (response) => {
         this.users = response.users;
+        this.filterUsers();  // ADD THIS
         this.loading = false;
       },
       error: (err) => {
         this.error = 'Failed to load users';
         this.loading = false;
         console.error(err);
+      }
+    });
+  }
+
+  filterUsers() {
+    if (this.userFilter === 'all') {
+      this.filteredUsers = this.users;
+    } else if (this.userFilter === 'pending') {
+      this.filteredUsers = this.users.filter(u => !u.IsActive);
+    } else {
+      this.filteredUsers = this.users.filter(u => u.IsActive);
+    }
+  }
+
+  setUserFilter(filter: 'all' | 'pending' | 'active') {
+    this.userFilter = filter;
+    this.filterUsers();
+  }
+
+  approveUser(user: any) {
+    const email = user.Email || user.email;
+    if (!confirm(`Approve ${email}?`)) return;
+
+    this.loading = true;
+    this.authService.approveUser(user.Id || user.id).subscribe({
+      next: (response) => {
+        this.loading = false;
+        if (response.success) {
+          this.success = `${email} approved`;
+          this.loadUsers();
+          setTimeout(() => this.success = '', 3000);
+        }
+      },
+      error: (err) => {
+        this.loading = false;
+        this.error = err.error?.error || 'Failed to approve user';
       }
     });
   }

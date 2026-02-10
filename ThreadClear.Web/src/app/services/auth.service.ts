@@ -150,6 +150,15 @@ export class AuthService {
         this.currentUserSubject.next(user);
     }
 
+    // Approve a pending user
+    approveUser(userId: string): Observable<{ success: boolean; message?: string; error?: string }> {
+        return this.http.post<{ success: boolean; message?: string; error?: string }>(
+            `${this.apiUrl}/admin/users/${userId}/approve`,
+            {},
+            { headers: this.getAdminHeaders() }
+        );
+    }
+
     // Admin functions - add these after updateCurrentUser()
 
     private getAdminHeaders(): HttpHeaders {

@@ -56,6 +56,14 @@ namespace ThreadClear.Functions.Functions
                     return unauthorized;
                 }
 
+                if (!user.IsActive)
+                {
+                    _logger.LogWarning("Login blocked: account pending approval for {Email}", loginRequest.Email);
+                    var pending = req.CreateResponse(HttpStatusCode.Forbidden);
+                    await pending.WriteAsJsonAsync(new LoginResponse { Success = false, Error = "Your account is pending approval" });
+                    return pending;
+                }
+
                 // Create and store token
                 var token = await _userService.CreateUserToken(user.Id, "web-app");
 

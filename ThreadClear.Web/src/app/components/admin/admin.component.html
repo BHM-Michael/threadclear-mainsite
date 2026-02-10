@@ -18,9 +18,17 @@
     <section class="section" *ngIf="activeTab === 'users'">
         <div class="section-header">
             <h2>Users</h2>
-            <button class="btn-primary" (click)="showNewUserForm = !showNewUserForm">
-                {{ showNewUserForm ? 'Cancel' : '+ Add User' }}
-            </button>
+            <div class="header-controls">
+                <div class="filter-buttons">
+                    <button [class.active]="userFilter === 'pending'"
+                        (click)="setUserFilter('pending')">Pending</button>
+                    <button [class.active]="userFilter === 'active'" (click)="setUserFilter('active')">Active</button>
+                    <button [class.active]="userFilter === 'all'" (click)="setUserFilter('all')">All</button>
+                </div>
+                <button class="btn-primary" (click)="showNewUserForm = !showNewUserForm">
+                    {{ showNewUserForm ? 'Cancel' : '+ Add User' }}
+                </button>
+            </div>
         </div>
 
         <!-- New User Form -->
@@ -72,18 +80,25 @@
                     <tr>
                         <th>Email</th>
                         <th>Role</th>
+                        <th>Status</th>
                         <th>Joined</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let user of users">
+                    <tr *ngFor="let user of filteredUsers">
                         <td>{{ user.Email }}</td>
                         <td><span class="role-badge" [class.admin]="user.Role === 'admin'">{{ user.Role }}</span></td>
                         <td>
-                            {{ user.CreatedAt | date:'shortDate' }}
+                            <span class="status-badge" [class.status-active]="user.IsActive"
+                                [class.status-pending]="!user.IsActive">
+                                {{ user.IsActive ? 'Active' : 'Pending' }}
+                            </span>
                         </td>
+                        <td>{{ user.CreatedAt | date:'shortDate' }}</td>
                         <td>
+                            <button class="btn-small btn-success" (click)="approveUser(user)"
+                                *ngIf="!user.IsActive && user.Role !== 'admin'">Approve</button>
                             <button class="btn-small" (click)="resetPassword(user)" *ngIf="user.Role !== 'admin'">Reset
                                 Pwd</button>
                             <button class="btn-small btn-danger" (click)="deleteUser(user)"
@@ -94,43 +109,6 @@
             </table>
         </div>
     </section>
-
-    <!-- Edit User Modal -->
-    <div class="modal-overlay" *ngIf="editingUser" (click)="cancelEdit()">
-        <div class="modal" (click)="$event.stopPropagation()">
-            <h3>Edit Permissions: {{ editingUser.Email }}</h3>
-
-            <div class="permissions-grid">
-                <label class="checkbox-label">
-                    <input type="checkbox" [(ngModel)]="editingUser.Permissions.UnansweredQuestions">
-                    Unanswered Questions
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" [(ngModel)]="editingUser.Permissions.TensionPoints">
-                    Tension Points
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" [(ngModel)]="editingUser.Permissions.Misalignments">
-                    Misalignments
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" [(ngModel)]="editingUser.Permissions.ConversationHealth">
-                    Conversation Health
-                </label>
-                <label class="checkbox-label">
-                    <input type="checkbox" [(ngModel)]="editingUser.Permissions.SuggestedActions">
-                    Suggested Actions
-                </label>
-            </div>
-
-            <div class="modal-actions">
-                <button class="btn-secondary" (click)="cancelEdit()">Cancel</button>
-                <button class="btn-primary" (click)="savePermissions()" [disabled]="loading">
-                    {{ loading ? 'Saving...' : 'Save Changes' }}
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- ==================== ORGANIZATIONS TAB ==================== -->
     <section class="section" *ngIf="activeTab === 'organizations'">

@@ -29,9 +29,9 @@ namespace ThreadClear.Functions.Functions
 
         private async Task<User?> ValidateAdminFromHeaders(HttpRequestData req)
         {
-            var adminEmail = req.Headers.TryGetValues("X-Admin-Email", out var emailValues)
+            var adminEmail = req.Headers.TryGetValues("X-User-Email", out var emailValues)
                 ? emailValues.FirstOrDefault() : null;
-            var adminPassword = req.Headers.TryGetValues("X-Admin-Password", out var passValues)
+            var adminPassword = req.Headers.TryGetValues("X-User-Password", out var passValues)
                 ? passValues.FirstOrDefault() : null;
 
             if (string.IsNullOrEmpty(adminEmail) || string.IsNullOrEmpty(adminPassword))

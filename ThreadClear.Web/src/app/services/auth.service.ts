@@ -153,7 +153,7 @@ export class AuthService {
     // Approve a pending user
     approveUser(userId: string): Observable<{ success: boolean; message?: string; error?: string }> {
         return this.http.post<{ success: boolean; message?: string; error?: string }>(
-            `${this.apiUrl}/admin/users/${userId}/approve`,
+            `${this.apiUrl}/approvals/user/${userId}`,
             {},
             { headers: this.getAdminHeaders() }
         );
@@ -166,9 +166,10 @@ export class AuthService {
         if (!credentials) return new HttpHeaders();
 
         const [email, password] = atob(credentials).split(':');
+        console.log('email:', email);  // ADD THIS
         return new HttpHeaders({
-            'X-Admin-Email': email,
-            'X-Admin-Password': password
+            'X-User-Email': email,
+            'X-User-Password': password
         });
     }
 

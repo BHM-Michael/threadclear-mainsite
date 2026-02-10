@@ -80,7 +80,7 @@ export interface BulkInviteResponse {
 export class AdminService {
   private apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   private getAdminHeaders(): HttpHeaders {
     const credentials = localStorage.getItem('userCredentials');
@@ -88,8 +88,8 @@ export class AdminService {
 
     const [email, password] = atob(credentials).split(':');
     return new HttpHeaders({
-      'X-Admin-Email': email,
-      'X-Admin-Password': password,
+      'X-User-Email': email,
+      'X-User-Password': password,
       'Content-Type': 'application/json'
     });
   }

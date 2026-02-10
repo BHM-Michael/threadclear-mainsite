@@ -22,7 +22,7 @@ namespace ThreadClear.Functions.Functions
 
         [Function("ApproveUser")]
         public async Task<HttpResponseData> ApproveUser(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", "options", Route = "admin/users/{userId}/approve")] HttpRequestData req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", "options", Route = "approvals/user/{userId}")] HttpRequestData req,
             string userId)
         {
             if (req.Method == "OPTIONS")

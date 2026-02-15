@@ -122,6 +122,9 @@ var host = new HostBuilder()
                 sp.GetRequiredService<IOrganizationRepository>(),
                 sp.GetRequiredService<ILogger<RegistrationService>>()));
 
+        services.AddSingleton<IRateLimitService>(sp =>
+            new RateLimitService(sqlConnectionString, sp.GetRequiredService<ILogger<RateLimitService>>()));
+
         services.AddScoped<ITeamsWorkspaceRepository, TeamsWorkspaceRepository>();
 
         services.AddScoped<ISlackWorkspaceRepository, SlackWorkspaceRepository>();

@@ -93,6 +93,15 @@ export interface AnalysisFindingRecord {
   severity: string | null;
 }
 
+export interface PublicAnalysisResponse {
+  success: boolean;
+  capsule: any;
+  parsingMode: string;
+  remainingScans: number;
+  isPublicScan: boolean;
+  error?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -134,6 +143,15 @@ export class ApiService {
       : `${this.apiUrl}/analyze/section`;
 
     return this.http.post<SectionResponse>(url, { conversationText, section }, { headers: this.getAuthHeaders() });
+  }
+
+  // Public analysis - no auth required, rate limited by IP
+  analyzePublic(data: { conversationText: string; sourceType: string }): Observable<PublicAnalysisResponse> {
+    const url = this.functionKey
+      ? `${this.apiUrl}/analyze-public?code=${this.functionKey}`
+      : `${this.apiUrl}/analyze-public`;
+
+    return this.http.post<PublicAnalysisResponse>(url, data);
   }
 
   // Full analysis (original endpoint) - still available as fallback

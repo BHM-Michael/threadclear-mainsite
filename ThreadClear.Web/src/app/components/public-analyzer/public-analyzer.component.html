@@ -1,0 +1,130 @@
+<div class="public-page">
+
+    <!-- Header -->
+    <header class="public-header">
+        <div class="header-content">
+            <h1 class="logo" routerLink="/try">ThreadClear</h1>
+            <div class="header-actions">
+                <button class="btn-text" (click)="goToLogin()">Log In</button>
+                <button class="btn-primary-sm" (click)="goToSignup()">Sign Up Free</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" *ngIf="!results">
+        <h2>See what's really happening in your conversations</h2>
+        <p class="subtitle">Paste any email, Slack, or Teams thread. Get instant analysis of unanswered questions,
+            tension points, and risk — no signup required.</p>
+    </section>
+
+    <!-- Analyzer -->
+    <section class="analyzer-section">
+        <div class="analyzer-card" [class.has-results]="results">
+            <div class="input-area" *ngIf="!results">
+                <textarea [(ngModel)]="conversationText"
+                    placeholder="Paste your conversation here... (email thread, Slack messages, Teams chat, or any text conversation)"
+                    rows="12" [disabled]="loading" maxlength="10000"></textarea>
+
+                <div class="input-footer">
+                    <span class="char-count" [class.near-limit]="conversationText.length > 8000">
+                        {{ conversationText.length | number }} / 10,000
+                    </span>
+                    <button class="btn-link" (click)="loadSample()" *ngIf="!conversationText">
+                        Try a sample conversation
+                    </button>
+                </div>
+
+                <div class="action-bar">
+                    <button class="btn-primary" (click)="analyze()" [disabled]="loading || !conversationText.trim()">
+                        {{ loading ? 'Analyzing...' : 'Analyze Conversation' }}
+                    </button>
+                    <button class="btn-secondary" (click)="clear()" *ngIf="conversationText" [disabled]="loading">
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error -->
+            <div class="error-banner" *ngIf="error">
+                {{ error }}
+            </div>
+
+            <!-- Rate Limited -->
+            <div class="rate-limit-banner" *ngIf="rateLimited">
+                <div class="rate-limit-icon">🔒</div>
+                <h3>Daily free scans used up!</h3>
+                <p>You've used all 3 free scans for today. Create a free account to get 10 analyses per month — plus
+                    save your results and track trends.</p>
+                <div class="rate-limit-actions">
+                    <button class="btn-primary" (click)="goToSignup()">Create Free Account</button>
+                    <button class="btn-text" (click)="goToLogin()">Already have an account? Log in</button>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div class="results-area" *ngIf="results">
+                <div class="results-header">
+                    <h2>Analysis Results</h2>
+                    <div class="results-actions">
+                        <button class="btn-secondary" (click)="clear()">Analyze Another</button>
+                    </div>
+                </div>
+
+                <app-results-display [results]="results"></app-results-display>
+
+                <!-- Remaining scans -->
+                <div class="scans-remaining" *ngIf="remainingScans !== null">
+                    <span *ngIf="remainingScans > 0">{{ remainingScans }} free scan{{ remainingScans === 1 ? '' : 's' }}
+                        remaining today</span>
+                    <span *ngIf="remainingScans === 0">No free scans remaining today</span>
+                </div>
+
+                <!-- CTA Banner -->
+                <div class="cta-banner">
+                    <h3>Want more?</h3>
+                    <p>Create a free account to save results, analyze more conversations, get draft message feedback,
+                        and track communication health over time.</p>
+                    <div class="cta-actions">
+                        <button class="btn-primary" (click)="goToSignup()">Create Free Account</button>
+                        <button class="btn-text" (click)="goToLogin()">Already have an account? Log in</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features (only show before results) -->
+    <section class="features" *ngIf="!results && !loading">
+        <div class="feature">
+            <div class="feature-icon">❓</div>
+            <h3>Unanswered Questions</h3>
+            <p>Find questions that slipped through the cracks before they become problems.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">⚡</div>
+            <h3>Tension Detection</h3>
+            <p>Spot frustration, urgency, and conflict early — before they escalate.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">🔍</div>
+            <h3>Misalignment Tracking</h3>
+            <p>See where people are talking past each other or have different assumptions.</p>
+        </div>
+        <div class="feature">
+            <div class="feature-icon">🛡️</div>
+            <h3>Privacy First</h3>
+            <p>Nothing stored. Nothing saved. Your conversations are analyzed and forgotten.</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="public-footer">
+        <div class="footer-links">
+            <a routerLink="/privacy">Privacy Policy</a>
+            <a routerLink="/terms">Terms of Service</a>
+        </div>
+        <p>© 2025 BHM-IT LLC. Your conversations are never stored.</p>
+    </footer>
+
+</div>

@@ -20,6 +20,7 @@ import { AdminService } from './services/admin.service';
 import { HighlightSpellingPipe } from './pipes/highlight-spelling.pipe';
 import { ProfileComponent } from './components/profile/profile.component';
 import { AnalysisHubComponent } from './components/analysis-hub/analysis-hub.component';
+import { PublicAnalyzerComponent } from './components/public-analyzer/public-analyzer.component';
 
 @NgModule({
   declarations: [
@@ -32,7 +33,8 @@ import { AnalysisHubComponent } from './components/analysis-hub/analysis-hub.com
     DashboardComponent,
     HighlightSpellingPipe,
     ProfileComponent,
-    AnalysisHubComponent
+    AnalysisHubComponent,
+    PublicAnalyzerComponent
   ],
   imports: [
     BrowserModule,

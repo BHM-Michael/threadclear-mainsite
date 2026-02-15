@@ -10,9 +10,11 @@ import { PrivacyComponent } from './components/privacy/privacy.component';
 import { TermsComponent } from './components/terms/terms.component';
 import { ProfileComponent } from './components/profile/profile.component';
 import { AnalysisHubComponent } from './components/analysis-hub/analysis-hub.component';
+import { PublicAnalyzerComponent } from './components/public-analyzer/public-analyzer.component';
 
 const routes: Routes = [
-  { path: '', redirectTo: '/login', pathMatch: 'full' },
+  { path: '', redirectTo: '/try', pathMatch: 'full' },
+  { path: 'try', component: PublicAnalyzerComponent },
   { path: 'login', component: LoginComponent },
   { path: 'analyze', component: ConversationAnalyzerComponent },
   { path: 'admin', component: AdminComponent },
@@ -23,7 +25,7 @@ const routes: Routes = [
   { path: 'terms', component: TermsComponent },
   { path: 'profile', component: ProfileComponent },
   { path: 'hub', component: AnalysisHubComponent },
-  { path: '**', redirectTo: '/login' }
+  { path: '**', redirectTo: '/try' }
 ];
 
 @NgModule({

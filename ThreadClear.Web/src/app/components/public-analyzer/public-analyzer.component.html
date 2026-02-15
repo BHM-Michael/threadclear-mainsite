@@ -21,7 +21,7 @@
     <!-- Analyzer -->
     <section class="analyzer-section">
         <div class="analyzer-card" [class.has-results]="results">
-            <div class="input-area" *ngIf="!results">
+            <div class="input-area" *ngIf="!results && !rateLimited">
                 <textarea [(ngModel)]="conversationText"
                     placeholder="Paste your conversation here... (email thread, Slack messages, Teams chat, or any text conversation)"
                     rows="12" [disabled]="loading" maxlength="10000"></textarea>
@@ -37,11 +37,18 @@
 
                 <div class="action-bar">
                     <button class="btn-primary" (click)="analyze()" [disabled]="loading || !conversationText.trim()">
-                        {{ loading ? 'Analyzing...' : 'Analyze Conversation' }}
+                        {{ loading ? 'Starting analysis...' : 'Analyze Conversation' }}
                     </button>
                     <button class="btn-secondary" (click)="clear()" *ngIf="conversationText" [disabled]="loading">
                         Clear
                     </button>
+                </div>
+
+                <!-- Privacy Badge -->
+                <div class="privacy-badge">
+                    <span class="privacy-icon">🛡️</span>
+                    <span>Your conversation is analyzed in real time and <strong>never stored</strong>. Nothing is saved
+                        — not the text, not the results, not your identity. Completely ephemeral.</span>
                 </div>
             </div>
 
@@ -71,17 +78,33 @@
                     </div>
                 </div>
 
-                <app-results-display [results]="results"></app-results-display>
+                <!-- Progress bar while sections loading -->
+                <div class="progress-container" *ngIf="!allSectionsComplete">
+                    <div class="progress-bar">
+                        <div class="progress-fill" [style.width.%]="progressPercent"></div>
+                    </div>
+                    <span class="progress-text">Analyzing... {{ progressPercent }}%</span>
+                </div>
+
+                <!-- Ephemeral notice -->
+                <div class="ephemeral-notice">
+                    <span class="privacy-icon">🛡️</span>
+                    Nothing stored — these results exist only in your browser right now. Close or refresh and they're
+                    gone.
+                </div>
+
+                <app-results-display [results]="results" [sectionsLoading]="sectionsLoading"
+                    [sectionsComplete]="sectionsComplete" [sectionsError]="sectionsError"></app-results-display>
 
                 <!-- Remaining scans -->
-                <div class="scans-remaining" *ngIf="remainingScans !== null">
+                <div class="scans-remaining" *ngIf="remainingScans !== null && allSectionsComplete">
                     <span *ngIf="remainingScans > 0">{{ remainingScans }} free scan{{ remainingScans === 1 ? '' : 's' }}
                         remaining today</span>
                     <span *ngIf="remainingScans === 0">No free scans remaining today</span>
                 </div>
 
                 <!-- CTA Banner -->
-                <div class="cta-banner">
+                <div class="cta-banner" *ngIf="allSectionsComplete">
                     <h3>Want more?</h3>
                     <p>Create a free account to save results, analyze more conversations, get draft message feedback,
                         and track communication health over time.</p>
@@ -94,7 +117,7 @@
         </div>
     </section>
 
-    <!-- Features (only show before results) -->
+    <!-- Features -->
     <section class="features" *ngIf="!results && !loading">
         <div class="feature">
             <div class="feature-icon">❓</div>

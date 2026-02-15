@@ -93,15 +93,6 @@ export interface AnalysisFindingRecord {
   severity: string | null;
 }
 
-export interface PublicAnalysisResponse {
-  success: boolean;
-  capsule: any;
-  parsingMode: string;
-  remainingScans: number;
-  isPublicScan: boolean;
-  error?: string;
-}
-
 @Injectable({
   providedIn: 'root'
 })
@@ -145,13 +136,32 @@ export class ApiService {
     return this.http.post<SectionResponse>(url, { conversationText, section }, { headers: this.getAuthHeaders() });
   }
 
-  // Public analysis - no auth required, rate limited by IP
-  analyzePublic(data: { conversationText: string; sourceType: string }): Observable<PublicAnalysisResponse> {
+  // Public scan gate - checks rate limit before starting progressive analysis
+  startPublicScan(textLength: number, sourceType: string): Observable<{ allowed: boolean; remainingScans: number; error?: string }> {
     const url = this.functionKey
-      ? `${this.apiUrl}/analyze-public?code=${this.functionKey}`
-      : `${this.apiUrl}/analyze-public`;
+      ? `${this.apiUrl}/public/start?code=${this.functionKey}`
+      : `${this.apiUrl}/public/start`;
 
-    return this.http.post<PublicAnalysisResponse>(url, data);
+    return this.http.post<{ allowed: boolean; remainingScans: number; error?: string }>(
+      url, { textLength, sourceType }
+    );
+  }
+
+  // Public versions of progressive endpoints (no auth headers)
+  quickParsePublic(conversationText: string): Observable<QuickParseResponse> {
+    const url = this.functionKey
+      ? `${this.apiUrl}/parse/quick?code=${this.functionKey}`
+      : `${this.apiUrl}/parse/quick`;
+
+    return this.http.post<QuickParseResponse>(url, { conversationText });
+  }
+
+  analyzeSectionPublic(conversationText: string, section: string): Observable<SectionResponse> {
+    const url = this.functionKey
+      ? `${this.apiUrl}/analyze/section?code=${this.functionKey}`
+      : `${this.apiUrl}/analyze/section`;
+
+    return this.http.post<SectionResponse>(url, { conversationText, section });
   }
 
   // Full analysis (original endpoint) - still available as fallback

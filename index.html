@@ -184,7 +184,7 @@
             </div>
             <div class="nav-actions">
                 <a href="https://app.threadclear.com/login" class="btn-secondary">Sign In</a>
-                <a href="#contact" class="btn-primary">Get Early Access</a>
+                <a href="https://app.threadclear.com/try" class="btn-primary">Try It Free</a>
             </div>
             <button class="nav-mobile-toggle" aria-label="Toggle menu" onclick="toggleMobileMenu()">
                 <span></span>
@@ -201,7 +201,7 @@
                 </div>
                 <div class="nav-mobile-actions">
                     <a href="https://app.threadclear.com/login" class="btn-secondary btn-full">Sign In</a>
-                    <a href="#contact" class="btn-primary btn-full" onclick="closeMobileMenu()">Get Early Access</a>
+                    <a href="https://app.threadclear.com/try" class="btn-primary btn-full" onclick="closeMobileMenu()">Try It Free</a>
                 </div>
             </div>
             <div class="nav-mobile-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
@@ -215,10 +215,10 @@
             <div class="hero-grid"></div>
         </div>
         <div class="container">
-            <div class="hero-badge">
-                <span class="badge-dot"></span>
-                Now in Private Beta
-            </div>
+			<div class="hero-badge">
+				<span class="badge-dot"></span>
+				Live Now — No Signup Required
+			</div>
             <h1 class="hero-title">
                 Stop letting conversations<br>
                 <span class="gradient-text">slip through the cracks</span>
@@ -228,15 +228,16 @@
                 tension points, and misalignments—without storing a word.
             </p>
             <div class="hero-cta">
-                <a href="#contact" class="btn-primary btn-large">
-                    Request Early Access
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
-                </a>
-                <a href="#how-it-works" class="btn-ghost">
-                    See How It Works
-                </a>
+				<a href="https://app.threadclear.com/try" class="btn-primary btn-large">
+					Try It Free — No Signup
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M5 12h14M12 5l7 7-7 7"/>
+					</svg>
+				</a>
+				<a href="#how-it-works" class="btn-ghost">
+					See How It Works
+				</a>
+				<p class="hero-privacy-note">🛡️ Nothing stored. Nothing saved. Completely ephemeral.</p>
             </div>
             <div class="hero-visual">
                 <div class="visual-window">
@@ -883,6 +884,12 @@
     </style>
 
     <style>
+	.hero-privacy-note {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 400;
+}
         .cookie-banner {
             display: none;
             position: fixed;

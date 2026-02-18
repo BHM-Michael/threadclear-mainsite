@@ -180,7 +180,7 @@
             <div class="nav-links">
                 <a href="#features">Features</a>
                 <a href="#how-it-works">How It Works</a>
-                <a href="#industries">Industries</a>
+                <a href="#industries">Who It's For</a>
                 <a href="#pricing">Pricing</a>
             </div>
             <div class="nav-actions">
@@ -197,7 +197,7 @@
                 <div class="nav-mobile-links">
                     <a href="#features" onclick="closeMobileMenu()">Features</a>
                     <a href="#how-it-works" onclick="closeMobileMenu()">How It Works</a>
-                    <a href="#industries" onclick="closeMobileMenu()">Industries</a>
+                    <a href="#industries" onclick="closeMobileMenu()">Who It's For</a>
                     <a href="#pricing" onclick="closeMobileMenu()">Pricing</a>
                 </div>
                 <div class="nav-mobile-actions">
@@ -228,7 +228,7 @@
                 Powered by ThreadCapsule™ technology, ThreadClear analyzes your conversations to surface unanswered questions, 
                 tension points, and misalignments—across any platform, without storing a word.
             </p>
-            <div class="hero-cta">
+            <div class="hero-cta" style="display:flex;flex-direction:column;align-items:center;text-align:center;">
 				<a href="https://app.threadclear.com/try" class="btn-primary btn-large">
 					Try It Free — No Signup
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -493,32 +493,23 @@
         </div>
     </section>
 
-    <!-- Industries Section -->
+    <!-- Who It's For Section -->
     <section id="industries" class="industries">
         <div class="container">
             <div class="section-header">
-                <span class="section-label">Industries</span>
-                <h2>Built for teams with high stakes</h2>
-                <p class="section-subtitle">ThreadClear serves organizations where missed communications have real consequences.</p>
+                <span class="section-label">Who It's For</span>
+                <h2>Built for anyone drowning in threads</h2>
+                <p class="section-subtitle">If missed messages have consequences in your world, ThreadClear was built for you.</p>
             </div>
             <div class="industries-grid">
                 <div class="industry-card">
                     <div class="industry-icon">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M3 21h18M3 7v1a3 3 0 003 3h12a3 3 0 003-3V7M21 7H3M12 11v10"/>
+                            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
                         </svg>
                     </div>
-                    <h3>Legal</h3>
-                    <p>Track client communications, ensure nothing falls through discovery, and maintain privilege boundaries.</p>
-                </div>
-                <div class="industry-card">
-                    <div class="industry-icon">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                        </svg>
-                    </div>
-                    <h3>Healthcare</h3>
-                    <p>Monitor care coordination, catch missed follow-ups, and support HIPAA-compliant communication analysis.</p>
+                    <h3>Managers & Team Leads</h3>
+                    <p>Stop scrolling through threads to find who owes what. See unanswered questions and misalignments at a glance.</p>
                 </div>
                 <div class="industry-card">
                     <div class="industry-icon">
@@ -526,8 +517,35 @@
                             <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
                         </svg>
                     </div>
-                    <h3>Finance</h3>
-                    <p>Ensure compliance in client communications, track commitments, and analyze deal flow conversations.</p>
+                    <h3>Sales & Account Teams</h3>
+                    <p>Catch buying signals, track commitments, and never let a deal stall because someone missed a question.</p>
+                </div>
+                <div class="industry-card">
+                    <div class="industry-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/>
+                        </svg>
+                    </div>
+                    <h3>Customer Success</h3>
+                    <p>Detect frustration early, ensure follow-ups happen, and keep client relationships healthy.</p>
+                </div>
+                <div class="industry-card">
+                    <div class="industry-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><path d="M8 21h8M12 17v4"/>
+                        </svg>
+                    </div>
+                    <h3>Project Managers</h3>
+                    <p>Track action items across threads, spot scope creep in conversations, and keep stakeholders aligned.</p>
+                </div>
+                <div class="industry-card">
+                    <div class="industry-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M3 21h18M3 7v1a3 3 0 003 3h12a3 3 0 003-3V7M21 7H3M12 11v10"/>
+                        </svg>
+                    </div>
+                    <h3>Executives</h3>
+                    <p>Get the full picture without reading every message. Understand team health and communication risks in seconds.</p>
                 </div>
                 <div class="industry-card">
                     <div class="industry-icon">
@@ -535,8 +553,8 @@
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                         </svg>
                     </div>
-                    <h3>Defense & Government</h3>
-                    <p>Self-hosted deployment for classified environments. Air-gapped support available.</p>
+                    <h3>Regulated Industries</h3>
+                    <p>Legal, healthcare, finance, defense—if compliance matters, our zero-retention architecture and self-hosted option have you covered.</p>
                 </div>
             </div>
         </div>
@@ -796,10 +814,10 @@
                         <a href="#how-it-works">How It Works</a>
                     </div>
                     <div class="footer-column">
-                        <h4>Industries</h4>
-                        <a href="#industries">Legal</a>
-                        <a href="#industries">Healthcare</a>
-                        <a href="#industries">Finance</a>
+                        <h4>Who It's For</h4>
+                        <a href="#industries">Managers</a>
+                        <a href="#industries">Sales Teams</a>
+                        <a href="#industries">Project Managers</a>
                     </div>
                     <div class="footer-column">
                         <h4>Company</h4>

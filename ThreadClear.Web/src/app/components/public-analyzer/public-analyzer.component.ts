@@ -67,6 +67,12 @@ Mike`;
     ngOnInit(): void {
         // Silently wake the database before user does anything
         this.apiService.warmup().subscribe();
+
+        const params = new URLSearchParams(window.location.search);
+        const shared = params.get('conversationText');
+        if (shared) {
+            this.conversationText = shared;
+        }
     }
 
     ngOnDestroy() {
@@ -248,6 +254,7 @@ Mike`;
         this.error = '';
         this.rateLimited = false;
         this.progressPercent = 0;
+        this.showSignupCta = false;
         Object.keys(this.sectionsLoading).forEach(key => {
             this.sectionsLoading[key] = false;
             this.sectionsComplete[key] = false;

@@ -18,6 +18,7 @@ export class PublicAnalyzerComponent implements OnDestroy {
     remainingScans: number | null = null;
     rateLimited = false;
     showSignupCta = false;
+    showSmsTip = false;
 
     // Progressive loading states
     sectionsLoading: { [key: string]: boolean } = {

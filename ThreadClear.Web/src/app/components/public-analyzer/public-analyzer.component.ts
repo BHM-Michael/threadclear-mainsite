@@ -17,6 +17,7 @@ export class PublicAnalyzerComponent implements OnDestroy {
     error = '';
     remainingScans: number | null = null;
     rateLimited = false;
+    showSignupCta = false;
 
     // Progressive loading states
     sectionsLoading: { [key: string]: boolean } = {
@@ -227,6 +228,10 @@ Mike`;
         const total = Object.keys(this.sectionsComplete).length;
         const complete = Object.values(this.sectionsComplete).filter(v => v).length;
         this.progressPercent = 15 + Math.round((complete / total) * 85);
+
+        if (complete === total) {
+            setTimeout(() => this.showSignupCta = true, 800); // slight delay feels natural
+        }
     }
 
     get allSectionsComplete(): boolean {

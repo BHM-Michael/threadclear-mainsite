@@ -103,14 +103,18 @@
                     <span *ngIf="remainingScans === 0">No free scans remaining today</span>
                 </div>
 
-                <!-- CTA Banner -->
-                <div class="cta-banner" *ngIf="allSectionsComplete">
-                    <h3>Want more?</h3>
-                    <p>Create a free account to save results, analyze more conversations, get draft message feedback,
-                        and track communication health over time.</p>
-                    <div class="cta-actions">
-                        <button class="btn-primary" (click)="goToSignup()">Create Free Account</button>
-                        <button class="btn-text" (click)="goToLogin()">Already have an account? Log in</button>
+                <!-- CTA Banner — appears after slight delay so it feels earned -->
+                <div class="cta-banner cta-reveal" *ngIf="showSignupCta">
+                    <div class="cta-inner">
+                        <div class="cta-icon">🎯</div>
+                        <h3>You just saw what ThreadClear can do.</h3>
+                        <p>Create a free account to save this analysis, track communication health over time, and never
+                            lose track of a customer conversation again.</p>
+                        <div class="cta-actions">
+                            <button class="btn-primary cta-primary-btn" (click)="goToSignup()">Create Your Free
+                                Account</button>
+                            <button class="btn-text" (click)="goToLogin()">Already have an account? Log in</button>
+                        </div>
                     </div>
                 </div>
             </div>

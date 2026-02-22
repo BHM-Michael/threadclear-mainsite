@@ -439,6 +439,27 @@
     }
 }
 
+.cta-reveal {
+    animation: ctaSlideIn 0.6s ease-out forwards;
+}
+
+@keyframes ctaSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.cta-primary-btn {
+    font-size: 1rem;
+    padding: 0.75rem 2rem;
+}
+
 @media (max-width: 480px) {
     .features {
         grid-template-columns: 1fr;

@@ -272,18 +272,6 @@ namespace ThreadClear.Functions.Functions
         }
     }
 
-    /// <summary>
-    /// Response model from ConversationAnalyzer - matches your existing models
-    /// </summary>
-    //public class AnalysisResult
-    //{
-    //    public List<UnansweredQuestion>? UnansweredQuestions { get; set; }
-    //    public List<TensionPoint>? TensionPoints { get; set; }
-    //    public List<Misalignment>? Misalignments { get; set; }
-    //    public int? HealthScore { get; set; }
-    //    public string? Summary { get; set; }
-    //}
-
     public class AnalysisResult
     {
         public bool Success { get; set; }

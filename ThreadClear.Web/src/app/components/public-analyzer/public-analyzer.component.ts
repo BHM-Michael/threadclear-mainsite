@@ -63,6 +63,11 @@ Mike`;
         private router: Router
     ) { }
 
+    ngOnInit(): void {
+        // Silently wake the database before user does anything
+        this.apiService.warmup().subscribe();
+    }
+
     ngOnDestroy() {
         this.destroy$.next();
         this.destroy$.complete();

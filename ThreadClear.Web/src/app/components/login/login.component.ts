@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-login',
@@ -15,12 +16,18 @@ export class LoginComponent {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private apiService: ApiService
   ) {
     // Redirect if already logged in
     if (this.authService.isLoggedIn) {
       this.handleRedirect();
     }
+  }
+
+  ngOnInit(): void {
+    // Silently wake the database before the user attempts login
+    this.apiService.warmup().subscribe();
   }
 
   login() {

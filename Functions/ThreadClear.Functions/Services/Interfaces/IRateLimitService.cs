@@ -8,5 +8,6 @@ namespace ThreadClear.Functions.Services.Interfaces
         int GetRemainingRequests(string ipAddress, int maxRequests = 3);
         Task LogPublicScanAsync(string ipAddress, string sourceType, int textLength,
             int participantCount, int messageCount, int analysisTimeMs);
+        Task PingAsync();
     }
 }

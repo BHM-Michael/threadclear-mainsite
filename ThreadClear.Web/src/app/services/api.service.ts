@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, Subject } from 'rxjs';
+import { catchError, mergeMap, Observable, of, retryWhen, Subject, throwError, timer } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface AnalysisRequest {
@@ -144,6 +144,25 @@ export class ApiService {
 
     return this.http.post<{ allowed: boolean; remainingScans: number; error?: string }>(
       url, { textLength, sourceType }
+    ).pipe(
+      retryWhen(errors =>
+        errors.pipe(
+          mergeMap((error, attempt) => {
+            if (attempt >= 1) return throwError(() => error); // Only retry once
+            return timer(3000); // Wait 3 seconds — DB should be warm by then
+          })
+        )
+      )
+    );
+  }
+
+  warmup(): Observable<any> {
+    const url = this.functionKey
+      ? `${this.apiUrl}/public/warmup?code=${this.functionKey}`
+      : `${this.apiUrl}/public/warmup`;
+
+    return this.http.get(url).pipe(
+      catchError(() => of({ status: 'cold' })) // Silent failure — never show error
     );
   }
 

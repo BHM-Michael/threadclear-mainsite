@@ -98,6 +98,14 @@ namespace ThreadClear.Functions.Services.Implementations
             }
         }
 
+        public async Task PingAsync()
+        {
+            using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            using var cmd = new SqlCommand("SELECT 1", conn);
+            await cmd.ExecuteScalarAsync();
+        }
+
         private string HashIp(string ip)
         {
             using var sha = SHA256.Create();

@@ -14,8 +14,8 @@
     <!-- Hero Section -->
     <section class="hero" *ngIf="!results">
         <h2>See what's really happening in your conversations</h2>
-        <p class="subtitle">Paste any email, Slack, or Teams thread. Get instant analysis of unanswered questions,
-            tension points, and risk — no signup required.</p>
+        <p class="subtitle">Paste any conversation — email, Slack, Teams, or customer messages. Get instant analysis of
+            unanswered questions, forgotten requests, and risk — no signup required.</p>
     </section>
 
     <!-- Analyzer -->
@@ -42,6 +42,23 @@
                     <button class="btn-secondary" (click)="clear()" *ngIf="conversationText" [disabled]="loading">
                         Clear
                     </button>
+                </div>
+
+                <!-- SMS copy helper tip -->
+                <div class="sms-tip" *ngIf="!conversationText">
+                    <button class="sms-tip-toggle" (click)="showSmsTip = !showSmsTip">
+                        💬 How to copy a full text thread
+                        <span class="tip-chevron">{{ showSmsTip ? '▲' : '▼' }}</span>
+                    </button>
+                    <div class="sms-tip-content" *ngIf="showSmsTip">
+                        <p><strong>On Android:</strong> Go to <a href="https://messages.google.com"
+                                target="_blank">messages.google.com</a> on your computer, open the thread, select all
+                            text, copy and paste here.</p>
+                        <p><strong>On iPhone:</strong> In your Messages app, tap and hold a message, tap More, select
+                            all messages, then tap Copy All.</p>
+                        <p><strong>WhatsApp:</strong> Open the chat → tap the three dots → More → Export Chat → Without
+                            Media. Copy the exported text and paste here.</p>
+                    </div>
                 </div>
 
                 <!-- Privacy Badge -->

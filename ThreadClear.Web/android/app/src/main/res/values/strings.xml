@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ThreadClear</string>
+    <string name="title_activity_main">ThreadClear</string>
+    <string name="package_name">com.bhmit.threadclear</string>
+    <string name="custom_url_scheme">com.bhmit.threadclear</string>
+</resources>

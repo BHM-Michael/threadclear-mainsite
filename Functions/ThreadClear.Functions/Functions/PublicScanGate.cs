@@ -36,6 +36,7 @@ namespace ThreadClear.Functions.Functions
 
             var clientIp = GetClientIp(req);
 
+
             if (!_rateLimitService.IsAllowed(clientIp, MAX_FREE_SCANS_PER_DAY))
             {
                 var remaining = _rateLimitService.GetRemainingRequests(clientIp, MAX_FREE_SCANS_PER_DAY);
@@ -76,16 +77,26 @@ namespace ThreadClear.Functions.Functions
 
         private string GetClientIp(HttpRequestData req)
         {
+            if (req.Headers.TryGetValues("X-Azure-ClientIP", out var azureIp))
+            {
+                var ip = azureIp.FirstOrDefault()?.Split(':').FirstOrDefault()?.Trim();
+                if (!string.IsNullOrEmpty(ip)) return ip;
+            }
+
             if (req.Headers.TryGetValues("X-Forwarded-For", out var forwardedFor))
             {
-                var ip = forwardedFor.FirstOrDefault()?.Split(',').FirstOrDefault()?.Trim();
+                var raw = forwardedFor.FirstOrDefault()?.Split(',').FirstOrDefault()?.Trim();
+                // Strip port if present (e.g. "73.148.33.48:51565" → "73.148.33.48")
+                var ip = raw?.Split(':').FirstOrDefault()?.Trim();
                 if (!string.IsNullOrEmpty(ip)) return ip;
             }
+
             if (req.Headers.TryGetValues("X-Real-IP", out var realIp))
             {
-                var ip = realIp.FirstOrDefault();
+                var ip = realIp.FirstOrDefault()?.Split(':').FirstOrDefault()?.Trim();
                 if (!string.IsNullOrEmpty(ip)) return ip;
             }
+
             return "unknown";
         }
 

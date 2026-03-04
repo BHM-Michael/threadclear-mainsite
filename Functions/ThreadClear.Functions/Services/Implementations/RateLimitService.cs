@@ -15,7 +15,6 @@ namespace ThreadClear.Functions.Services.Implementations
     {
         private readonly ILogger<RateLimitService> _logger;
         private readonly string _connectionString;
-        private readonly ConcurrentDictionary<string, List<DateTime>> _requestLog = new();
 
         public RateLimitService(string connectionString, ILogger<RateLimitService> logger)
         {
@@ -25,44 +24,58 @@ namespace ThreadClear.Functions.Services.Implementations
 
         public bool IsAllowed(string ipAddress, int maxRequests = 3)
         {
-            var now = DateTime.UtcNow;
-            var windowStart = now.Date;
-
-            var requests = _requestLog.AddOrUpdate(
-                ipAddress,
-                _ => new List<DateTime> { now },
-                (_, existing) =>
-                {
-                    existing.RemoveAll(t => t < windowStart);
-
-                    if (existing.Count < maxRequests)
-                    {
-                        existing.Add(now);
-                    }
-
-                    return existing;
-                });
-
-            var allowed = requests.Count(t => t >= windowStart) <= maxRequests;
-
-            if (!allowed)
+            try
             {
-                _logger.LogWarning("Rate limit exceeded for IP {IP} - {Count}/{Max} requests today",
-                    MaskIp(ipAddress), requests.Count, maxRequests);
-            }
+                var ipHash = HashIp(ipAddress);
+                var windowStart = DateTime.UtcNow.Date;
 
-            return allowed;
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
+
+                var sql = @"SELECT COUNT(*) FROM PublicScanLog 
+                    WHERE ClientIpHash = @IpHash 
+                    AND CreatedAt >= @WindowStart";
+
+                using var cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@IpHash", ipHash);
+                cmd.Parameters.AddWithValue("@WindowStart", windowStart);
+
+                var count = (int)cmd.ExecuteScalar();
+                return count < maxRequests;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Rate limit check failed — allowing request");
+                return true;
+            }
         }
 
         public int GetRemainingRequests(string ipAddress, int maxRequests = 3)
         {
-            var windowStart = DateTime.UtcNow.Date;
+            try
+            {
+                var ipHash = HashIp(ipAddress);
+                var windowStart = DateTime.UtcNow.Date;
 
-            if (!_requestLog.TryGetValue(ipAddress, out var requests))
-                return maxRequests;
+                using var conn = new SqlConnection(_connectionString);
+                conn.Open();
 
-            var todayCount = requests.Count(t => t >= windowStart);
-            return Math.Max(0, maxRequests - todayCount);
+                var sql = @"SELECT COUNT(*) FROM PublicScanLog 
+                    WHERE ClientIpHash = @IpHash 
+                    AND CreatedAt >= @WindowStart";
+
+                using var cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.AddWithValue("@IpHash", ipHash);
+                cmd.Parameters.AddWithValue("@WindowStart", windowStart);
+
+                var count = (int)cmd.ExecuteScalar();
+                return Math.Max(0, maxRequests - count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GetRemainingRequests failed");
+                return 0;
+            }
         }
 
         public async Task LogPublicScanAsync(string ipAddress, string sourceType, int textLength,

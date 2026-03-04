@@ -77,6 +77,33 @@ namespace ThreadClear.Functions.Services
         }
 
         /// <summary>
+        /// Get a full thread by message ID (used by Gmail Add-on trigger)
+        /// </summary>
+        public async Task<GmailThread?> GetThreadByMessageIdAsync(string accessToken, string messageId)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            // First get the message to find its threadId
+            var msgUrl = $"{GmailApiBase}/messages/{messageId}?format=minimal";
+            var msgResponse = await _httpClient.GetAsync(msgUrl);
+
+            if (!msgResponse.IsSuccessStatusCode)
+            {
+                _logger.LogError("Failed to get message {MessageId}", messageId);
+                return null;
+            }
+
+            var msgJson = await msgResponse.Content.ReadAsStringAsync();
+            var message = JsonSerializer.Deserialize<GmailMessage>(msgJson);
+
+            if (string.IsNullOrEmpty(message?.ThreadId))
+                return null;
+
+            // Now get the full thread
+            return await GetThreadAsync(accessToken, message.ThreadId);
+        }
+
+        /// <summary>
         /// Convert a Gmail thread to a conversation string for analysis
         /// </summary>
         public string ConvertThreadToConversation(GmailThread thread)

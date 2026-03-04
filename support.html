@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support — ThreadClear</title>
+    <meta name="description" content="Get help with ThreadClear. Find answers to common questions or contact our support team.">
+    <link rel="canonical" href="https://threadclear.com/support">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#0ea5e9">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="TC_logo.png">
+
+    <!-- Reuse the main site stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+
+    <style>
+        /* ── Support Hero ── */
+        .support-hero {
+            padding: 120px 0 64px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .support-hero .hero-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+        .support-hero .hero-gradient {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 60% at 50% 0%,
+                rgba(14,165,233,0.15) 0%, transparent 70%);
+        }
+        .support-hero .hero-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(14,165,233,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(14,165,233,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .support-hero .container { position: relative; z-index: 1; }
+
+        .support-hero h1 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 1rem;
+            color: var(--color-text);
+        }
+        .support-hero p {
+            font-size: 1.125rem;
+            color: var(--color-text-muted);
+            max-width: 520px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* ── Contact Cards ── */
+        .contact-section { padding: 60px 0 20px; }
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .contact-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            transition: border-color var(--transition-fast), transform var(--transition-fast);
+        }
+        .contact-card:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-2px);
+        }
+        .contact-card-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+        .contact-card h3 {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 8px;
+        }
+        .contact-card p {
+            font-size: 0.9rem;
+            color: var(--color-text-muted);
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+        .card-email {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--color-primary-light);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color var(--transition-fast);
+        }
+        .card-email:hover { border-color: var(--color-primary-light); }
+
+        /* ── FAQ ── */
+        .faq-section { padding: 60px 0 80px; }
+        .faq-section .section-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        .faq-section .section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--color-primary-light);
+            margin-bottom: 12px;
+        }
+        .faq-section h2 {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--color-text);
+        }
+        .faq-list {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .faq-item { border-bottom: 1px solid var(--color-border); }
+        .faq-question {
+            width: 100%;
+            background: none;
+            border: none;
+            text-align: left;
+            padding: 22px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: color var(--transition-fast);
+        }
+        .faq-question:hover { color: var(--color-primary-light); }
+        .faq-chevron {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(14,165,233,0.1);
+            border: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.3s ease, background var(--transition-fast);
+            font-size: 12px;
+            color: var(--color-primary-light);
+        }
+        .faq-item.open .faq-chevron {
+            transform: rotate(180deg);
+            background: rgba(14,165,233,0.2);
+        }
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+        .faq-item.open .faq-answer { max-height: 400px; }
+        .faq-answer p {
+            font-size: 0.925rem;
+            color: var(--color-text-muted);
+            line-height: 1.8;
+            padding-bottom: 24px;
+        }
+        .faq-answer a {
+            color: var(--color-primary-light);
+            text-decoration: none;
+        }
+        .faq-answer a:hover { text-decoration: underline; }
+
+        /* ── CTA Strip ── */
+        .support-cta {
+            background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+            border-radius: var(--radius-lg);
+            padding: 48px;
+            text-align: center;
+            margin-bottom: 80px;
+        }
+        .support-cta h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+        }
+        .support-cta p {
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 24px;
+        }
+        .btn-white {
+            background: white;
+            color: var(--color-primary-dark);
+            padding: 12px 28px;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 0.95rem;
+            display: inline-block;
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+        }
+        .btn-white:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 600px) {
+            .support-cta { padding: 32px 24px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Nav (exact match to threadclear.com) -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <img src="TC_logo.png" alt="ThreadClear" class="logo-icon">
+                <span class="logo-text">ThreadClear</span>
+            </a>
+            <div class="nav-links">
+                <a href="/#features">Features</a>
+                <a href="/#how-it-works">How It Works</a>
+                <a href="/#industries">Who It's For</a>
+                <a href="/#pricing">Pricing</a>
+            </div>
+            <div class="nav-actions">
+                <a href="https://app.threadclear.com/login" class="btn-secondary">Sign In</a>
+                <a href="https://app.threadclear.com/try" class="btn-primary">Try It Free</a>
+            </div>
+            <button class="nav-mobile-toggle" aria-label="Toggle menu" onclick="toggleMobileMenu()">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="nav-mobile-menu" id="mobileMenu">
+                <div class="nav-mobile-links">
+                    <a href="/#features" onclick="closeMobileMenu()">Features</a>
+                    <a href="/#how-it-works" onclick="closeMobileMenu()">How It Works</a>
+                    <a href="/#industries" onclick="closeMobileMenu()">Who It's For</a>
+                    <a href="/#pricing" onclick="closeMobileMenu()">Pricing</a>
+                </div>
+                <div class="nav-mobile-actions">
+                    <a href="https://app.threadclear.com/login" class="btn-secondary btn-full">Sign In</a>
+                    <a href="https://app.threadclear.com/try" class="btn-primary btn-full" onclick="closeMobileMenu()">Try It Free</a>
+                </div>
+            </div>
+            <div class="nav-mobile-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="support-hero">
+        <div class="hero-bg">
+            <div class="hero-gradient"></div>
+            <div class="hero-grid"></div>
+        </div>
+        <div class="container">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                Support Center
+            </div>
+            <h1>How can we <span class="gradient-text">help you?</span></h1>
+            <p>Get answers to common questions or reach out directly. We typically respond within one business day.</p>
+        </div>
+    </section>
+
+    <!-- Contact Cards -->
+    <section class="contact-section">
+        <div class="container">
+            <div class="contact-grid">
+                <div class="contact-card">
+                    <div class="contact-card-icon">✉️</div>
+                    <h3>Email Support</h3>
+                    <p>Send us a message and we'll get back to you within one business day. Include what you were trying to do and what happened.</p>
+                    <a href="mailto:michael@threadclear.com" class="card-email">michael@threadclear.com →</a>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-card-icon">🔒</div>
+                    <h3>Privacy & Data</h3>
+                    <p>ThreadClear processes all conversations ephemerally — nothing is stored after analysis. For privacy questions or data deletion requests, contact us directly.</p>
+                    <a href="mailto:michael@threadclear.com" class="card-email">michael@threadclear.com →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq-section">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-label">FAQ</div>
+                <h2>Frequently Asked Questions</h2>
+            </div>
+            <div class="faq-list">
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggle(this)">
+                        Does ThreadClear store my email content?
+                        <span class="faq-chevron">▾</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>No. ThreadClear processes your conversations ephemerally — content is analyzed in memory and immediately discarded. We never store, log, or train on your email or message content. This is a core architectural principle, not just a policy.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggle(this)">
+                        How do I install the Gmail add-on?
+                        <span class="faq-chevron">▾</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Search for "ThreadClear" in the Google Workspace Marketplace and click Install. Once installed, the ThreadClear analysis card will automatically appear when you open any email thread in Gmail — on both desktop and mobile.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggle(this)">
+                        What does the health score mean?
+                        <span class="faq-chevron">▾</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>The conversation health score (0–100) reflects the overall quality of a thread — factoring in unanswered questions, tension points, response patterns, and communication clarity. 80+ is healthy, 60–79 needs attention, below 60 is at risk.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggle(this)">
+                        Which platforms does ThreadClear support?
+                        <span class="faq-chevron">▾</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>ThreadClear currently supports Gmail via the Workspace Add-on and direct text or image paste at <a href="https://app.threadclear.com/try">app.threadclear.com/try</a>. Outlook, Slack, and Teams support are on the roadmap.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggle(this)">
+                        Is ThreadClear suitable for regulated industries?
+                        <span class="faq-chevron">▾</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes. ThreadClear's ephemeral processing means no conversation content is retained after analysis, making it viable for healthcare, legal, financial services, and other regulated industries. Self-hosted deployment is available for Enterprise customers requiring air-gapped environments.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggle(this)">
+                        How do I cancel my subscription?
+                        <span class="faq-chevron">▾</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>You can cancel anytime from your account settings at <a href="https://app.threadclear.com">app.threadclear.com</a>. Your access continues until the end of the current billing period. Email <a href="mailto:michael@threadclear.com">michael@threadclear.com</a> if you need any help.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggle(this)">
+                        What is ThreadCapsule™?
+                        <span class="faq-chevron">▾</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>ThreadCapsule™ is ThreadClear's proprietary conversation normalization technology. It standardizes conversations from any platform — email, Slack, Teams, SMS — into a unified structure that enables consistent, accurate analysis regardless of source format.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="container">
+        <div class="support-cta">
+            <h3>Still have questions?</h3>
+            <p>Our team is happy to help — or try ThreadClear free right now, no signup required.</p>
+            <a href="https://app.threadclear.com/try" class="btn-white">Try It Free →</a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>© 2026 BHM-IT LLC. All rights reserved.</p>
+                <div class="footer-legal">
+                    <a href="/privacy">Privacy Policy</a>
+                    <a href="/terms">Terms of Service</a>
+                    <a href="/support">Support</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggle(btn) {
+            const item = btn.closest('.faq-item');
+            const wasOpen = item.classList.contains('open');
+            document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+            if (!wasOpen) item.classList.add('open');
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobileMenu').classList.toggle('open');
+            document.getElementById('mobileOverlay').classList.toggle('open');
+            document.querySelector('.nav-mobile-toggle').classList.toggle('open');
+            document.body.classList.toggle('menu-open');
+        }
+
+        function closeMobileMenu() {
+            document.getElementById('mobileMenu').classList.remove('open');
+            document.getElementById('mobileOverlay').classList.remove('open');
+            document.querySelector('.nav-mobile-toggle').classList.remove('open');
+            document.body.classList.remove('menu-open');
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMobileMenu(); });
+        window.addEventListener('resize', () => { if (window.innerWidth > 768) closeMobileMenu(); });
+    </script>
+
+</body>
+</html>

@@ -115,5 +115,10 @@ namespace ThreadClear.Functions.Services.Implementations
             var since = DateTime.UtcNow.AddDays(-days);
             return await _insightRepository.GetNeedsAttention(organizationId, since, limit);
         }
+
+        public async Task<List<StorableInsight>> GetInsightsByDateRange(Guid organizationId, DateTime start, DateTime end)
+        {
+            return await _insightRepository.GetByDateRange(organizationId, start, end);
+        }
     }
 }

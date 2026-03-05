@@ -51,22 +51,22 @@ namespace ThreadClear.Functions.Functions
             return response;
         }
 
-        [Function("DatabaseKeepAlive")]
-        public async Task RunKeepAlive(
-    [TimerTrigger("0 */5 * * * *")] TimerInfo timer)
-        {
-            try
-            {
-                using var connection = new SqlConnection(_connectionString);
-                await connection.OpenAsync();
-                using var command = new SqlCommand("SELECT 1", connection);
-                await command.ExecuteScalarAsync();
-                _logger.LogDebug("Database keep-alive successful at {Time}", DateTime.UtcNow);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Database keep-alive failed");
-            }
-        }
+    //    [Function("DatabaseKeepAlive")]
+    //    public async Task RunKeepAlive(
+    //[TimerTrigger("0 */5 * * * *")] TimerInfo timer)
+    //    {
+    //        try
+    //        {
+    //            using var connection = new SqlConnection(_connectionString);
+    //            await connection.OpenAsync();
+    //            using var command = new SqlCommand("SELECT 1", connection);
+    //            await command.ExecuteScalarAsync();
+    //            _logger.LogDebug("Database keep-alive successful at {Time}", DateTime.UtcNow);
+    //        }
+    //        catch (Exception ex)
+    //        {
+    //            _logger.LogError(ex, "Database keep-alive failed");
+    //        }
+    //    }
     }
 }

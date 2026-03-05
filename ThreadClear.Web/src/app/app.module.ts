@@ -22,6 +22,7 @@ import { ProfileComponent } from './components/profile/profile.component';
 import { AnalysisHubComponent } from './components/analysis-hub/analysis-hub.component';
 import { PublicAnalyzerComponent } from './components/public-analyzer/public-analyzer.component';
 import { ServiceWorkerModule } from '@angular/service-worker';
+import { TrendChartComponent } from './components/trend-chart/trend-chart.component';
 
 @NgModule({
   declarations: [
@@ -35,7 +36,8 @@ import { ServiceWorkerModule } from '@angular/service-worker';
     HighlightSpellingPipe,
     ProfileComponent,
     AnalysisHubComponent,
-    PublicAnalyzerComponent
+    PublicAnalyzerComponent,
+    TrendChartComponent
   ],
   imports: [
     BrowserModule,

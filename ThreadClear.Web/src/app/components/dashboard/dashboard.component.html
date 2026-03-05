@@ -114,7 +114,8 @@
             <div class="attention-info">
               <div class="attention-title">{{ item.Subject || 'Untitled Conversation' }}</div>
               <div class="attention-meta">
-                <span class="attention-risk risk-{{ item.OverallRisk.toLowerCase() }}">{{ item.OverallRisk }} Risk</span>
+                <span class="attention-risk risk-{{ item.OverallRisk.toLowerCase() }}">{{ item.OverallRisk }}
+                  Risk</span>
                 <span class="attention-date">{{ item.Timestamp | date:'MMM d' }}</span>
                 <span class="attention-source">{{ item.SourceType }}</span>
               </div>
@@ -122,7 +123,8 @@
           </div>
           <div class="attention-flags">
             <span class="flag-tag" *ngIf="item.UnansweredQuestionsCount > 0">
-              {{ item.UnansweredQuestionsCount }} unanswered {{ item.UnansweredQuestionsCount === 1 ? 'question' : 'questions' }}
+              {{ item.UnansweredQuestionsCount }} unanswered {{ item.UnansweredQuestionsCount === 1 ? 'question' :
+              'questions' }}
             </span>
             <span class="flag-tag flag-tension" *ngIf="item.TensionPointsCount > 0">
               {{ item.TensionPointsCount }} tension {{ item.TensionPointsCount === 1 ? 'point' : 'points' }}
@@ -136,7 +138,8 @@
     </div>
 
     <!-- All Clear State -->
-    <div class="all-clear" *ngIf="(summary?.HighRiskCount || 0) === 0 && (summary?.MediumRiskCount || 0) === 0 && (summary?.TotalConversations || 0) > 0">
+    <div class="all-clear"
+      *ngIf="(summary?.HighRiskCount || 0) === 0 && (summary?.MediumRiskCount || 0) === 0 && (summary?.TotalConversations || 0) > 0">
       <div class="all-clear-icon">✅</div>
       <div class="all-clear-title">All Clear</div>
       <div class="all-clear-subtitle">No high or medium risk conversations in this period.</div>
@@ -144,38 +147,11 @@
 
     <!-- Charts Section -->
     <div class="charts-section">
-      <!-- Conversation Trends -->
-      <div class="chart-card">
-        <div class="chart-header">
-          <h3>Conversations Analyzed</h3>
-          <span class="chart-sublabel">per day</span>
-        </div>
-        <div class="trends-chart" *ngIf="trends.length > 0">
-          <div class="chart-y-axis">
-            <span>{{ getMaxConversations() }}</span>
-            <span>{{ getMaxConversations() / 2 | number:'1.0-0' }}</span>
-            <span>0</span>
-          </div>
-          <div class="chart-bars">
-            <div class="trend-bar-wrapper" *ngFor="let trend of trends">
-              <div class="trend-bar" [style.height.%]="(trend.ConversationCount / getMaxConversations()) * 100"
-                [title]="trend.ConversationCount + ' conversations on ' + (trend.Period | date:'MMM d')">
-                <div class="trend-tooltip">{{ trend.ConversationCount }}</div>
-              </div>
-              <span class="trend-label">{{ trend.Period | slice:5:10 }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="empty-state" *ngIf="trends.length === 0">
-          <div class="empty-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-            </svg>
-          </div>
-          <div class="empty-title">No trend data yet</div>
-          <div class="empty-subtitle">Analyze more conversations to see trends</div>
-        </div>
+      <!-- Conversation Health Trend -->
+      <div class="chart-card full-width">
+        <app-trend-chart [trends]="trends" [panelConversations]="selectedConversations" [panelDate]="selectedDate"
+          (dateClicked)="onChartDateClick($event)">
+        </app-trend-chart>
       </div>
 
       <!-- By Source Type -->
@@ -204,6 +180,34 @@
           </div>
           <div class="empty-title">No source data yet</div>
           <div class="empty-subtitle">Sources appear as you analyze conversations</div>
+        </div>
+      </div>
+
+      <!-- Drill Down Panel -->
+      <div class="drilldown-panel" *ngIf="drillDownDate">
+        <div class="drilldown-header">
+          <h3>Conversations on {{ drillDownDate | date:'MMMM d, yyyy' }}</h3>
+          <button class="close-btn" (click)="closeDrillDown()">✕</button>
+        </div>
+        <div class="drilldown-loading" *ngIf="drillDownLoading">Loading...</div>
+        <div class="drilldown-list" *ngIf="!drillDownLoading">
+          <div class="drilldown-item" *ngFor="let insight of drillDownInsights">
+            <div class="drilldown-score" [ngClass]="getHealthScoreClass(insight.healthScore)">
+              {{ insight.healthScore }}
+            </div>
+            <div class="drilldown-info">
+              <div class="drilldown-title">{{ insight.teamOrChannel || 'Untitled Conversation' }}</div>
+              <div class="drilldown-meta">
+                <span class="attention-risk risk-{{ insight.overallRisk?.toLowerCase() }}">{{ insight.overallRisk }}
+                  Risk</span>
+                <span>{{ insight.sourceType }}</span>
+                <span>{{ insight.messageCount }} messages</span>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="drillDownInsights.length === 0" class="drilldown-empty">
+            No conversations found for this date.
+          </div>
         </div>
       </div>
     </div>

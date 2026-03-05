@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { OrganizationService, Organization } from '../../services/organization.service';
 import { InsightsService, InsightSummary, InsightTrend, TopicBreakdown } from '../../services/insights.service';
+import { TrendChartComponent } from '../trend-chart/trend-chart.component';
 
 export interface NeedsAttentionItem {
   Id: string;
@@ -28,9 +29,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
   topics: TopicBreakdown[] = [];
   needsAttention: NeedsAttentionItem[] = [];
 
+  // Drill down
+  drillDownDate: string | null = null;
+  drillDownInsights: any[] = [];
+  drillDownLoading = false;
+
   selectedDays = 30;
   isLoading = true;
   error: string | null = null;
+
+  selectedConversations: any[] = [];
+  selectedDate: string | null = null;
 
   // Human-readable labels for source types
   private sourceLabels: Record<string, string> = {
@@ -197,5 +206,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
   getTopicSeverity(topic: TopicBreakdown): string {
     if (topic.HighSeverityCount > 0) return 'high';
     return 'low';
+  }
+
+  onChartDateClick(date: string): void {
+    if (!this.currentOrg) return;
+    this.drillDownDate = date;
+    this.selectedDate = date;
+    this.drillDownLoading = true;
+    this.drillDownInsights = [];
+    this.selectedConversations = [];
+
+    this.insightsService.getInsightsByDate(this.currentOrg.id, date).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.drillDownInsights = response.insights || [];
+          this.selectedConversations = this.drillDownInsights; // feed the panel
+        }
+        this.drillDownLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load drill down', err);
+        this.drillDownLoading = false;
+      }
+    });
+  }
+
+  closeDrillDown(): void {
+    this.drillDownDate = null;
+    this.drillDownInsights = [];
   }
 }

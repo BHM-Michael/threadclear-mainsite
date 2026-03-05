@@ -28,5 +28,7 @@ namespace ThreadClear.Functions.Services.Interfaces
         Task<StorableInsight?> GetInsightById(Guid insightId);
 
         Task<List<NeedsAttentionItem>> GetNeedsAttention(Guid organizationId, int days = 30, int limit = 5);
+
+        Task<List<StorableInsight>> GetInsightsByDateRange(Guid organizationId, DateTime start, DateTime end);
     }
 }

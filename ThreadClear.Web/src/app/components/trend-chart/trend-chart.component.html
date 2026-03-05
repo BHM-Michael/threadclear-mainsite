@@ -1,0 +1,138 @@
+<div class="chart-container">
+  <div class="chart-header">
+    <div>
+      <span class="chart-title">Communication Health Trends</span>
+      <span class="chart-subtitle">Click any dot for daily details</span>
+    </div>
+    <div class="chart-legend">
+      <span class="legend-item health">
+        <svg width="20" height="4">
+          <line x1="0" y1="2" x2="20" y2="2" stroke="#7b7ed4" stroke-width="2.5" />
+        </svg>
+        Avg Health Score
+      </span>
+      <span class="legend-item risk">
+        <svg width="20" height="4">
+          <line x1="0" y1="2" x2="20" y2="2" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,2" />
+        </svg>
+        High Risk Count
+      </span>
+    </div>
+  </div>
+
+  <div class="chart-wrapper" *ngIf="trends && trends.length > 0; else noData">
+    <svg [attr.viewBox]="'0 0 ' + svgWidth + ' ' + svgHeight" preserveAspectRatio="xMidYMid meet"
+      (click)="closePanel()">
+      <defs>
+        <linearGradient id="healthGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7b7ed4" stop-opacity="0.3" />
+          <stop offset="100%" stop-color="#7b7ed4" stop-opacity="0.02" />
+        </linearGradient>
+        <clipPath id="chartClip">
+          <rect [attr.x]="paddingLeft" [attr.y]="paddingTop" [attr.width]="chartWidth" [attr.height]="chartHeight" />
+        </clipPath>
+      </defs>
+
+      <!-- Grid lines -->
+      <g class="grid-lines">
+        <line *ngFor="let y of gridLines" [attr.x1]="paddingLeft" [attr.y1]="y" [attr.x2]="svgWidth - paddingRight"
+          [attr.y2]="y" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3,3" />
+      </g>
+
+      <!-- Y axis labels -->
+      <g class="y-labels">
+        <text *ngFor="let label of yLabels" [attr.x]="paddingLeft - 8" [attr.y]="label.y + 4" text-anchor="end"
+          class="axis-label">{{ label.label }}</text>
+      </g>
+
+      <!-- Health area fill -->
+      <path [attr.d]="healthAreaPath" fill="url(#healthGradient)" clip-path="url(#chartClip)" />
+
+      <!-- Risk line -->
+      <path [attr.d]="riskLinePath" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3"
+        stroke-linecap="round" clip-path="url(#chartClip)" />
+
+      <!-- Health score line -->
+      <path [attr.d]="healthLinePath" fill="none" stroke="#7b7ed4" stroke-width="2.5" stroke-linecap="round"
+        stroke-linejoin="round" clip-path="url(#chartClip)" />
+
+      <!-- Health score dots -->
+      <g *ngFor="let point of healthPoints; let i = index">
+        <!-- Visible dot — no pointer events -->
+        <circle [attr.cx]="point.x" [attr.cy]="point.y" r="5" [attr.fill]="getHealthColor(point.value)" stroke="white"
+          stroke-width="1.5" style="pointer-events: none" />
+        <!-- Large invisible hit area — handles all events -->
+        <circle [attr.cx]="point.x" [attr.cy]="point.y" r="12" fill="transparent" class="data-point"
+          (mouseenter)="showTooltip(point, trends[i])" (mouseleave)="hideTooltip()"
+          (click)="onDotClick(trends[i]); $event.stopPropagation()" />
+      </g>
+
+      <!-- X axis labels -->
+      <g class="x-labels">
+        <text *ngFor="let label of xLabels" [attr.x]="label.x" [attr.y]="svgHeight - 8" text-anchor="middle"
+          class="axis-label">{{ label.label }}</text>
+      </g>
+
+      <!-- Axes -->
+      <line [attr.x1]="paddingLeft" [attr.y1]="paddingTop" [attr.x2]="paddingLeft" [attr.y2]="paddingTop + chartHeight"
+        stroke="#cbd5e1" stroke-width="1" />
+      <line [attr.x1]="paddingLeft" [attr.y1]="paddingTop + chartHeight" [attr.x2]="svgWidth - paddingRight"
+        [attr.y2]="paddingTop + chartHeight" stroke="#cbd5e1" stroke-width="1" />
+
+      <!-- Tooltip -->
+      <g *ngIf="tooltip.visible && tooltip.trend" class="tooltip-group" style="pointer-events: none">
+        <rect [attr.x]="tooltip.x - 60" [attr.y]="tooltip.y < 80 ? tooltip.y + 10 : tooltip.y - 88" width="120"
+          height="78" rx="6" ry="6" fill="#1e293b" opacity="0.92" />
+        <text [attr.x]="tooltip.x" [attr.y]="tooltip.y < 80 ? tooltip.y + 28 : tooltip.y - 70" text-anchor="middle"
+          class="tooltip-label">{{ tooltip.trend.Period | date:'MMM d' }}</text>
+        <text [attr.x]="tooltip.x" [attr.y]="tooltip.y < 80 ? tooltip.y + 44 : tooltip.y - 54" text-anchor="middle"
+          class="tooltip-value health-color">Health: {{ tooltip.trend.AverageHealthScore | number:'1.0-0' }}</text>
+        <text [attr.x]="tooltip.x" [attr.y]="tooltip.y < 80 ? tooltip.y + 58 : tooltip.y - 40" text-anchor="middle"
+          class="tooltip-value risk-color">High Risk: {{ tooltip.trend.HighRiskCount }}</text>
+        <text [attr.x]="tooltip.x" [attr.y]="tooltip.y < 80 ? tooltip.y + 72 : tooltip.y - 26" text-anchor="middle"
+          class="tooltip-value" style="fill: #64748b">
+          {{ tooltip.trend.ConversationCount }} conversation{{ tooltip.trend.ConversationCount !== 1 ? 's' : '' }}
+        </text>
+      </g>
+    </svg>
+
+    <!-- Slide panel -->
+    <div class="conversation-panel" [class.open]="panelOpen">
+      <div class="panel-header">
+        <span class="panel-title">{{ panelDate | date:'MMMM d, y' }}</span>
+        <button class="panel-close" (click)="closePanel()">✕</button>
+      </div>
+      <div class="panel-body">
+        <div *ngIf="!panelConversations || panelConversations.length === 0" class="panel-empty">
+          No conversations on this date.
+        </div>
+        <div *ngFor="let conv of panelConversations" class="conv-card">
+          <div class="conv-card-header">
+            <!-- 2. Fix conv-card title to use Subject -->
+            <span class="conv-title">{{ conv.TeamOrChannel || conv.teamOrChannel || (conv.SourceType || conv.sourceType
+              || 'Unknown') + ' conversation' }}</span>
+            <span class="conv-badge" [class.high-risk]="(conv.OverallRisk || conv.overallRisk) === 'High'"
+              [class.medium-risk]="(conv.OverallRisk || conv.overallRisk) === 'Medium'"
+              [class.low-risk]="(conv.OverallRisk || conv.overallRisk) === 'Low'">
+              {{ conv.OverallRisk || conv.overallRisk || 'Unknown' }}
+            </span>
+          </div>
+          <div class="conv-meta">
+            <span class="conv-source">{{ conv.SourceType || conv.sourceType || 'Email' }}</span>
+            <span class="conv-score" *ngIf="conv.HealthScore || conv.healthScore">
+              Health: <strong>{{ conv.HealthScore || conv.healthScore }}</strong>
+            </span>
+          </div>
+          <div class="conv-participants" *ngIf="conv.ParticipantCount || conv.participantCount">
+            {{ conv.ParticipantCount || conv.participantCount }} participant(s) ·
+            {{ conv.MessageCount || conv.messageCount }} messages
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #noData>
+    <div class="no-data">No trend data available for this period.</div>
+  </ng-template>
+</div>

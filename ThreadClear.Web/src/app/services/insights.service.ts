@@ -133,4 +133,11 @@ export class InsightsService {
       { headers: this.getAuthHeaders() }
     );
   }
+
+  getInsightsByDate(orgId: string, date: string): Observable<{ success: boolean; date: string; count: number; insights: StorableInsight[] }> {
+    return this.http.get<{ success: boolean; date: string; count: number; insights: StorableInsight[] }>(
+      `${this.apiUrl}/organizations/${orgId}/insights/by-date?date=${date}`,
+      { headers: this.getAuthHeaders() }
+    );
+  }
 }

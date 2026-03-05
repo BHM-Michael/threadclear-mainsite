@@ -26,7 +26,29 @@ namespace ThreadClear.Functions.Models
             {
                 if (_insights == null && !string.IsNullOrEmpty(InsightsJson))
                 {
-                    _insights = JsonSerializer.Deserialize<List<InsightEntry>>(InsightsJson);
+                    try
+                    {
+                        // Handle cases where InsightsJson is a single object instead of array
+                        var trimmed = InsightsJson.Trim();
+                        if (trimmed.StartsWith("["))
+                        {
+                            _insights = JsonSerializer.Deserialize<List<InsightEntry>>(InsightsJson);
+                        }
+                        else if (trimmed.StartsWith("{"))
+                        {
+                            // Wrap single object in array
+                            var single = JsonSerializer.Deserialize<InsightEntry>(InsightsJson);
+                            _insights = single != null ? new List<InsightEntry> { single } : new List<InsightEntry>();
+                        }
+                        else
+                        {
+                            _insights = new List<InsightEntry>();
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        _insights = new List<InsightEntry>();
+                    }
                 }
                 return _insights ?? new List<InsightEntry>();
             }

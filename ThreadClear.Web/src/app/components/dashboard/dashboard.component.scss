@@ -753,6 +753,10 @@
   }
 }
 
+.chart-card.full-width {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 600px) {
   .summary-cards {
     grid-template-columns: 1fr;

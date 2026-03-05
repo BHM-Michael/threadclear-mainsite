@@ -317,5 +317,56 @@ namespace ThreadClear.Functions.Functions
             });
             return response;
         }
+
+    [Function("GetInsightsByDate")]
+        public async Task<HttpResponseData> GetInsightsByDate(
+    [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "organizations/{orgId}/insights/by-date")] HttpRequestData req,
+    string orgId)
+        {
+            var user = await AuthenticateRequest(req);
+            if (user == null)
+            {
+                var unauthorized = req.CreateResponse(HttpStatusCode.Unauthorized);
+                await unauthorized.WriteAsJsonAsync(new { success = false, error = "Authentication required" });
+                return unauthorized;
+            }
+
+            if (!Guid.TryParse(orgId, out var organizationId))
+            {
+                var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badRequest.WriteAsJsonAsync(new { success = false, error = "Invalid organization ID" });
+                return badRequest;
+            }
+
+            if (!await _organizationService.CanUserAccessOrganization(user.Id, organizationId))
+            {
+                var forbidden = req.CreateResponse(HttpStatusCode.Forbidden);
+                await forbidden.WriteAsJsonAsync(new { success = false, error = "Access denied" });
+                return forbidden;
+            }
+
+            var query = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
+            if (!DateTime.TryParse(query["date"], out var date))
+            {
+                var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badRequest.WriteAsJsonAsync(new { success = false, error = "Invalid or missing date parameter" });
+                return badRequest;
+            }
+
+            var start = date.Date;
+            var end = date.Date.AddDays(1).AddTicks(-1);
+
+            var insights = await _insightService.GetInsightsByDateRange(organizationId, start, end);
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(new
+            {
+                success = true,
+                date = date.ToString("yyyy-MM-dd"),
+                count = insights.Count,
+                insights
+            });
+            return response;
+        }
     }
 }

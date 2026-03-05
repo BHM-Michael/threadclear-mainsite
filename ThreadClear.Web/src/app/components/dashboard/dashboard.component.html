@@ -1,4 +1,5 @@
 <div class="dashboard-container">
+
   <!-- Header -->
   <div class="dashboard-header">
     <div class="header-left">
@@ -16,16 +17,16 @@
     </div>
   </div>
 
-  <!-- Loading State -->
+  <!-- Loading -->
   <div class="loading-state" *ngIf="isLoading">
     <div class="spinner"></div>
   </div>
 
-  <!-- Main Content -->
   <ng-container *ngIf="!isLoading">
 
     <!-- Summary Cards -->
     <div class="summary-cards">
+
       <div class="summary-card card-total">
         <div class="card-header">
           <span class="card-label">Total Conversations</span>
@@ -82,6 +83,7 @@
         <div class="card-sublabel">looking healthy</div>
       </div>
 
+      <!-- Health Score Gauge Card -->
       <div class="summary-card card-health">
         <div class="card-header">
           <span class="card-label">Avg Health Score</span>
@@ -92,14 +94,18 @@
             </svg>
           </div>
         </div>
-        <div class="card-value" [ngClass]="getHealthScoreClass(summary?.AverageHealthScore || 0)">
-          {{ summary?.AverageHealthScore | number:'1.0-0' }}
+        <div class="gauge-wrapper">
+          <canvas #gaugeChart></canvas>
+          <div class="gauge-value" [ngClass]="getHealthScoreClass(summary?.AverageHealthScore || 0)">
+            {{ summary?.AverageHealthScore | number:'1.0-0' }}
+          </div>
         </div>
         <div class="card-sublabel">out of 100</div>
       </div>
+
     </div>
 
-    <!-- Needs Attention Section -->
+    <!-- Needs Attention -->
     <div class="attention-section" *ngIf="(summary?.HighRiskCount || 0) > 0 || (summary?.MediumRiskCount || 0) > 0">
       <div class="section-header">
         <h3>⚠️ Needs Attention</h3>
@@ -116,7 +122,7 @@
               <div class="attention-meta">
                 <span class="attention-risk risk-{{ item.OverallRisk.toLowerCase() }}">{{ item.OverallRisk }} Risk</span>
                 <span class="attention-date">{{ item.Timestamp | date:'MMM d' }}</span>
-                <span class="attention-source">{{ item.SourceType }}</span>
+                <span class="attention-source">{{ getSourceLabel(item.SourceType) }}</span>
               </div>
             </div>
           </div>
@@ -129,42 +135,28 @@
             </span>
           </div>
         </div>
-        <div class="attention-empty" *ngIf="needsAttention.length === 0">
-          <span>Loading conversations...</span>
-        </div>
       </div>
     </div>
 
-    <!-- All Clear State -->
-    <div class="all-clear" *ngIf="(summary?.HighRiskCount || 0) === 0 && (summary?.MediumRiskCount || 0) === 0 && (summary?.TotalConversations || 0) > 0">
+    <!-- All Clear -->
+    <div class="all-clear"
+      *ngIf="(summary?.HighRiskCount || 0) === 0 && (summary?.MediumRiskCount || 0) === 0 && (summary?.TotalConversations || 0) > 0">
       <div class="all-clear-icon">✅</div>
       <div class="all-clear-title">All Clear</div>
       <div class="all-clear-subtitle">No high or medium risk conversations in this period.</div>
     </div>
 
-    <!-- Charts Section -->
+    <!-- Charts Row -->
     <div class="charts-section">
-      <!-- Conversation Trends -->
+
+      <!-- Line Chart -->
       <div class="chart-card">
         <div class="chart-header">
           <h3>Conversations Analyzed</h3>
           <span class="chart-sublabel">per day</span>
         </div>
-        <div class="trends-chart" *ngIf="trends.length > 0">
-          <div class="chart-y-axis">
-            <span>{{ getMaxConversations() }}</span>
-            <span>{{ getMaxConversations() / 2 | number:'1.0-0' }}</span>
-            <span>0</span>
-          </div>
-          <div class="chart-bars">
-            <div class="trend-bar-wrapper" *ngFor="let trend of trends">
-              <div class="trend-bar" [style.height.%]="(trend.ConversationCount / getMaxConversations()) * 100"
-                [title]="trend.ConversationCount + ' conversations on ' + (trend.Period | date:'MMM d')">
-                <div class="trend-tooltip">{{ trend.ConversationCount }}</div>
-              </div>
-              <span class="trend-label">{{ trend.Period | slice:5:10 }}</span>
-            </div>
-          </div>
+        <div class="chart-canvas-wrapper" *ngIf="trends.length > 0">
+          <canvas #trendChart></canvas>
         </div>
         <div class="empty-state" *ngIf="trends.length === 0">
           <div class="empty-icon">
@@ -178,7 +170,7 @@
         </div>
       </div>
 
-      <!-- By Source Type -->
+      <!-- By Source -->
       <div class="chart-card">
         <div class="chart-header">
           <h3>By Source</h3>
@@ -206,9 +198,10 @@
           <div class="empty-subtitle">Sources appear as you analyze conversations</div>
         </div>
       </div>
+
     </div>
 
-    <!-- Topics Section -->
+    <!-- Topics -->
     <div class="topics-section" *ngIf="topics.length > 0">
       <div class="section-header">
         <h3>Top Topics</h3>

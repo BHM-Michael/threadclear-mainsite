@@ -157,6 +157,7 @@
       background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
       color: #ef4444;
     }
+
     .card-value {
       color: #dc2626;
     }
@@ -167,6 +168,7 @@
       background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
       color: #f59e0b;
     }
+
     .card-value {
       color: #d97706;
     }
@@ -177,6 +179,7 @@
       background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
       color: #22c55e;
     }
+
     .card-value {
       color: #16a34a;
     }
@@ -333,10 +336,21 @@
     transition: width 0.5s ease;
   }
 
-  &:nth-child(1) .source-bar { background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%); }
-  &:nth-child(2) .source-bar { background: linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%); }
-  &:nth-child(3) .source-bar { background: linear-gradient(90deg, #06b6d4 0%, #0891b2 100%); }
-  &:nth-child(4) .source-bar { background: linear-gradient(90deg, #10b981 0%, #059669 100%); }
+  &:nth-child(1) .source-bar {
+    background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+  }
+
+  &:nth-child(2) .source-bar {
+    background: linear-gradient(90deg, #8b5cf6 0%, #6d28d9 100%);
+  }
+
+  &:nth-child(3) .source-bar {
+    background: linear-gradient(90deg, #06b6d4 0%, #0891b2 100%);
+  }
+
+  &:nth-child(4) .source-bar {
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  }
 }
 
 /* Topics Section */
@@ -476,44 +490,8 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Gauge */
-.gauge-wrapper {
-  position: relative;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 8px 0 4px;
-
-  canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  .gauge-value {
-    position: relative;
-    z-index: 1;
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -1px;
-    margin-top: 20px;
-  }
-}
-
-/* Chart canvas */
-.chart-canvas-wrapper {
-  height: 220px;
-  position: relative;
-
-  canvas {
-    width: 100% !important;
-    height: 100% !important;
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -526,9 +504,17 @@
 }
 
 /* Health score colors */
-.health-good { color: #16a34a; }
-.health-medium { color: #d97706; }
-.health-poor { color: #dc2626; }
+.health-good {
+  color: #16a34a;
+}
+
+.health-medium {
+  color: #d97706;
+}
+
+.health-poor {
+  color: #dc2626;
+}
 
 /* Chart sublabel */
 .chart-sublabel {
@@ -612,7 +598,7 @@
 
   &:hover {
     border-color: #cbd5e1;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 
   .attention-left {
@@ -665,10 +651,12 @@
       background: #fef2f2;
       color: #dc2626;
     }
+
     &.risk-medium {
       background: #fffbeb;
       color: #d97706;
     }
+
     &.risk-low {
       background: #f0fdf4;
       color: #16a34a;
@@ -782,10 +770,10 @@
 
     .header-right {
       width: 100%;
-      
+
       .period-selector {
         width: 100%;
-        
+
         select {
           width: 100%;
         }

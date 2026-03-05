@@ -1,0 +1,101 @@
+{
+  "configVersion": 1,
+  "timestamp": 1771831809572,
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/index.html",
+        "/main.033c3fed2a6494d0.js",
+        "/manifest.webmanifest",
+        "/polyfills.c17f01b338d764e0.js",
+        "/runtime.d6341f7e132c4b5c.js",
+        "/styles.ef46db3751d8e999.css"
+      ],
+      "patterns": []
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/assets/addin/assets/icon-128.png",
+        "/assets/addin/assets/icon-16.png",
+        "/assets/addin/assets/icon-32.png",
+        "/assets/addin/assets/icon-48.png",
+        "/assets/addin/assets/icon-64.png",
+        "/assets/addin/assets/icon-80.png",
+        "/assets/addin/functions.html",
+        "/assets/addin/taskpane-compose.html",
+        "/assets/addin/taskpane.html",
+        "/assets/icons/icon-128x128.png",
+        "/assets/icons/icon-144x144.png",
+        "/assets/icons/icon-152x152.png",
+        "/assets/icons/icon-192x192.png",
+        "/assets/icons/icon-384x384.png",
+        "/assets/icons/icon-512x512.png",
+        "/assets/icons/icon-72x72.png",
+        "/assets/icons/icon-96x96.png",
+        "/assets/images/TC_logo.png",
+        "/favicon.svg"
+      ],
+      "patterns": []
+    }
+  ],
+  "dataGroups": [],
+  "hashTable": {
+    "/assets/addin/assets/icon-128.png": "e1f8ffd21c02c30bc22235a173884ef27feb97d7",
+    "/assets/addin/assets/icon-16.png": "e4ca1c142506a51cd5283932f622e60150e054b2",
+    "/assets/addin/assets/icon-32.png": "232de5252e6f8b4f29a29e915fb03afdf413b9c7",
+    "/assets/addin/assets/icon-48.png": "aab80a133719dc8849a5d007fec7c2b66e428c8a",
+    "/assets/addin/assets/icon-64.png": "c95ab8cf2bfe4f2c655b0dc871f49e6c9df44fba",
+    "/assets/addin/assets/icon-80.png": "ab18d74ad75946ad534f115af828bae9256cc761",
+    "/assets/addin/functions.html": "fa18be89cf89574d7fed8e09b02178cf8dc36372",
+    "/assets/addin/taskpane-compose.html": "09a366566a24c32696effb80b59303aaf61f1c1e",
+    "/assets/addin/taskpane.html": "a62b5f5f4032e1d638f8662473427ed3620a7430",
+    "/assets/icons/icon-128x128.png": "b9104fc56435ec9860823a104794d00c997d4853",
+    "/assets/icons/icon-144x144.png": "354fa086c14e50e4d73038aa90b0727a95d3c5ff",
+    "/assets/icons/icon-152x152.png": "bd8b357f2edb3a0909e228adb270d426789756ee",
+    "/assets/icons/icon-192x192.png": "e01fade4796de2e6908be6aee5d173ea4f6fe2a7",
+    "/assets/icons/icon-384x384.png": "f1d1b8dc47a3fe683ad037095d2ddd011f7bb54b",
+    "/assets/icons/icon-512x512.png": "9a8cd1d51d5c06fbf9156b4295208ae02ef0f273",
+    "/assets/icons/icon-72x72.png": "23e9d477870d8b44697d56832b99ea72539a67bc",
+    "/assets/icons/icon-96x96.png": "6f979e2c6827a2a4c6aafdc5d39c56d828148698",
+    "/assets/images/TC_logo.png": "18ae1f1d2f828771e829112ed4a34be7cfce11db",
+    "/favicon.svg": "2b88529b73dd90ca0aa96a23ca1a6d2ffc1f69d9",
+    "/index.html": "1f7ccac240c5263de33b70087c35df79157457e3",
+    "/main.033c3fed2a6494d0.js": "2438a97e877d2dffa9b437e01ca123732bda71b2",
+    "/manifest.webmanifest": "0dd1e44659bf750d6404998e369dd0bfbdd986e2",
+    "/polyfills.c17f01b338d764e0.js": "704de61dc737d789eb76e888001e3464ed621db4",
+    "/runtime.d6341f7e132c4b5c.js": "fe1ef2f067f2ad99ba2e3882daeeb0db87b4e7a1",
+    "/styles.ef46db3751d8e999.css": "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+  },
+  "navigationUrls": [
+    {
+      "positive": true,
+      "regex": "^\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*\\.[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*\\/.*$"
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}

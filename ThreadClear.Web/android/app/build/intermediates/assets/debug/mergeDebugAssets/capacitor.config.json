@@ -1,0 +1,8 @@
+{
+	"appId": "com.bhmit.threadclear",
+	"appName": "ThreadClear",
+	"webDir": "dist/thread-clear.web",
+	"server": {
+		"androidScheme": "https"
+	}
+}

@@ -26,5 +26,7 @@ namespace ThreadClear.Functions.Services.Interfaces
         Task<List<InsightTrend>> GetInsightTrends(Guid organizationId, int days, string groupBy);
         Task<List<TopicBreakdown>> GetTopicBreakdown(Guid organizationId, int days);
         Task<StorableInsight?> GetInsightById(Guid insightId);
+
+        Task<List<NeedsAttentionItem>> GetNeedsAttention(Guid organizationId, int days = 30, int limit = 5);
     }
 }

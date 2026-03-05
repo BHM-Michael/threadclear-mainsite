@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { NeedsAttentionItem } from '../components/dashboard/dashboard.component';
 
 export interface InsightSummary {
   TotalConversations: number;
@@ -59,7 +60,6 @@ export class InsightsService {
   constructor(private http: HttpClient) { }
 
   private getAuthHeaders(): HttpHeaders {
-    // Try Bearer token first
     const token = localStorage.getItem('authToken');
     if (token) {
       return new HttpHeaders({
@@ -68,7 +68,6 @@ export class InsightsService {
       });
     }
 
-    // Fall back to email/password credentials
     const credentials = localStorage.getItem('userCredentials');
     if (credentials) {
       const [email, password] = atob(credentials).split(':');
@@ -102,6 +101,13 @@ export class InsightsService {
   getTopicAnalysis(orgId: string, days: number = 30): Observable<{ success: boolean; days: number; topics: TopicBreakdown[] }> {
     return this.http.get<{ success: boolean; days: number; topics: TopicBreakdown[] }>(
       `${this.apiUrl}/organizations/${orgId}/insights/topics?days=${days}`,
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
+  getNeedsAttention(orgId: string, days: number = 30, limit: number = 5): Observable<{ success: boolean; items: NeedsAttentionItem[] }> {
+    return this.http.get<{ success: boolean; items: NeedsAttentionItem[] }>(
+      `${this.apiUrl}/organizations/${orgId}/insights/needs-attention?days=${days}&limit=${limit}`,
       { headers: this.getAuthHeaders() }
     );
   }

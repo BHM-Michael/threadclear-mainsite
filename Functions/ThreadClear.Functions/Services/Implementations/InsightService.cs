@@ -109,5 +109,11 @@ namespace ThreadClear.Functions.Services.Implementations
         {
             return await GetInsight(insightId);
         }
+
+        public async Task<List<NeedsAttentionItem>> GetNeedsAttention(Guid organizationId, int days = 30, int limit = 5)
+        {
+            var since = DateTime.UtcNow.AddDays(-days);
+            return await _insightRepository.GetNeedsAttention(organizationId, since, limit);
+        }
     }
 }

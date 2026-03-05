@@ -23,6 +23,7 @@
 
   <!-- Main Content -->
   <ng-container *ngIf="!isLoading">
+
     <!-- Summary Cards -->
     <div class="summary-cards">
       <div class="summary-card card-total">
@@ -36,6 +37,7 @@
           </div>
         </div>
         <div class="card-value">{{ summary?.TotalConversations || 0 }}</div>
+        <div class="card-sublabel">analyzed in period</div>
       </div>
 
       <div class="summary-card card-high">
@@ -49,6 +51,7 @@
           </div>
         </div>
         <div class="card-value">{{ summary?.HighRiskCount || 0 }}</div>
+        <div class="card-sublabel">need immediate attention</div>
       </div>
 
       <div class="summary-card card-medium">
@@ -62,6 +65,7 @@
           </div>
         </div>
         <div class="card-value">{{ summary?.MediumRiskCount || 0 }}</div>
+        <div class="card-sublabel">worth monitoring</div>
       </div>
 
       <div class="summary-card card-low">
@@ -75,6 +79,7 @@
           </div>
         </div>
         <div class="card-value">{{ summary?.LowRiskCount || 0 }}</div>
+        <div class="card-sublabel">looking healthy</div>
       </div>
 
       <div class="summary-card card-health">
@@ -87,8 +92,54 @@
             </svg>
           </div>
         </div>
-        <div class="card-value">{{ summary?.AverageHealthScore | number:'1.0-0' }}%</div>
+        <div class="card-value" [ngClass]="getHealthScoreClass(summary?.AverageHealthScore || 0)">
+          {{ summary?.AverageHealthScore | number:'1.0-0' }}
+        </div>
+        <div class="card-sublabel">out of 100</div>
       </div>
+    </div>
+
+    <!-- Needs Attention Section -->
+    <div class="attention-section" *ngIf="(summary?.HighRiskCount || 0) > 0 || (summary?.MediumRiskCount || 0) > 0">
+      <div class="section-header">
+        <h3>⚠️ Needs Attention</h3>
+        <span class="section-sublabel">Conversations with the lowest health scores</span>
+      </div>
+      <div class="attention-list">
+        <div class="attention-item" *ngFor="let item of needsAttention">
+          <div class="attention-left">
+            <div class="attention-score" [ngClass]="getHealthScoreClass(item.HealthScore)">
+              {{ item.HealthScore }}
+            </div>
+            <div class="attention-info">
+              <div class="attention-title">{{ item.Subject || 'Untitled Conversation' }}</div>
+              <div class="attention-meta">
+                <span class="attention-risk risk-{{ item.OverallRisk.toLowerCase() }}">{{ item.OverallRisk }} Risk</span>
+                <span class="attention-date">{{ item.Timestamp | date:'MMM d' }}</span>
+                <span class="attention-source">{{ item.SourceType }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="attention-flags">
+            <span class="flag-tag" *ngIf="item.UnansweredQuestionsCount > 0">
+              {{ item.UnansweredQuestionsCount }} unanswered {{ item.UnansweredQuestionsCount === 1 ? 'question' : 'questions' }}
+            </span>
+            <span class="flag-tag flag-tension" *ngIf="item.TensionPointsCount > 0">
+              {{ item.TensionPointsCount }} tension {{ item.TensionPointsCount === 1 ? 'point' : 'points' }}
+            </span>
+          </div>
+        </div>
+        <div class="attention-empty" *ngIf="needsAttention.length === 0">
+          <span>Loading conversations...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- All Clear State -->
+    <div class="all-clear" *ngIf="(summary?.HighRiskCount || 0) === 0 && (summary?.MediumRiskCount || 0) === 0 && (summary?.TotalConversations || 0) > 0">
+      <div class="all-clear-icon">✅</div>
+      <div class="all-clear-title">All Clear</div>
+      <div class="all-clear-subtitle">No high or medium risk conversations in this period.</div>
     </div>
 
     <!-- Charts Section -->
@@ -96,14 +147,23 @@
       <!-- Conversation Trends -->
       <div class="chart-card">
         <div class="chart-header">
-          <h3>Conversation Trends</h3>
+          <h3>Conversations Analyzed</h3>
+          <span class="chart-sublabel">per day</span>
         </div>
         <div class="trends-chart" *ngIf="trends.length > 0">
-          <div class="trend-bar-wrapper" *ngFor="let trend of trends">
-            <div class="trend-bar" [style.height.%]="(trend.ConversationCount / getMaxConversations()) * 100">
-              <div class="trend-tooltip">{{ trend.ConversationCount }} conversations</div>
+          <div class="chart-y-axis">
+            <span>{{ getMaxConversations() }}</span>
+            <span>{{ getMaxConversations() / 2 | number:'1.0-0' }}</span>
+            <span>0</span>
+          </div>
+          <div class="chart-bars">
+            <div class="trend-bar-wrapper" *ngFor="let trend of trends">
+              <div class="trend-bar" [style.height.%]="(trend.ConversationCount / getMaxConversations()) * 100"
+                [title]="trend.ConversationCount + ' conversations on ' + (trend.Period | date:'MMM d')">
+                <div class="trend-tooltip">{{ trend.ConversationCount }}</div>
+              </div>
+              <span class="trend-label">{{ trend.Period | slice:5:10 }}</span>
             </div>
-            <span class="trend-label">{{ trend.Period | slice:5:10 }}</span>
           </div>
         </div>
         <div class="empty-state" *ngIf="trends.length === 0">
@@ -113,7 +173,7 @@
                 d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
             </svg>
           </div>
-          <div class="empty-title">No trend data</div>
+          <div class="empty-title">No trend data yet</div>
           <div class="empty-subtitle">Analyze more conversations to see trends</div>
         </div>
       </div>
@@ -121,13 +181,14 @@
       <!-- By Source Type -->
       <div class="chart-card">
         <div class="chart-header">
-          <h3>By Source Type</h3>
+          <h3>By Source</h3>
+          <span class="chart-sublabel">where conversations came from</span>
         </div>
         <div class="source-list" *ngIf="getSourceTypes().length > 0">
           <div class="source-item" *ngFor="let source of getSourceTypes()">
             <div class="source-header">
-              <span class="source-name">{{ source.key }}</span>
-              <span class="source-count">{{ source.value }}</span>
+              <span class="source-name">{{ getSourceLabel(source.key) }}</span>
+              <span class="source-count">{{ source.value }} conversation{{ source.value !== 1 ? 's' : '' }}</span>
             </div>
             <div class="source-bar-bg">
               <div class="source-bar" [style.width.%]="getSourcePercentage(source.value)"></div>
@@ -141,8 +202,8 @@
                 d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
           </div>
-          <div class="empty-title">No source data</div>
-          <div class="empty-subtitle">Sources will appear as you analyze</div>
+          <div class="empty-title">No source data yet</div>
+          <div class="empty-subtitle">Sources appear as you analyze conversations</div>
         </div>
       </div>
     </div>
@@ -151,21 +212,23 @@
     <div class="topics-section" *ngIf="topics.length > 0">
       <div class="section-header">
         <h3>Top Topics</h3>
+        <span class="section-sublabel">Most discussed themes across your conversations</span>
       </div>
       <div class="topics-grid">
         <div class="topic-card" *ngFor="let topic of topics">
           <div class="topic-header">
             <span class="topic-name">{{ topic.Topic }}</span>
-            <span class="topic-count">{{ topic.Count }}</span>
+            <span class="topic-count">{{ topic.Count }} mention{{ topic.Count !== 1 ? 's' : '' }}</span>
           </div>
           <div class="topic-categories" *ngIf="getTopCategories(topic).length > 0">
             <span class="category-tag" *ngFor="let cat of getTopCategories(topic)"
               [ngClass]="'severity-' + getTopicSeverity(topic)">
-              {{ cat.key }}: {{ cat.value }}
+              {{ getCategoryLabel(cat.key) }}: {{ cat.value }}
             </span>
           </div>
         </div>
       </div>
     </div>
+
   </ng-container>
 </div>

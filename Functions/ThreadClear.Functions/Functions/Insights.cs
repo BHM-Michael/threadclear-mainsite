@@ -275,5 +275,47 @@ namespace ThreadClear.Functions.Functions
             });
             return response;
         }
+
+        [Function("GetNeedsAttention")]
+        public async Task<HttpResponseData> GetNeedsAttention(
+    [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "organizations/{orgId}/insights/needs-attention")] HttpRequestData req,
+    string orgId)
+        {
+            var user = await AuthenticateRequest(req);
+            if (user == null)
+            {
+                var unauthorized = req.CreateResponse(HttpStatusCode.Unauthorized);
+                await unauthorized.WriteAsJsonAsync(new { success = false, error = "Authentication required" });
+                return unauthorized;
+            }
+
+            if (!Guid.TryParse(orgId, out var organizationId))
+            {
+                var badRequest = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badRequest.WriteAsJsonAsync(new { success = false, error = "Invalid organization ID" });
+                return badRequest;
+            }
+
+            if (!await _organizationService.CanUserAccessOrganization(user.Id, organizationId))
+            {
+                var forbidden = req.CreateResponse(HttpStatusCode.Forbidden);
+                await forbidden.WriteAsJsonAsync(new { success = false, error = "Access denied" });
+                return forbidden;
+            }
+
+            var query = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
+            var days = int.TryParse(query["days"], out var d) ? d : 30;
+            var limit = int.TryParse(query["limit"], out var l) ? l : 5;
+
+            var items = await _insightService.GetNeedsAttention(organizationId, days, limit);
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(new
+            {
+                success = true,
+                items
+            });
+            return response;
+        }
     }
 }

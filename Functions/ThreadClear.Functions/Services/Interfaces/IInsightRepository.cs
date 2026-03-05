@@ -30,6 +30,8 @@ namespace ThreadClear.Functions.Services.Interfaces
         // Cleanup
         Task<int> DeleteOlderThan(Guid organizationId, DateTime cutoff);
 
+        Task<List<NeedsAttentionItem>> GetNeedsAttention(Guid organizationId, DateTime? since = null, int limit = 5);
+
         //Task<Insight?> GetByOutlookConversationIdAsync(string orgId, string conversationId);
     }
 

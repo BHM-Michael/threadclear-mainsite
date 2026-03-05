@@ -384,6 +384,60 @@ namespace ThreadClear.Functions.Services.Implementations
         //    return null;
         //}
 
+        public async Task<List<NeedsAttentionItem>> GetNeedsAttention(Guid organizationId, DateTime? since = null, int limit = 5)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var whereClause = "WHERE OrganizationId = @OrganizationId AND OverallRisk IN ('High', 'Medium')";
+            if (since.HasValue)
+                whereClause += " AND Timestamp >= @Since";
+
+            var sql = $@"SELECT TOP (@Limit)
+                    Id, OverallRisk, HealthScore, Timestamp, SourceType,
+                    ParticipantCount, MessageCount, Insights
+                FROM StorableInsights
+                {whereClause}
+                ORDER BY HealthScore ASC";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@OrganizationId", organizationId);
+            cmd.Parameters.AddWithValue("@Limit", limit);
+            if (since.HasValue)
+                cmd.Parameters.AddWithValue("@Since", since.Value);
+
+            var items = new List<NeedsAttentionItem>();
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var insightsJson = reader.GetString(reader.GetOrdinal("Insights"));
+                var entries = new List<InsightEntry>();
+                try
+                {
+                    entries = JsonSerializer.Deserialize<List<InsightEntry>>(insightsJson,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                catch { /* malformed JSON — skip counts */ }
+
+                var unansweredCount = entries.Count(e =>
+                    e.Category.Equals("QUESTION_STATUS", StringComparison.OrdinalIgnoreCase));
+                var tensionCount = entries.Count(e =>
+                    e.Category.Equals("TENSION_SIGNAL", StringComparison.OrdinalIgnoreCase));
+
+                items.Add(new NeedsAttentionItem
+                {
+                    Id = reader.GetGuid(reader.GetOrdinal("Id")).ToString(),
+                    OverallRisk = reader.GetString(reader.GetOrdinal("OverallRisk")),
+                    HealthScore = reader.GetInt32(reader.GetOrdinal("HealthScore")),
+                    Timestamp = reader.GetDateTime(reader.GetOrdinal("Timestamp")).ToString("o"),
+                    SourceType = reader.GetString(reader.GetOrdinal("SourceType")),
+                    UnansweredQuestionsCount = unansweredCount,
+                    TensionPointsCount = tensionCount
+                });
+            }
+            return items;
+        }
+
         private StorableInsight MapInsight(SqlDataReader reader)
         {
             return new StorableInsight

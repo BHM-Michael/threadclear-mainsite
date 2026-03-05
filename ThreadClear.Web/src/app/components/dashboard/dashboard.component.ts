@@ -1,7 +1,18 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, forkJoin } from 'rxjs';
 import { OrganizationService, Organization } from '../../services/organization.service';
 import { InsightsService, InsightSummary, InsightTrend, TopicBreakdown } from '../../services/insights.service';
+
+export interface NeedsAttentionItem {
+  Id: string;
+  Subject: string;
+  HealthScore: number;
+  OverallRisk: string;
+  Timestamp: string;
+  SourceType: string;
+  UnansweredQuestionsCount: number;
+  TensionPointsCount: number;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -15,10 +26,41 @@ export class DashboardComponent implements OnInit, OnDestroy {
   summary: InsightSummary | null = null;
   trends: InsightTrend[] = [];
   topics: TopicBreakdown[] = [];
+  needsAttention: NeedsAttentionItem[] = [];
 
   selectedDays = 30;
   isLoading = true;
   error: string | null = null;
+
+  // Human-readable labels for source types
+  private sourceLabels: Record<string, string> = {
+    'email': '📧 Email',
+    'Email': '📧 Email',
+    'slack': '💬 Slack',
+    'Slack': '💬 Slack',
+    'teams': '🟦 Teams',
+    'Teams': '🟦 Teams',
+    'sms': '📱 SMS',
+    'SMS': '📱 SMS',
+    'paste': '📋 Pasted Text',
+    'Paste': '📋 Pasted Text',
+    'image': '🖼️ Image Upload',
+    'Image': '🖼️ Image Upload',
+    'audio': '🎙️ Audio',
+    'Audio': '🎙️ Audio',
+  };
+
+  // Human-readable labels for topic categories
+  private categoryLabels: Record<string, string> = {
+    'QUESTION_STATUS': 'Unanswered Questions',
+    'TENSION_SIGNAL': 'Tension',
+    'MISALIGNMENT': 'Misalignment',
+    'ACTION_ITEM': 'Action Items',
+    'COMMITMENT': 'Commitments',
+    'DECISION': 'Decisions',
+    'RISK': 'Risk',
+    'ESCALATION': 'Escalation',
+  };
 
   constructor(
     private orgService: OrganizationService,
@@ -87,6 +129,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       }
     });
+
+    // Load needs attention (low health score conversations)
+    this.insightsService.getNeedsAttention(orgId, this.selectedDays).subscribe({
+      next: (response: { success: boolean; items: NeedsAttentionItem[] }) => {
+        if (response.success) {
+          this.needsAttention = response.items || [];
+        }
+      },
+      error: (err: any) => console.error('Failed to load needs attention', err)
+    });
   }
 
   onDaysChange(days: number): void {
@@ -111,12 +163,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getMaxConversations(): number {
     if (this.trends.length === 0) return 1;
-    // Handle both PascalCase and camelCase
     return Math.max(...this.trends.map(t => t.ConversationCount || (t as any).ConversationCount || 0), 1);
   }
 
   getSourceTypes(): { key: string; value: number }[] {
-    // Handle both PascalCase and camelCase
     const sourceData = this.summary?.BySourceType || (this.summary as any)?.bySourceType;
     if (!sourceData) return [];
     return Object.entries(sourceData).map(([key, value]) => ({ key, value: value as number }));
@@ -128,13 +178,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return (count / total) * 100;
   }
 
+  getSourceLabel(key: string): string {
+    return this.sourceLabels[key] || key;
+  }
+
   getTopCategories(topic: TopicBreakdown): { key: string; value: number }[] {
-    // Handle both PascalCase and camelCase
     const categoryData = topic.ByCategory || (topic as any)?.ByCategory;
     if (!categoryData) return [];
     return Object.entries(categoryData)
       .map(([key, value]) => ({ key, value: value as number }))
       .slice(0, 3);
+  }
+
+  getCategoryLabel(key: string): string {
+    return this.categoryLabels[key] || key;
   }
 
   getTopicSeverity(topic: TopicBreakdown): string {

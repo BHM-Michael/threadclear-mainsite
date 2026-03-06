@@ -1121,6 +1121,196 @@ $color-danger: #ef4444;
     }
 }
 
+// SMS Unstructured Results
+.sms-results {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.sms-sentiment-card {
+    border-top: 3px solid var(--primary-color, #4f46e5);
+}
+
+.sms-reply-card {
+    border-top: 3px solid #10b981;
+}
+
+.sentiment-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+
+    &.sentiment-positive {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    &.sentiment-neutral {
+        background: #e5e7eb;
+        color: #374151;
+    }
+
+    &.sentiment-concerned {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    &.sentiment-frustrated {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+}
+
+.sentiment-reason {
+    color: #6b7280;
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.sms-summary-text {
+    line-height: 1.6;
+    color: #374151;
+}
+
+.sms-action-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+.priority-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &.priority-high {
+        background: #ef4444;
+    }
+
+    &.priority-medium {
+        background: #f59e0b;
+    }
+
+    &.priority-low {
+        background: #10b981;
+    }
+}
+
+.sms-action-text {
+    flex: 1;
+    font-size: 14px;
+    color: #374151;
+}
+
+.sms-priority-label {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.health-score-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 0;
+
+    .score-bar {
+        flex: 1;
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .score-fill {
+        height: 100%;
+        background: #4f46e5;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    .score-pct {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        min-width: 36px;
+    }
+}
+
+.sms-health-issues {
+    margin: 0;
+    padding-left: 18px;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.copy-reply-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    color: #374151;
+
+    &:hover {
+        background: #f9fafb;
+    }
+}
+
+.sms-reply-text {
+    background: #f9fafb;
+    border-left: 3px solid #10b981;
+    padding: 14px 16px;
+    border-radius: 0 8px 8px 0;
+    line-height: 1.6;
+    font-size: 15px;
+    color: #111827;
+    white-space: pre-wrap;
+}
+
+.sms-reply-hint {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 8px;
+}
+
+.risk-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+
+    &.risk-low {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    &.risk-medium {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    &.risk-high {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+}
+
 @media (max-width: 480px) {
     .page-header .header-content h1 {
         font-size: 24px;

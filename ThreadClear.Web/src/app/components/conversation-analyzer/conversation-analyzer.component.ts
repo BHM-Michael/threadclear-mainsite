@@ -71,10 +71,6 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-
-
-
-
     if (!this.authService.isLoggedIn) {
       this.router.navigate(['/login']);
     }
@@ -143,6 +139,36 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   get userEmail(): string {
     const user = this.currentUser as any;
     return user?.Email || user?.email || '';
+  }
+
+  get isUnstructuredSMS(): boolean {
+    return this.results?.Metadata?.SourceType === 'sms_unstructured' ||
+      this.results?.metadata?.SourceType === 'sms_unstructured';
+  }
+
+  get smsSuggestedReply(): string {
+    return this.results?.Metadata?.SuggestedReply ||
+      this.results?.metadata?.SuggestedReply || '';
+  }
+
+  get smsClientSentiment(): string {
+    return this.results?.Metadata?.ClientSentiment ||
+      this.results?.metadata?.ClientSentiment || '';
+  }
+
+  get smsSentimentReason(): string {
+    return this.results?.Metadata?.SentimentReason ||
+      this.results?.metadata?.SentimentReason || '';
+  }
+
+  copiedReply = false;
+
+  copyReply() {
+    if (this.smsSuggestedReply) {
+      navigator.clipboard.writeText(this.smsSuggestedReply);
+      this.copiedReply = true;
+      setTimeout(() => this.copiedReply = false, 2000);
+    }
   }
 
   onAudioSelected(event: any) {

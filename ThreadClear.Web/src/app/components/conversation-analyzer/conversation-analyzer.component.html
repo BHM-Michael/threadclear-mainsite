@@ -411,8 +411,135 @@ John: What's the timeline for review?" rows="12">
                 </div>
             </div>
 
-            <!-- Results Display -->
-            <app-results-display *ngIf="results" [results]="results"></app-results-display>
+            <!-- SMS Unstructured Results -->
+            <div class="sms-results" *ngIf="results && isUnstructuredSMS">
+
+                <!-- Sentiment Badge -->
+                <div class="result-card sms-sentiment-card" *ngIf="smsClientSentiment">
+                    <div class="section-header">
+                        <h2>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                                <line x1="9" y1="9" x2="9.01" y2="9" />
+                                <line x1="15" y1="9" x2="15.01" y2="9" />
+                            </svg>
+                            Client Sentiment
+                        </h2>
+                    </div>
+                    <span class="sentiment-badge" [class.sentiment-positive]="smsClientSentiment === 'Positive'"
+                        [class.sentiment-neutral]="smsClientSentiment === 'Neutral'"
+                        [class.sentiment-concerned]="smsClientSentiment === 'Concerned'"
+                        [class.sentiment-frustrated]="smsClientSentiment === 'Frustrated'">
+                        {{ smsClientSentiment }}
+                    </span>
+                    <p class="sentiment-reason">{{ smsSentimentReason }}</p>
+                </div>
+
+                <!-- Summary -->
+                <div class="result-card" *ngIf="results.Summary">
+                    <div class="section-header">
+                        <h2>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <line x1="8" y1="6" x2="21" y2="6" />
+                                <line x1="8" y1="12" x2="21" y2="12" />
+                                <line x1="8" y1="18" x2="21" y2="18" />
+                                <line x1="3" y1="6" x2="3.01" y2="6" />
+                                <line x1="3" y1="12" x2="3.01" y2="12" />
+                                <line x1="3" y1="18" x2="3.01" y2="18" />
+                            </svg>
+                            Summary
+                        </h2>
+                    </div>
+                    <p class="sms-summary-text">{{ results.Summary }}</p>
+                </div>
+
+                <!-- Open Items -->
+                <div class="result-card" *ngIf="results.SuggestedActions?.length">
+                    <div class="section-header">
+                        <h2>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="9 11 12 14 22 4" />
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                            </svg>
+                            Open Items
+                        </h2>
+                    </div>
+                    <div class="sms-action-item" *ngFor="let item of results.SuggestedActions">
+                        <span class="priority-dot" [class.priority-high]="item.Priority === 'High'"
+                            [class.priority-medium]="item.Priority === 'Medium'"
+                            [class.priority-low]="item.Priority === 'Low'">
+                        </span>
+                        <span class="sms-action-text">{{ item.Action }}</span>
+                        <span class="sms-priority-label">{{ item.Priority }}</span>
+                    </div>
+                </div>
+
+                <!-- Conversation Health -->
+                <div class="result-card" *ngIf="results.Analysis?.ConversationHealth">
+                    <div class="section-header">
+                        <h2>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                            </svg>
+                            Thread Health
+                        </h2>
+                        <span class="risk-badge"
+                            [class.risk-low]="results.Analysis.ConversationHealth.RiskLevel === 'Low'"
+                            [class.risk-medium]="results.Analysis.ConversationHealth.RiskLevel === 'Medium'"
+                            [class.risk-high]="results.Analysis.ConversationHealth.RiskLevel === 'High'">
+                            {{ results.Analysis.ConversationHealth.RiskLevel }} Risk
+                        </span>
+                    </div>
+                    <div class="health-score-row">
+                        <div class="score-bar">
+                            <div class="score-fill"
+                                [style.width.%]="(results.Analysis.ConversationHealth.HealthScore || 0) * 100">
+                            </div>
+                        </div>
+                        <span class="score-pct">{{ ((results.Analysis.ConversationHealth.HealthScore || 0) * 100) |
+                            number:'1.0-0' }}%</span>
+                    </div>
+                    <ul class="sms-health-issues" *ngIf="results.Analysis.ConversationHealth.Issues?.length">
+                        <li *ngFor="let issue of results.Analysis.ConversationHealth.Issues">{{ issue }}</li>
+                    </ul>
+                </div>
+
+                <!-- Suggested Reply -->
+                <div class="result-card sms-reply-card" *ngIf="smsSuggestedReply">
+                    <div class="section-header">
+                        <h2>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                            Suggested Reply
+                        </h2>
+                        <button class="copy-reply-btn" (click)="copyReply()">
+                            <svg *ngIf="!copiedReply" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                            </svg>
+                            <svg *ngIf="copiedReply" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            {{ copiedReply ? 'Copied!' : 'Copy' }}
+                        </button>
+                    </div>
+                    <p class="sms-reply-text">{{ smsSuggestedReply }}</p>
+                    <p class="sms-reply-hint">Review before sending — this is a starting point, not a final draft.</p>
+                </div>
+
+            </div>
+
+            <!-- Normal Results (all non-SMS formats) -->
+            <app-results-display *ngIf="results && !isUnstructuredSMS" [results]="results"></app-results-display>
         </div>
     </div>
 </div>

@@ -50,6 +50,13 @@ namespace ThreadClear.Functions.Services.Implementations
                 "application/json");
 
             var response = await _httpClient.PostAsync(ApiUrl, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync();
+                Console.Error.WriteLine($"Anthropic API error {(int)response.StatusCode}: {errorBody}");
+            }
+
             response.EnsureSuccessStatusCode();
 
             var responseBody = await response.Content.ReadAsStringAsync();

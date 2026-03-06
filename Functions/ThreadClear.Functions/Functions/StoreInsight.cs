@@ -68,7 +68,6 @@ namespace ThreadClear.Functions.Functions
                     return await CreateErrorResponse(req, HttpStatusCode.BadRequest, "Invalid request - capsule required");
                 }
 
-                // Build a minimal capsule with just what InsightService needs
                 var capsule = new ThreadCapsule
                 {
                     CapsuleId = capsuleJson.TryGetProperty("CapsuleId", out var id) ? id.GetString() ?? Guid.NewGuid().ToString() : Guid.NewGuid().ToString(),
@@ -76,8 +75,18 @@ namespace ThreadClear.Functions.Functions
                     Participants = ExtractParticipants(capsuleJson),
                     Messages = new List<Message>(),
                     Analysis = ExtractAnalysis(capsuleJson),
-                    Summary = capsuleJson.TryGetProperty("Summary", out var sum) ? sum.GetString() : null
+                    Summary = capsuleJson.TryGetProperty("Summary", out var sum) ? sum.GetString()
+                            : capsuleJson.TryGetProperty("summary", out var sumL) ? sumL.GetString()
+                            : null
                 };
+
+                // Pass metadata through for SMS fields
+                if (capsuleJson.TryGetProperty("Metadata", out var meta) ||
+                    capsuleJson.TryGetProperty("metadata", out meta))
+                {
+                    foreach (var prop in meta.EnumerateObject())
+                        capsule.Metadata[prop.Name] = prop.Value.GetString() ?? "";
+                }
 
                 // Get org if user belongs to one (optional now)
                 var userOrgs = await _organizationService.GetUserOrganizations(user.Id);

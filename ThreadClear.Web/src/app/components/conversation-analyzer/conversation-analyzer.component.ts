@@ -275,6 +275,7 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
 
   // NEW: Progressive analysis - shows results as they come in
   analyzeTextProgressive() {
+    console.log('analyzeTextProgressive called');
     this.loading = true;
     this.isStreaming = true;
     this.streamingProgress = 0;
@@ -296,18 +297,19 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (parseResult) => {
+          const isUnstructured = !parseResult.participants?.length &&
+            (parseResult.messages?.length <= 1);
 
-
-          // Initialize results with parsed data - user sees this immediately
+          // Initialize results immediately
           this.results = {
             CapsuleId: 'tc-' + Date.now(),
             SourceType: parseResult.sourceType || 'conversation',
             Participants: parseResult.participants || [],
             Messages: parseResult.messages || [],
             Metadata: parseResult.metadata || {},
-            Summary: null,  // Will be filled by AI
+            Summary: null,
             Analysis: {
-              UnansweredQuestions: null,  // null = loading, [] = empty
+              UnansweredQuestions: null,
               TensionPoints: null,
               Misalignments: null,
               ConversationHealth: null
@@ -315,24 +317,55 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
             SuggestedActions: null
           };
 
-          this.streamingProgress = 20;
-          this.streamStatus = 'Running AI analysis...';
-
-          // Hide the loading overlay - show results with spinners
           this.isStreaming = false;
           this.loading = false;
 
-          // Phase 2: Fire all AI analysis sections in parallel
-          this.loadSectionParallel('summary');
-          this.loadSectionParallel('questions');
-          this.loadSectionParallel('tensions');
-          this.loadSectionParallel('health');
-          this.loadSectionParallel('actions');
-          this.loadSectionParallel('misalignments');
+          if (isUnstructured) {
+            // SMS / lump text — skip sections, hit full endpoint which routes to AnalyzeUnstructuredSMS
+            this.streamStatus = 'Analyzing SMS thread...';
+            Object.keys(this.sectionsLoading).forEach(k => this.sectionsLoading[k] = true);
 
-          // Also analyze draft if provided
-          if (this.draftMessage) {
-            this.analyzeDraftMessage();
+            this.apiService.analyzeConversation({
+              conversationText: this.conversationText,
+              sourceType: this.sourceType,
+              parsingMode: this.parsingMode
+            }).pipe(takeUntil(this.destroy$)).subscribe({
+              next: (response) => {
+                const capsule = response.capsule;
+                this.results = {
+                  ...this.results,
+                  Metadata: capsule?.Metadata || capsule?.metadata || {},
+                  Summary: capsule?.Summary || capsule?.summary || null,
+                  Analysis: capsule?.Analysis || capsule?.analysis || this.results.Analysis,
+                  SuggestedActions: capsule?.SuggestedActions || capsule?.suggestedActions || []
+                };
+                Object.keys(this.sectionsComplete).forEach(k => this.sectionsComplete[k] = true);
+                Object.keys(this.sectionsLoading).forEach(k => this.sectionsLoading[k] = false);
+                this.streamStatus = 'Analysis complete!';
+                this.updateProgress();
+              },
+              error: (err) => {
+                console.error('SMS analysis error:', err);
+                this.error = 'Error analyzing thread. Please try again.';
+                Object.keys(this.sectionsLoading).forEach(k => this.sectionsLoading[k] = false);
+              }
+            });
+
+          } else {
+            // Normal structured flow — parallel sections
+            this.streamingProgress = 20;
+            this.streamStatus = 'Running AI analysis...';
+
+            this.loadSectionParallel('summary');
+            this.loadSectionParallel('questions');
+            this.loadSectionParallel('tensions');
+            this.loadSectionParallel('health');
+            this.loadSectionParallel('actions');
+            this.loadSectionParallel('misalignments');
+
+            if (this.draftMessage) {
+              this.analyzeDraftMessage();
+            }
           }
         },
         error: (err) => {
@@ -477,6 +510,8 @@ export class ConversationAnalyzerComponent implements OnInit, OnDestroy {
   private insightStored = false;  // Add this flag to the class properties
 
   private storeInsightIfNeeded() {
+    console.log('storeInsightIfNeeded called, insightStored=', this.insightStored, 'results=', !!this.results);
+
     if (this.insightStored || !this.results) return;
     this.insightStored = true;
 

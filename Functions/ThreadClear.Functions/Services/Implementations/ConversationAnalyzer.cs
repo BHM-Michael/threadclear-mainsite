@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Text;
 using System.Collections.Generic;
@@ -60,6 +61,14 @@ namespace ThreadClear.Functions.Services.Implementations
                 capsule.Analysis = new ConversationAnalysis();
             }
 
+            // SMS / unstructured blob — skip normal parsing pipeline entirely
+            if (IsUnstructuredInput(capsule))
+            {
+                await AnalyzeUnstructuredSMS(capsule, options);
+                _currentTaxonomy = null;
+                return;
+            }
+
             // Check parsing mode to determine analysis approach
             var useAI = ShouldUseAIAnalysis(capsule);
 
@@ -107,6 +116,28 @@ namespace ThreadClear.Functions.Services.Implementations
             // Default to AI analysis
             _logger.LogInformation("Using AI-powered analysis (Advanced mode)");
             return true;
+        }
+
+        /// <summary>
+        /// Detect if input is an unstructured SMS/chat blob (no timestamps, no speakers)
+        /// </summary>
+        private bool IsUnstructuredInput(ThreadCapsule capsule)
+        {
+            // If parser already produced real messages, it's structured
+            if (capsule.Messages != null && capsule.Messages.Count > 1)
+                return false;
+
+            // Flag set by parser upstream
+            if (capsule.Metadata.TryGetValue("SourceType", out var sourceType) &&
+                sourceType == "sms_unstructured")
+                return true;
+
+            // Fallback: has raw text but no meaningful messages parsed
+            if (!string.IsNullOrWhiteSpace(capsule.RawText) &&
+                (capsule.Messages == null || capsule.Messages.Count <= 1))
+                return true;
+
+            return false;
         }
 
         #region Full Analysis - AI (Admin / All Features)
@@ -702,6 +733,116 @@ namespace ThreadClear.Functions.Services.Implementations
             }
 
             return suggestions.Take(5).ToList();
+        }
+
+        #endregion
+
+        #region Unstructured SMS Analysis
+
+        private async Task AnalyzeUnstructuredSMS(ThreadCapsule capsule, AnalysisOptions? options)
+        {
+            _logger.LogInformation("Unstructured SMS mode — skipping participant/message parsing");
+
+            // Null out meaningless fields
+            capsule.Participants = new List<Participant>();
+            capsule.Messages = new List<Message>();
+            capsule.Metadata["SourceType"] = "sms_unstructured";
+
+            var prompt = BuildUnstructuredSMSPrompt(capsule, options);
+            var response = await _aiService.AnalyzeConversation(prompt, capsule);
+            ParseUnstructuredSMSResponse(capsule, response);
+        }
+
+        private string BuildUnstructuredSMSPrompt(ThreadCapsule capsule, AnalysisOptions? options)
+        {
+            return $@"You are analyzing a raw SMS/text message thread copied from a phone.
+There are NO speaker labels and NO timestamps. Do not infer or fabricate names.
+
+Focus ONLY on:
+1. What requests or tasks are still unresolved or unconfirmed
+2. The overall client sentiment (positive, neutral, concerned, frustrated)
+3. What the thread owner needs to follow up on
+4. A suggested reply text — casual, natural, as a small business owner would write it
+
+Return ONLY valid JSON:
+{{
+  ""summary"": ""2-3 sentence plain-language summary of what this thread is about"",
+  ""openItems"": [
+    {{ ""item"": ""what is unresolved or needs follow-up"", ""priority"": ""Low|Medium|High"" }}
+  ],
+  ""clientSentiment"": ""Positive|Neutral|Concerned|Frustrated"",
+  ""sentimentReason"": ""one sentence explaining why"",
+  ""suggestedReply"": ""a natural, casual reply the business owner could send"",
+  ""conversationHealth"": {{
+    ""overallScore"": 75,
+    ""riskLevel"": ""Low|Medium|High"",
+    ""issues"": [],
+    ""strengths"": []
+  }}
+}}
+
+Do NOT reference speaker names. Do NOT invent names like 'Laura'. 
+Only use information explicitly present in the thread.
+
+THREAD:
+{capsule.RawText}";
+        }
+
+        private void ParseUnstructuredSMSResponse(ThreadCapsule capsule, string response)
+        {
+            try
+            {
+                var clean = JsonHelper.CleanJsonResponse(response);
+                using var doc = JsonDocument.Parse(clean);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("summary", out var summary))
+                    capsule.Summary = summary.GetString() ?? "";
+
+                if (root.TryGetProperty("suggestedReply", out var reply))
+                    capsule.Metadata["SuggestedReply"] = reply.GetString() ?? "";
+
+                if (root.TryGetProperty("clientSentiment", out var sentiment))
+                    capsule.Metadata["ClientSentiment"] = sentiment.GetString() ?? "";
+
+                if (root.TryGetProperty("sentimentReason", out var reason))
+                    capsule.Metadata["SentimentReason"] = reason.GetString() ?? "";
+
+                // Map openItems → SuggestedActions (reuse existing model)
+                if (root.TryGetProperty("openItems", out var items))
+                {
+                    capsule.SuggestedActions = items.EnumerateArray().Select(i => new SuggestedActionItem
+                    {
+                        Action = i.TryGetProperty("item", out var item) ? item.GetString() ?? "" : "",
+                        Priority = i.TryGetProperty("priority", out var p) ? p.GetString() ?? "Medium" : "Medium",
+                        Reasoning = "Open item from SMS thread"
+                    }).ToList();
+                }
+
+                if (root.TryGetProperty("conversationHealth", out var ch))
+                {
+                    capsule.Analysis.ConversationHealth = new ConversationHealth
+                    {
+                        HealthScore = ch.TryGetProperty("overallScore", out var os) ? os.GetDouble() / 100.0 : 0.5,
+                        RiskLevel = ch.TryGetProperty("riskLevel", out var rl) ? rl.GetString() ?? "Low" : "Low",
+                        Issues = ch.TryGetProperty("issues", out var i) ? i.EnumerateArray().Select(x => x.GetString()).ToList() : new List<string?>(),
+                        Strengths = ch.TryGetProperty("strengths", out var st) ? st.EnumerateArray().Select(x => x.GetString()).ToList() : new List<string?>(),
+                        Recommendations = new List<string?>()
+                    };
+                }
+
+                // Zero out structured fields — meaningless for unstructured input
+                capsule.Analysis.UnansweredQuestions = new List<UnansweredQuestion>();
+                capsule.Analysis.TensionPoints = new List<TensionPoint>();
+                capsule.Analysis.Misalignments = new List<Misalignment>();
+                capsule.Analysis.Decisions = new List<DecisionPoint>();
+                capsule.Analysis.ActionItems = new List<ActionItem>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing unstructured SMS response");
+                capsule.Summary = "Unable to analyze thread.";
+            }
         }
 
         #endregion

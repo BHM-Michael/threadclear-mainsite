@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, Output, EventEmitter, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { InsightTrend } from '../../services/insights.service';
 
@@ -12,7 +12,8 @@ interface ChartPoint {
 @Component({
   selector: 'app-trend-chart',
   templateUrl: './trend-chart.component.html',
-  styleUrls: ['./trend-chart.component.scss']
+  styleUrls: ['./trend-chart.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class TrendChartComponent implements OnChanges {
   @Input() trends: InsightTrend[] = [];
@@ -149,9 +150,87 @@ export class TrendChartComponent implements OnChanges {
     }, 200);
   }
 
+  getCoachingNudge(conv: any): string {
+    const risk = conv.OverallRisk || conv.overallRisk;
+    const unanswered = conv.UnansweredQuestionsCount || conv.unansweredQuestionsCount || 0;
+    const tension = conv.TensionPointsCount || conv.tensionPointsCount || 0;
+
+    if (risk === 'High' && tension > 0)
+      return 'Follow up — tension detected, may need intervention';
+    if (unanswered > 1)
+      return `${unanswered} questions still waiting on a response`;
+    if (tension > 0)
+      return 'Check in — communication friction detected';
+    if (risk === 'High')
+      return 'Review this conversation — health score is low';
+    return 'Worth a quick check-in';
+  }
+
+  getHealthClass(score: number): string {
+    if (score >= 70) return 'health-good';
+    if (score >= 40) return 'health-medium';
+    return 'health-poor';
+  }
+
+  // Keep original untouched — used by SVG dots
   getHealthColor(score: number): string {
     if (score >= 70) return '#22c55e';
     if (score >= 40) return '#f59e0b';
     return '#ef4444';
+  }
+
+  showAllCards = false;
+
+  getPanelCount(risk: string): number {
+    return this.panelConversations.filter(c =>
+      (c.OverallRisk || c.overallRisk) === risk).length;
+  }
+
+  getPanelAvgHealth(): number {
+    if (!this.panelConversations.length) return 0;
+    const sum = this.panelConversations.reduce((acc, c) =>
+      acc + (c.HealthScore || c.healthScore || 0), 0);
+    return Math.round(sum / this.panelConversations.length);
+  }
+
+  getPanelTotalUnanswered(): number {
+    return this.panelConversations.reduce((acc, c) =>
+      acc + (c.UnansweredQuestionsCount || c.unansweredQuestionsCount || 0), 0);
+  }
+
+  getPanelTotalTension(): number {
+    return this.panelConversations.reduce((acc, c) =>
+      acc + (c.TensionPointsCount || c.tensionPointsCount || 0), 0);
+  }
+
+  getAttentionCards(): any[] {
+    return this.panelConversations
+      .filter(c => (c.OverallRisk || c.overallRisk) === 'High' ||
+        (c.UnansweredQuestionsCount || c.unansweredQuestionsCount) > 0 ||
+        (c.TensionPointsCount || c.tensionPointsCount) > 0)
+      .sort((a, b) => (a.HealthScore || a.healthScore || 0) - (b.HealthScore || b.healthScore || 0));
+  }
+
+  getVisibleCards(): any[] {
+    if (this.showAllCards) return this.panelConversations;
+    const attention = this.getAttentionCards();
+    return attention.length > 0 ? attention.slice(0, 3) : this.panelConversations.slice(0, 3);
+  }
+
+  getSourceLabel(sourceType: string): string {
+    const labels: Record<string, string> = {
+      'email': '📧 Email',
+      'Email': '📧 Email',
+      'slack': '💬 Slack',
+      'Slack': '💬 Slack',
+      'teams': '🟦 Teams',
+      'sms': '📱 SMS',
+      'SMS': '📱 SMS',
+      'sms_unstructured': '📱 SMS / Text',
+      'conversation': '💬 Conversation',
+      'audio': '🎙️ Audio',
+      'image': '🖼️ Image'
+    };
+    return labels[sourceType] || sourceType;
   }
 }

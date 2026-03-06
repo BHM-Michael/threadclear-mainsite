@@ -147,7 +147,7 @@ namespace ThreadClear.Functions.Functions
                     draftAnalysis = await _analyzer.AnalyzeDraft(capsule, request.DraftMessage);
                 }
 
-                await StoreInsightAsync(authenticatedUser, capsule, request.SourceType ?? "simple");
+                //await StoreInsightAsync(authenticatedUser, capsule, request.SourceType ?? "simple");
 
                 var response = req.CreateResponse(HttpStatusCode.OK);
                 await response.WriteAsJsonAsync(new

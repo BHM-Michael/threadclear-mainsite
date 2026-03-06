@@ -46,6 +46,14 @@ namespace ThreadClear.Functions.Services.Implementations
             capsule.Metadata["DetectedSourceType"] = detectedSourceType;
             capsule.Metadata["ProvidedSourceType"] = sourceType;
 
+            if (IsUnstructuredSMSInput(conversationText))
+            {
+                capsule.Metadata["SourceType"] = "sms_unstructured";
+                capsule.SourceType = "sms_unstructured";
+                // ConversationAnalyzer.AnalyzeConversation will handle the rest
+                return capsule;
+            }
+
             await ParseAndAnalyzeWithAI(capsule, conversationText, detectedSourceType);
 
             return capsule;
@@ -61,6 +69,34 @@ namespace ThreadClear.Functions.Services.Implementations
         {
             var capsule = await ParseConversation(conversationText, sourceType, mode);
             return capsule.Messages;
+        }
+
+        /// <summary>
+        /// Detect unstructured SMS/chat blob — no timestamps, no "Name:" speaker prefixes
+        /// </summary>
+        private bool IsUnstructuredSMSInput(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return false;
+
+            var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                            .Select(l => l.Trim())
+                            .Where(l => l.Length > 0)
+                            .ToList();
+
+            if (lines.Count < 2) return false;
+
+            // If ANY line has a "Name: message" pattern, it's structured
+            var speakerPattern = new Regex(@"^[\w\s]{1,30}:\s+\S", RegexOptions.Compiled);
+            var hasAnySpeaker = lines.Any(l => speakerPattern.IsMatch(l));
+            if (hasAnySpeaker) return false;
+
+            // If ANY line has a timestamp pattern, it's structured
+            var timestampPattern = new Regex(@"\d{1,2}[:/]\d{2}", RegexOptions.Compiled);
+            var hasAnyTimestamp = lines.Any(l => timestampPattern.IsMatch(l));
+            if (hasAnyTimestamp) return false;
+
+            // No speakers, no timestamps = unstructured
+            return true;
         }
 
         private string DetectSourceType(string conversationText, string providedSourceType)

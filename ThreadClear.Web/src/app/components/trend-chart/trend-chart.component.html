@@ -106,28 +106,107 @@
         <div *ngIf="!panelConversations || panelConversations.length === 0" class="panel-empty">
           No conversations on this date.
         </div>
-        <div *ngFor="let conv of panelConversations" class="conv-card">
-          <div class="conv-card-header">
-            <!-- 2. Fix conv-card title to use Subject -->
-            <span class="conv-title">{{ conv.TeamOrChannel || conv.teamOrChannel || (conv.SourceType || conv.sourceType
-              || 'Unknown') + ' conversation' }}</span>
-            <span class="conv-badge" [class.high-risk]="(conv.OverallRisk || conv.overallRisk) === 'High'"
-              [class.medium-risk]="(conv.OverallRisk || conv.overallRisk) === 'Medium'"
-              [class.low-risk]="(conv.OverallRisk || conv.overallRisk) === 'Low'">
-              {{ conv.OverallRisk || conv.overallRisk || 'Unknown' }}
-            </span>
+
+        <ng-container *ngIf="panelConversations && panelConversations.length > 0">
+
+          <!-- Summary block -->
+          <div class="panel-summary">
+            <div class="summary-row">
+              <div class="summary-stat">
+                <span class="stat-value">{{ panelConversations.length }}</span>
+                <span class="stat-label">Total</span>
+              </div>
+              <div class="summary-stat stat-high">
+                <span class="stat-value">{{ getPanelCount('High') }}</span>
+                <span class="stat-label">🔴 High</span>
+              </div>
+              <div class="summary-stat stat-medium">
+                <span class="stat-value">{{ getPanelCount('Medium') }}</span>
+                <span class="stat-label">🟡 Medium</span>
+              </div>
+              <div class="summary-stat stat-low">
+                <span class="stat-value">{{ getPanelCount('Low') }}</span>
+                <span class="stat-label">🟢 Low</span>
+              </div>
+            </div>
+
+            <div class="summary-signals">
+              <span class="signal signal-question" *ngIf="getPanelTotalUnanswered() > 0">
+                ❓ {{ getPanelTotalUnanswered() }} unanswered
+              </span>
+              <span class="signal signal-tension" *ngIf="getPanelTotalTension() > 0">
+                ⚡ {{ getPanelTotalTension() }} tension
+              </span>
+              <span class="signal signal-ok" *ngIf="getPanelTotalUnanswered() === 0 && getPanelTotalTension() === 0">
+                ✓ No flags
+              </span>
+            </div>
+
+            <div class="summary-health">
+              Avg Health: <strong [ngClass]="getHealthClass(getPanelAvgHealth())">
+                {{ getPanelAvgHealth() }}
+              </strong>
+            </div>
           </div>
-          <div class="conv-meta">
-            <span class="conv-source">{{ conv.SourceType || conv.sourceType || 'Email' }}</span>
-            <span class="conv-score" *ngIf="conv.HealthScore || conv.healthScore">
-              Health: <strong>{{ conv.HealthScore || conv.healthScore }}</strong>
-            </span>
+
+          <!-- Divider -->
+          <div class="panel-divider">
+            <span>{{ showAllCards ? 'All conversations' : 'Needs attention' }}</span>
+            <button class="toggle-list-btn" (click)="showAllCards = !showAllCards">
+              {{ showAllCards ? 'Show less' : 'Show all' }}
+            </button>
           </div>
-          <div class="conv-participants" *ngIf="conv.ParticipantCount || conv.participantCount">
-            {{ conv.ParticipantCount || conv.participantCount }} participant(s) ·
-            {{ conv.MessageCount || conv.messageCount }} messages
-          </div>
-        </div>
+
+          <!-- Cards — attention items first, paginated -->
+          <ng-container *ngFor="let conv of getVisibleCards(); let i = index">
+            <div class="conv-card">
+              <div class="conv-card-header">
+                <span class="conv-title">
+                  {{ conv.TeamOrChannel || conv.teamOrChannel || conv.Subject || conv.subject || 'Untitled Conversation'
+                  }}
+                </span>
+                <span class="conv-badge" [class.high-risk]="(conv.OverallRisk || conv.overallRisk) === 'High'"
+                  [class.medium-risk]="(conv.OverallRisk || conv.overallRisk) === 'Medium'"
+                  [class.low-risk]="(conv.OverallRisk || conv.overallRisk) === 'Low'">
+                  {{ conv.OverallRisk || conv.overallRisk }}
+                </span>
+              </div>
+              <div class="conv-meta">
+                <span class="conv-source">{{ getSourceLabel(conv.SourceType || conv.sourceType) }}</span>
+                <span class="conv-score" *ngIf="conv.HealthScore || conv.healthScore">
+                  Health: <strong [ngClass]="getHealthClass(conv.HealthScore || conv.healthScore)">
+                    {{ conv.HealthScore || conv.healthScore }}
+                  </strong>
+                </span>
+              </div>
+              <div class="conv-signals">
+                <span class="signal signal-question"
+                  *ngIf="(conv.UnansweredQuestionsCount || conv.unansweredQuestionsCount) > 0">
+                  ❓ {{ conv.UnansweredQuestionsCount || conv.unansweredQuestionsCount }} unanswered
+                </span>
+                <span class="signal signal-tension" *ngIf="(conv.TensionPointsCount || conv.tensionPointsCount) > 0">
+                  ⚡ {{ conv.TensionPointsCount || conv.tensionPointsCount }} tension
+                </span>
+              </div>
+              <div class="conv-coaching-nudge"
+                *ngIf="(conv.OverallRisk || conv.overallRisk) === 'High' || (conv.UnansweredQuestionsCount || conv.unansweredQuestionsCount) > 1 || (conv.TensionPointsCount || conv.tensionPointsCount) > 0">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <span>{{ getCoachingNudge(conv) }}</span>
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- Show more -->
+          <button class="show-more-btn" *ngIf="!showAllCards && getAttentionCards().length > 3"
+            (click)="showAllCards = true">
+            + {{ getAttentionCards().length - 3 }} more conversations
+          </button>
+
+        </ng-container>
       </div>
     </div>
   </div>

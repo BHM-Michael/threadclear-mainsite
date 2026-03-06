@@ -51,6 +51,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     'Teams': '🟦 Teams',
     'sms': '📱 SMS',
     'SMS': '📱 SMS',
+    'sms_unstructured': '📱 SMS / Text',
+    'conversation': '💬 Conversation',
     'paste': '📋 Pasted Text',
     'Paste': '📋 Pasted Text',
     'image': '🖼️ Image Upload',

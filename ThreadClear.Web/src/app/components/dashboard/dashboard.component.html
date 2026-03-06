@@ -182,34 +182,6 @@
           <div class="empty-subtitle">Sources appear as you analyze conversations</div>
         </div>
       </div>
-
-      <!-- Drill Down Panel -->
-      <div class="drilldown-panel" *ngIf="drillDownDate">
-        <div class="drilldown-header">
-          <h3>Conversations on {{ drillDownDate | date:'MMMM d, yyyy' }}</h3>
-          <button class="close-btn" (click)="closeDrillDown()">✕</button>
-        </div>
-        <div class="drilldown-loading" *ngIf="drillDownLoading">Loading...</div>
-        <div class="drilldown-list" *ngIf="!drillDownLoading">
-          <div class="drilldown-item" *ngFor="let insight of drillDownInsights">
-            <div class="drilldown-score" [ngClass]="getHealthScoreClass(insight.healthScore)">
-              {{ insight.healthScore }}
-            </div>
-            <div class="drilldown-info">
-              <div class="drilldown-title">{{ insight.teamOrChannel || 'Untitled Conversation' }}</div>
-              <div class="drilldown-meta">
-                <span class="attention-risk risk-{{ insight.overallRisk?.toLowerCase() }}">{{ insight.overallRisk }}
-                  Risk</span>
-                <span>{{ insight.sourceType }}</span>
-                <span>{{ insight.messageCount }} messages</span>
-              </div>
-            </div>
-          </div>
-          <div *ngIf="drillDownInsights.length === 0" class="drilldown-empty">
-            No conversations found for this date.
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Topics Section -->

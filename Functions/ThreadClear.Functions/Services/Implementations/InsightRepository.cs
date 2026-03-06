@@ -440,7 +440,7 @@ namespace ThreadClear.Functions.Services.Implementations
 
         private StorableInsight MapInsight(SqlDataReader reader)
         {
-            return new StorableInsight
+            var insight = new StorableInsight
             {
                 Id = reader.GetGuid(reader.GetOrdinal("Id")),
                 OrganizationId = reader.GetGuid(reader.GetOrdinal("OrganizationId")),
@@ -454,6 +454,32 @@ namespace ThreadClear.Functions.Services.Implementations
                 HealthScore = reader.GetInt32(reader.GetOrdinal("HealthScore")),
                 InsightsJson = reader.GetString(reader.GetOrdinal("Insights"))
             };
+
+            // Parse signal counts from Insights JSON array
+            try
+            {
+                using var doc = JsonDocument.Parse(insight.InsightsJson);
+                var root = doc.RootElement;
+
+                if (root.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var entry in root.EnumerateArray())
+                    {
+                        if (entry.TryGetProperty("Category", out var cat) ||
+                            entry.TryGetProperty("category", out cat))
+                        {
+                            var category = cat.GetString();
+                            if (category == "QUESTION_STATUS")
+                                insight.UnansweredQuestionsCount++;
+                            else if (category == "TENSION_SIGNAL")
+                                insight.TensionPointsCount++;
+                        }
+                    }
+                }
+            }
+            catch { /* non-blocking */ }
+
+            return insight;
         }
     }
 }

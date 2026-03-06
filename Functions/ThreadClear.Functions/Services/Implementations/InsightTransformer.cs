@@ -32,6 +32,11 @@ namespace ThreadClear.Functions.Services.Implementations
 
             if (capsule.Analysis == null) return insight;
 
+            insight.TeamOrChannel = capsule.ThreadMetadata?.Subject
+                ?? capsule.Metadata?.GetValueOrDefault("Subject")
+                ?? capsule.Summary?.Split('.').FirstOrDefault()?.Trim()
+                ?? (capsule.SourceType == "sms_unstructured" ? "SMS / Text Thread" : null);
+
             var insights = new List<InsightEntry>();
 
             // Transform Unanswered Questions

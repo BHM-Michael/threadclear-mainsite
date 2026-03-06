@@ -18,6 +18,10 @@ namespace ThreadClear.Functions.Models
         public int HealthScore { get; set; }
         public string InsightsJson { get; set; } = "[]";
 
+        public int UnansweredQuestionsCount { get; set; }
+        public int TensionPointsCount { get; set; }
+        public string? Subject { get; set; }
+
         // Parsed insights
         private List<InsightEntry>? _insights;
         public List<InsightEntry> Insights

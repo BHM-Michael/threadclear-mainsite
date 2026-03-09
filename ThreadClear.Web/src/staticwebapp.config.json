@@ -16,5 +16,12 @@
                 "anonymous"
             ]
         }
-    ]
+    ],
+    "responseOverrides": {},
+    "globalHeaders": {
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+    },
+    "mimeTypes": {
+        ".html": "text/html"
+    }
 }

@@ -540,10 +540,12 @@
                 console.error('Analysis error:', error);
                 status.className = 'status error';
                 status.textContent = '❌ ' + (error.message || 'Failed to analyze thread');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<span>🔍</span> Analyze This Thread';
-            }
+			} finally {
+				btn.disabled = false;
+				btn.innerHTML = '<span>🔍</span> Analyze This Thread';
+				status.style.display = 'none';
+				status.innerHTML = '';
+			}
         }
 
         // Get email body content

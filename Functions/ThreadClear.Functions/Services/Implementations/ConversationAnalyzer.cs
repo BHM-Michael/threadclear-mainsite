@@ -880,24 +880,6 @@ THREAD:
             return Regex.Replace(question.ToLower().Trim(), @"[^\w\s]", "").Trim();
         }
 
-        private List<string> ExtractKeywords(string text)
-        {
-            var stopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
-                "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-                "have", "has", "had", "do", "does", "did", "will", "would", "could",
-                "should", "may", "might", "must", "can", "this", "that", "these",
-                "those", "i", "you", "he", "she", "it", "we", "they", "what", "when",
-                "where", "who", "why", "how", "which", "there", "here", "and", "or",
-                "but", "if", "then", "so", "as", "of", "for", "to", "from", "in", "on",
-                "at", "by", "with", "about", "your", "my", "our", "their", "its"
-            };
-
-            return Regex.Split(text.ToLower(), @"\W+")
-                .Where(w => w.Length > 2 && !stopWords.Contains(w))
-                .Distinct()
-                .ToList();
-        }
-
         private string GetSentenceContainingPattern(string text, string pattern)
         {
             if (string.IsNullOrEmpty(pattern))

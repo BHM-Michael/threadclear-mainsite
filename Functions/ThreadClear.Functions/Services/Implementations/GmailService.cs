@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ThreadClear.Functions.Services.Interfaces;
 
 namespace ThreadClear.Functions.Services
 {
@@ -205,6 +206,114 @@ namespace ThreadClear.Functions.Services
                 return match.Groups[1].Value.Trim().Trim('"');
             return from;
         }
+
+        /// <summary>
+        /// Refresh an access token using a refresh token
+        /// </summary>
+        public async Task<string> RefreshAccessTokenAsync(string refreshToken, string clientId, string clientSecret)
+        {
+            var body = new FormUrlEncodedContent(new[]
+            {
+        new KeyValuePair<string, string>("grant_type", "refresh_token"),
+        new KeyValuePair<string, string>("client_id", clientId),
+        new KeyValuePair<string, string>("client_secret", clientSecret),
+        new KeyValuePair<string, string>("refresh_token", refreshToken)
+    });
+
+            var response = await _httpClient.PostAsync("https://oauth2.googleapis.com/token", body);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.GetProperty("access_token").GetString()!;
+        }
+
+        /// <summary>
+        /// Setup Gmail push notifications via Pub/Sub watch
+        /// </summary>
+        public async Task<GmailWatchResult> SetupWatchAsync(string accessToken, string pubSubTopic)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var body = JsonSerializer.Serialize(new
+            {
+                topicName = pubSubTopic,
+                labelIds = new[] { "INBOX" },
+                labelFilterBehavior = "INCLUDE"
+            });
+
+            var response = await _httpClient.PostAsync(
+                $"{GmailApiBase}/watch",
+                new StringContent(body, Encoding.UTF8, "application/json"));
+
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            var historyId = root.GetProperty("historyId").GetString()!;
+            var expirationMs = long.Parse(root.GetProperty("expiration").GetString()!);
+
+            _logger.LogInformation("Gmail watch set up — historyId: {HistoryId}", historyId);
+
+            return new GmailWatchResult
+            {
+                HistoryId = historyId,
+                Expiration = DateTimeOffset.FromUnixTimeMilliseconds(expirationMs).UtcDateTime
+            };
+        }
+
+        /// <summary>
+        /// Get new message IDs since the last known historyId
+        /// </summary>
+        public async Task<GmailHistoryResult> GetNewMessageIdsAsync(string accessToken, string startHistoryId)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var url = $"{GmailApiBase}/history" +
+                      $"?startHistoryId={startHistoryId}&historyTypes=messageAdded&labelId=INBOX";
+
+            var response = await _httpClient.GetAsync(url);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return new GmailHistoryResult { LatestHistoryId = startHistoryId };
+
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            var result = new GmailHistoryResult
+            {
+                LatestHistoryId = root.TryGetProperty("historyId", out var hid)
+                    ? hid.GetString() ?? startHistoryId : startHistoryId
+            };
+
+            if (root.TryGetProperty("history", out var historyArray))
+            {
+                foreach (var item in historyArray.EnumerateArray())
+                {
+                    if (!item.TryGetProperty("messagesAdded", out var messagesAdded)) continue;
+
+                    foreach (var msgAdded in messagesAdded.EnumerateArray())
+                    {
+                        if (msgAdded.TryGetProperty("message", out var msg) &&
+                            msg.TryGetProperty("id", out var msgId))
+                        {
+                            var id = msgId.GetString();
+                            if (!string.IsNullOrEmpty(id) && !result.NewMessageIds.Contains(id))
+                                result.NewMessageIds.Add(id);
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
     }
 
     #region Gmail API Response Models
@@ -288,6 +397,18 @@ namespace ThreadClear.Functions.Services
 
         [JsonPropertyName("size")]
         public int Size { get; set; }
+    }
+
+    public class GmailWatchResult
+    {
+        public string HistoryId { get; set; } = "";
+        public DateTime Expiration { get; set; }
+    }
+
+    public class GmailHistoryResult
+    {
+        public List<string> NewMessageIds { get; set; } = new();
+        public string LatestHistoryId { get; set; } = "";
     }
 
     #endregion

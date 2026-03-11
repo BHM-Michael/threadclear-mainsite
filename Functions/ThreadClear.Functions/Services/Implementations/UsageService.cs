@@ -17,9 +17,6 @@ namespace ThreadClear.Functions.Services.Implementations
         private readonly string _connectionString;
         private readonly ILogger<UsageService> _logger;
 
-        // Default limits for free tier
-        private const int FREE_TIER_MONTHLY_ANALYSES = 10;
-
         public UsageService(string connectionString, ILogger<UsageService> logger)
         {
             _connectionString = connectionString;

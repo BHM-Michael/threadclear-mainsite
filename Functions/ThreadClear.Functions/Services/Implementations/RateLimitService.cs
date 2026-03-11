@@ -125,13 +125,5 @@ namespace ThreadClear.Functions.Services.Implementations
             var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(ip));
             return Convert.ToHexString(bytes).ToLower();
         }
-
-        private string MaskIp(string ip)
-        {
-            var parts = ip.Split('.');
-            if (parts.Length == 4)
-                return $"{parts[0]}.{parts[1]}.xxx.xxx";
-            return "masked";
-        }
     }
 }

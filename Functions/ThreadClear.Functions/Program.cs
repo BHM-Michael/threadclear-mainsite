@@ -3,10 +3,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ThreadClear.Functions.Extensions;
 using ThreadClear.Functions.Models;
+using ThreadClear.Functions.Services;
 using ThreadClear.Functions.Services.Implementations;
 using ThreadClear.Functions.Services.Interfaces;
-using ThreadClear.Functions.Extensions;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults()
@@ -129,6 +130,36 @@ var host = new HostBuilder()
 
         services.AddScoped<ISlackWorkspaceRepository, SlackWorkspaceRepository>();
         services.AddScoped<ITeamsWorkspaceRepository, TeamsWorkspaceRepository>();
+        services.AddScoped<IDigestInsightRepository, DigestInsightRepository>();
+
+        // Add HttpClient factory (needed by GraphService)
+        services.AddHttpClient("graph");
+
+        // Register Graph services
+        services.AddSingleton<IGraphTokenRepository>(sp =>
+            new GraphTokenRepository(sqlConnectionString, sp.GetRequiredService<ILogger<GraphTokenRepository>>()));
+
+        services.AddSingleton<IGraphService>(sp =>
+            new GraphService(
+                sp.GetRequiredService<IConfiguration>(),
+                sp.GetRequiredService<ILogger<GraphService>>(),
+                sp.GetRequiredService<IHttpClientFactory>()));
+
+        services.AddSingleton<IConversationAnalysisService>(sp =>
+            new ConversationAnalysisService(
+                sp.GetRequiredService<IAIService>(),
+                sp.GetRequiredService<ILogger<ConversationAnalysisService>>()));
+
+        services.AddHttpClient("gmail");
+
+        services.AddSingleton<IGmailTokenRepository>(sp =>
+            new GmailTokenRepository(sqlConnectionString,
+                sp.GetRequiredService<ILogger<GmailTokenRepository>>()));
+
+        services.AddSingleton<GmailService>(sp =>
+            new GmailService(
+                sp.GetRequiredService<ILogger<GmailService>>(),
+                sp.GetRequiredService<IHttpClientFactory>().CreateClient("gmail")));
 
         services.AddGmailDigestServices();
 

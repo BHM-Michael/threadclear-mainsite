@@ -130,7 +130,10 @@ var host = new HostBuilder()
 
         services.AddScoped<ISlackWorkspaceRepository, SlackWorkspaceRepository>();
         services.AddScoped<ITeamsWorkspaceRepository, TeamsWorkspaceRepository>();
-        services.AddScoped<IDigestInsightRepository, DigestInsightRepository>();
+        services.AddSingleton<IDigestInsightRepository>(sp =>
+    new DigestInsightRepository(
+        sqlConnectionString,
+        sp.GetRequiredService<ILogger<DigestInsightRepository>>()));
 
         // Add HttpClient factory (needed by GraphService)
         services.AddHttpClient("graph");
@@ -160,6 +163,17 @@ var host = new HostBuilder()
             new GmailService(
                 sp.GetRequiredService<ILogger<GmailService>>(),
                 sp.GetRequiredService<IHttpClientFactory>().CreateClient("gmail")));
+
+        // Remove this:
+        services.AddSingleton<IEmailService, StubEmailService>();
+
+        // Add this:
+        services.AddHttpClient("sendgrid");
+        services.AddSingleton<IEmailService>(sp =>
+            new SendGridEmailService(
+                sp.GetRequiredService<IConfiguration>(),
+                sp.GetRequiredService<ILogger<SendGridEmailService>>(),
+                sp.GetRequiredService<IHttpClientFactory>()));
 
         services.AddGmailDigestServices();
 

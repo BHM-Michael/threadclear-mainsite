@@ -99,8 +99,7 @@ namespace ThreadClear.Functions.Functions
                     UnansweredQuestions = unansweredCount,
                     TensionSignals = tensionCount,
                     Summary = summary,
-                    AnalyzedAt = DateTime.UtcNow,
-                    DigestSent = false
+                    AnalyzedAt = DateTime.UtcNow
                 };
 
                 await _digestRepo.CreateAsync(digestInsight);

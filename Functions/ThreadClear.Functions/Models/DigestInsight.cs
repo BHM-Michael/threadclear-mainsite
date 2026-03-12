@@ -15,7 +15,5 @@ namespace ThreadClear.Models
         public int TensionSignals { get; set; }
         public string Summary { get; set; }
         public DateTime AnalyzedAt { get; set; } = DateTime.UtcNow;
-        public bool DigestSent { get; set; } = false;
-        public DateTime? SentAt { get; set; }
     }
 }

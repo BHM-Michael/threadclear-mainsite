@@ -10,6 +10,7 @@ namespace ThreadClear.Functions.Services.Interfaces
         Task CreateAsync(DigestInsight insight);
         Task<List<DigestInsight>> GetPendingInsightsForUserAsync(Guid userId);
         Task<List<Guid>> GetUsersWithPendingInsightsAsync();
-        Task MarkSentAsync(List<int> ids);
+        Task DeleteAsync(List<int> ids);
+        Task LogAuditAsync(Guid userId, int threadCount, string provider);
     }
 }

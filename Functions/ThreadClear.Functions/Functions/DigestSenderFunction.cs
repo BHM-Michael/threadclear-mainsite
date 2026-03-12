@@ -83,7 +83,9 @@ namespace ThreadClear.Functions
 
             await _emailService.SendAsync(user.Email, subject, body);
 
-            await _digestRepo.MarkSentAsync(insights.Select(i => i.Id).ToList());
+            var provider = insights.FirstOrDefault()?.Provider ?? "unknown";
+            await _digestRepo.LogAuditAsync(userId, insights.Count, provider);
+            await _digestRepo.DeleteAsync(insights.Select(i => i.Id).ToList());
 
             _logger.LogInformation(
                 "Digest sent to {Email} — {Count} threads, avg health {Health}",

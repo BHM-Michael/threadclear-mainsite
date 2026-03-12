@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ThreadClear.Functions.Models;
 using ThreadClear.Functions.Services.Interfaces;
 using ThreadClear.Models;
 
@@ -14,7 +13,8 @@ namespace ThreadClear.Functions.Services.Implementations
         private readonly string _connectionString;
         private readonly ILogger<DigestInsightRepository> _logger;
 
-        public DigestInsightRepository(string connectionString, ILogger<DigestInsightRepository> logger)
+        public DigestInsightRepository(string connectionString,
+            ILogger<DigestInsightRepository> logger)
         {
             _connectionString = connectionString;
             _logger = logger;
@@ -27,10 +27,10 @@ namespace ThreadClear.Functions.Services.Implementations
 
             var sql = @"INSERT INTO DigestInsights 
                             (UserId, Provider, ThreadId, Subject, HealthScore, RiskLevel,
-                             UnansweredQuestions, TensionSignals, Summary, AnalyzedAt, DigestSent)
+                             UnansweredQuestions, TensionSignals, Summary, AnalyzedAt)
                         VALUES 
                             (@UserId, @Provider, @ThreadId, @Subject, @HealthScore, @RiskLevel,
-                             @UnansweredQuestions, @TensionSignals, @Summary, @AnalyzedAt, 0)";
+                             @UnansweredQuestions, @TensionSignals, @Summary, @AnalyzedAt)";
 
             using var cmd = new SqlCommand(sql, connection);
             cmd.Parameters.AddWithValue("@UserId", insight.UserId);
@@ -55,9 +55,9 @@ namespace ThreadClear.Functions.Services.Implementations
             await connection.OpenAsync();
 
             var sql = @"SELECT Id, UserId, Provider, ThreadId, Subject, HealthScore, RiskLevel,
-                               UnansweredQuestions, TensionSignals, Summary, AnalyzedAt, DigestSent, SentAt
+                               UnansweredQuestions, TensionSignals, Summary, AnalyzedAt
                         FROM DigestInsights
-                        WHERE UserId = @UserId AND DigestSent = 0
+                        WHERE UserId = @UserId
                         ORDER BY HealthScore ASC";
 
             using var cmd = new SqlCommand(sql, connection);
@@ -76,7 +76,7 @@ namespace ThreadClear.Functions.Services.Implementations
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            var sql = "SELECT DISTINCT UserId FROM DigestInsights WHERE DigestSent = 0";
+            var sql = "SELECT DISTINCT UserId FROM DigestInsights";
 
             using var cmd = new SqlCommand(sql, connection);
 
@@ -88,14 +88,13 @@ namespace ThreadClear.Functions.Services.Implementations
             return results;
         }
 
-        public async Task MarkSentAsync(List<int> ids)
+        public async Task DeleteAsync(List<int> ids)
         {
             if (ids == null || ids.Count == 0) return;
 
             using var connection = new SqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            // Build parameterized IN clause — no Dapper, do it manually
             var paramNames = new List<string>();
             using var cmd = new SqlCommand();
             cmd.Connection = connection;
@@ -107,12 +106,30 @@ namespace ThreadClear.Functions.Services.Implementations
                 cmd.Parameters.AddWithValue(paramName, ids[i]);
             }
 
-            cmd.CommandText = $@"UPDATE DigestInsights 
-                                 SET DigestSent = 1, SentAt = GETUTCDATE()
-                                 WHERE Id IN ({string.Join(",", paramNames)})";
+            cmd.CommandText =
+                $"DELETE FROM DigestInsights WHERE Id IN ({string.Join(",", paramNames)})";
 
             await cmd.ExecuteNonQueryAsync();
-            _logger.LogInformation("Marked {Count} DigestInsights as sent", ids.Count);
+            _logger.LogInformation("Deleted {Count} DigestInsights after sending", ids.Count);
+        }
+
+        public async Task LogAuditAsync(Guid userId, int threadCount, string provider)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var sql = @"INSERT INTO DigestAuditLog (UserId, ThreadCount, Provider)
+                        VALUES (@UserId, @ThreadCount, @Provider)";
+
+            using var cmd = new SqlCommand(sql, connection);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            cmd.Parameters.AddWithValue("@ThreadCount", threadCount);
+            cmd.Parameters.AddWithValue("@Provider", provider);
+
+            await cmd.ExecuteNonQueryAsync();
+            _logger.LogInformation(
+                "Audit log: digest sent to user {UserId}, {ThreadCount} threads",
+                userId, threadCount);
         }
 
         private static DigestInsight MapDigestInsight(SqlDataReader reader)
@@ -120,7 +137,7 @@ namespace ThreadClear.Functions.Services.Implementations
             return new DigestInsight
             {
                 Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                UserId = reader.GetGuid(reader.GetOrdinal("UserId")),
+                UserId = Guid.Parse(reader.GetString(reader.GetOrdinal("UserId"))),
                 Provider = reader.GetString(reader.GetOrdinal("Provider")),
                 ThreadId = reader.GetString(reader.GetOrdinal("ThreadId")),
                 Subject = reader.IsDBNull(reader.GetOrdinal("Subject"))
@@ -131,10 +148,7 @@ namespace ThreadClear.Functions.Services.Implementations
                 TensionSignals = reader.GetInt32(reader.GetOrdinal("TensionSignals")),
                 Summary = reader.IsDBNull(reader.GetOrdinal("Summary"))
                     ? null : reader.GetString(reader.GetOrdinal("Summary")),
-                AnalyzedAt = reader.GetDateTime(reader.GetOrdinal("AnalyzedAt")),
-                DigestSent = reader.GetBoolean(reader.GetOrdinal("DigestSent")),
-                SentAt = reader.IsDBNull(reader.GetOrdinal("SentAt"))
-                    ? null : reader.GetDateTime(reader.GetOrdinal("SentAt"))
+                AnalyzedAt = reader.GetDateTime(reader.GetOrdinal("AnalyzedAt"))
             };
         }
     }

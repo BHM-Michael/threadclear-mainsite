@@ -83,7 +83,7 @@ namespace ThreadClear.Functions.Services.Implementations
             var results = new List<Guid>();
             using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
-                results.Add(reader.GetGuid(0));
+                results.Add(Guid.Parse(reader.GetString(0)));
 
             return results;
         }

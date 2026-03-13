@@ -1,35 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using ThreadClear.Functions.Services;
 
 namespace ThreadClear.Functions.Services.Interfaces
 {
     public interface IGmailService
     {
-        Task<string> RefreshAccessTokenAsync(string refreshToken);
+        Task<List<GmailThread>> ListRecentThreadsAsync(string accessToken, int hoursBack = 24, int maxResults = 50);
+        Task<GmailThread?> GetThreadAsync(string accessToken, string threadId);
+        Task<GmailThread?> GetThreadByMessageIdAsync(string accessToken, string messageId);
         Task<GmailEmailMetadata> GetEmailMetadataAsync(string accessToken, string messageId);
-        Task<GmailHistoryResult> GetNewMessageIdsAsync(string accessToken, string startHistoryId);
+        string ConvertThreadToConversation(GmailThread thread);
+        Task<string> RefreshAccessTokenAsync(string refreshToken, string clientId, string clientSecret);
         Task<GmailWatchResult> SetupWatchAsync(string accessToken, string pubSubTopic);
-    }
-
-    public class GmailEmailMetadata
-    {
-        public string MessageId { get; set; } = "";
-        public string Subject { get; set; } = "";
-        public string BodyText { get; set; } = "";
-        public string FromEmail { get; set; } = "";
-        public DateTime ReceivedAt { get; set; }
-    }
-
-    public class GmailHistoryResult
-    {
-        public List<string> NewMessageIds { get; set; } = new();
-        public string LatestHistoryId { get; set; } = "";
-    }
-
-    public class GmailWatchResult
-    {
-        public string HistoryId { get; set; } = "";
-        public DateTime Expiration { get; set; }
+        Task<GmailHistoryResult> GetNewMessageIdsAsync(string accessToken, string startHistoryId);
     }
 }

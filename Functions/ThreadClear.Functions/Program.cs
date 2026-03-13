@@ -159,7 +159,7 @@ var host = new HostBuilder()
             new GmailTokenRepository(sqlConnectionString,
                 sp.GetRequiredService<ILogger<GmailTokenRepository>>()));
 
-        services.AddSingleton<GmailService>(sp =>
+        services.AddSingleton<IGmailService>(sp =>
             new GmailService(
                 sp.GetRequiredService<ILogger<GmailService>>(),
                 sp.GetRequiredService<IHttpClientFactory>().CreateClient("gmail")));

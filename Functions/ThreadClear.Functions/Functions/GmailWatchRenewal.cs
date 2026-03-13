@@ -32,7 +32,6 @@ namespace ThreadClear.Functions.Functions
             _logger.LogInformation("GmailWatchRenewal fired at {Time}", DateTime.UtcNow);
 
             var userIds = await _gmailTokenRepo.GetUsersWithExpiringWatchesAsync();
-
             if (userIds.Count == 0)
             {
                 _logger.LogInformation("No Gmail watches need renewal");
@@ -40,6 +39,8 @@ namespace ThreadClear.Functions.Functions
             }
 
             var pubSubTopic = _config["GooglePubSubTopic"]!;
+            var clientId = _config["GoogleClientId"]!;
+            var clientSecret = _config["GoogleClientSecret"]!;
 
             foreach (var userId in userIds)
             {
@@ -49,9 +50,10 @@ namespace ThreadClear.Functions.Functions
                     if (tokenRecord == null) continue;
 
                     var accessToken = await _gmailService.RefreshAccessTokenAsync(
-                        tokenRecord.RefreshToken);
+                        tokenRecord.RefreshToken, clientId, clientSecret);
 
                     var watchResult = await _gmailService.SetupWatchAsync(accessToken, pubSubTopic);
+
                     await _gmailTokenRepo.UpsertWatchAsync(userId, watchResult.HistoryId,
                         watchResult.Expiration);
 

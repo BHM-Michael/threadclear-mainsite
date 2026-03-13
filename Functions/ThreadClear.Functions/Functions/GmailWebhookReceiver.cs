@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using ThreadClear.Functions.Models;
+using ThreadClear.Functions.Services;
 using ThreadClear.Functions.Services.Interfaces;
 using ThreadClear.Models;
 
@@ -38,8 +39,6 @@ namespace ThreadClear.Functions.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "post",
                 Route = "gmail/webhook")] HttpRequestData req)
         {
-            // ── Step 1: Validate secret token ────────────────────────────────
-            // We embed a secret in the push subscription URL as ?token=xxx
             var token = req.Query["token"];
             var expectedToken = _config["GoogleWebhookSecret"];
             if (token != expectedToken)
@@ -48,7 +47,6 @@ namespace ThreadClear.Functions.Functions
                 return req.CreateResponse(HttpStatusCode.Unauthorized);
             }
 
-            // ── Step 2: Acknowledge immediately — Pub/Sub retries on non-200 ─
             string body;
             try
             {
@@ -67,9 +65,6 @@ namespace ThreadClear.Functions.Functions
 
         private async Task ProcessNotificationAsync(string body)
         {
-            // ── Step 3: Decode Pub/Sub envelope ──────────────────────────────
-            // Format: { "message": { "data": "<base64>", "messageId": "..." }, "subscription": "..." }
-            // data decodes to: { "emailAddress": "user@gmail.com", "historyId": "12345" }
             JsonDocument envelope;
             try
             {
@@ -140,7 +135,6 @@ namespace ThreadClear.Functions.Functions
 
         private async Task ProcessForUserAsync(string emailAddress, string newHistoryId)
         {
-            // ── Step 4: Look up user by Gmail email ───────────────────────────
             var tokenRecord = await _gmailTokenRepo.GetByEmailAsync(emailAddress);
             if (tokenRecord == null)
             {
@@ -148,11 +142,9 @@ namespace ThreadClear.Functions.Functions
                 return;
             }
 
-            // ── Step 5: Get stored historyId ──────────────────────────────────
             var storedHistoryId = await _gmailTokenRepo.GetHistoryIdAsync(tokenRecord.UserId);
             if (string.IsNullOrEmpty(storedHistoryId))
             {
-                // First notification — store the new historyId and wait for next
                 _logger.LogInformation(
                     "No stored historyId for user {UserId}, storing {HistoryId}",
                     tokenRecord.UserId, newHistoryId);
@@ -161,11 +153,14 @@ namespace ThreadClear.Functions.Functions
                 return;
             }
 
-            // ── Step 6: Refresh access token ──────────────────────────────────
+            var clientId = _config["GoogleClientId"]!;
+            var clientSecret = _config["GoogleClientSecret"]!;
+
             string accessToken;
             try
             {
-                accessToken = await _gmailService.RefreshAccessTokenAsync(tokenRecord.RefreshToken);
+                accessToken = await _gmailService.RefreshAccessTokenAsync(
+                    tokenRecord.RefreshToken, clientId, clientSecret);
             }
             catch (Exception ex)
             {
@@ -174,7 +169,6 @@ namespace ThreadClear.Functions.Functions
                 return;
             }
 
-            // ── Step 7: Fetch new message IDs since last historyId ────────────
             GmailHistoryResult historyResult;
             try
             {
@@ -188,7 +182,6 @@ namespace ThreadClear.Functions.Functions
                 return;
             }
 
-            // ── Step 8: Update stored historyId ───────────────────────────────
             if (!string.IsNullOrEmpty(historyResult.LatestHistoryId))
             {
                 await _gmailTokenRepo.UpsertWatchAsync(
@@ -203,7 +196,6 @@ namespace ThreadClear.Functions.Functions
                 return;
             }
 
-            // ── Step 9: Fetch each message and enqueue ────────────────────────
             foreach (var messageId in historyResult.NewMessageIds)
             {
                 try

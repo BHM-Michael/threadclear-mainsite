@@ -1,13 +1,18 @@
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using ThreadClear.Functions.Services.Interfaces;
 
 namespace ThreadClear.Functions.Services
 {
-    public class GmailService
+    public class GmailService : IGmailService
     {
         private readonly ILogger<GmailService> _logger;
         private readonly HttpClient _httpClient;
@@ -19,9 +24,6 @@ namespace ThreadClear.Functions.Services
             _httpClient = httpClient;
         }
 
-        /// <summary>
-        /// List threads from the last N hours
-        /// </summary>
         public async Task<List<GmailThread>> ListRecentThreadsAsync(string accessToken, int hoursBack = 24, int maxResults = 50)
         {
             var threads = new List<GmailThread>();
@@ -56,9 +58,6 @@ namespace ThreadClear.Functions.Services
             return threads;
         }
 
-        /// <summary>
-        /// Get a full thread with all messages
-        /// </summary>
         public async Task<GmailThread?> GetThreadAsync(string accessToken, string threadId)
         {
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -77,14 +76,10 @@ namespace ThreadClear.Functions.Services
             return JsonSerializer.Deserialize<GmailThread>(json);
         }
 
-        /// <summary>
-        /// Get a full thread by message ID (used by Gmail Add-on trigger)
-        /// </summary>
         public async Task<GmailThread?> GetThreadByMessageIdAsync(string accessToken, string messageId)
         {
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-            // First get the message to find its threadId
             var msgUrl = $"{GmailApiBase}/messages/{messageId}?format=minimal";
             var msgResponse = await _httpClient.GetAsync(msgUrl);
 
@@ -100,13 +95,38 @@ namespace ThreadClear.Functions.Services
             if (string.IsNullOrEmpty(message?.ThreadId))
                 return null;
 
-            // Now get the full thread
             return await GetThreadAsync(accessToken, message.ThreadId);
         }
 
-        /// <summary>
-        /// Convert a Gmail thread to a conversation string for analysis
-        /// </summary>
+        public async Task<GmailEmailMetadata> GetEmailMetadataAsync(string accessToken, string messageId)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var url = $"{GmailApiBase}/messages/{messageId}?format=full";
+            var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var message = JsonSerializer.Deserialize<GmailMessage>(json);
+
+            var subject = GetHeader(message?.Payload, "Subject") ?? "(No Subject)";
+            var from = GetHeader(message?.Payload, "From") ?? "";
+            var body = ExtractBody(message?.Payload);
+
+            var internalDate = long.TryParse(message?.InternalDate, out var ms)
+                ? DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime
+                : DateTime.UtcNow;
+
+            return new GmailEmailMetadata
+            {
+                MessageId = messageId,
+                Subject = subject,
+                BodyText = body,
+                FromEmail = from,
+                ReceivedAt = internalDate
+            };
+        }
+
         public string ConvertThreadToConversation(GmailThread thread)
         {
             var sb = new StringBuilder();
@@ -121,8 +141,6 @@ namespace ThreadClear.Functions.Services
                 var from = GetHeader(message.Payload, "From") ?? "Unknown";
                 var date = GetHeader(message.Payload, "Date") ?? "";
                 var body = ExtractBody(message.Payload);
-
-                // Extract just the name/email from "Name <email@example.com>"
                 var sender = ExtractSenderName(from);
 
                 sb.AppendLine($"[{sender}] ({date}):");
@@ -133,92 +151,15 @@ namespace ThreadClear.Functions.Services
             return sb.ToString();
         }
 
-        private string? GetHeader(GmailPayload? payload, string name)
-        {
-            return payload?.Headers?.FirstOrDefault(h => 
-                h.Name.Equals(name, StringComparison.OrdinalIgnoreCase))?.Value;
-        }
-
-        private string ExtractBody(GmailPayload? payload)
-        {
-            if (payload == null) return "";
-
-            // Try direct body first
-            if (!string.IsNullOrEmpty(payload.Body?.Data))
-            {
-                return DecodeBase64(payload.Body.Data);
-            }
-
-            // Check parts for text/plain or text/html
-            if (payload.Parts != null)
-            {
-                // Prefer text/plain
-                var textPart = payload.Parts.FirstOrDefault(p => p.MimeType == "text/plain");
-                if (textPart?.Body?.Data != null)
-                    return DecodeBase64(textPart.Body.Data);
-
-                // Fall back to text/html
-                var htmlPart = payload.Parts.FirstOrDefault(p => p.MimeType == "text/html");
-                if (htmlPart?.Body?.Data != null)
-                    return StripHtml(DecodeBase64(htmlPart.Body.Data));
-
-                // Recurse into nested parts
-                foreach (var part in payload.Parts)
-                {
-                    var nested = ExtractBody(part);
-                    if (!string.IsNullOrEmpty(nested))
-                        return nested;
-                }
-            }
-
-            return "";
-        }
-
-        private string DecodeBase64(string encoded)
-        {
-            try
-            {
-                // Gmail uses URL-safe base64
-                var base64 = encoded.Replace('-', '+').Replace('_', '/');
-                var padded = base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '=');
-                var bytes = Convert.FromBase64String(padded);
-                return Encoding.UTF8.GetString(bytes);
-            }
-            catch
-            {
-                return encoded;
-            }
-        }
-
-        private string StripHtml(string html)
-        {
-            // Basic HTML stripping - consider using HtmlAgilityPack for production
-            var text = System.Text.RegularExpressions.Regex.Replace(html, "<[^>]+>", " ");
-            text = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ");
-            return System.Net.WebUtility.HtmlDecode(text).Trim();
-        }
-
-        private string ExtractSenderName(string from)
-        {
-            // "John Doe <john@example.com>" -> "John Doe"
-            var match = System.Text.RegularExpressions.Regex.Match(from, @"^([^<]+)<");
-            if (match.Success)
-                return match.Groups[1].Value.Trim().Trim('"');
-            return from;
-        }
-
-        /// <summary>
-        /// Refresh an access token using a refresh token
-        /// </summary>
         public async Task<string> RefreshAccessTokenAsync(string refreshToken, string clientId, string clientSecret)
         {
             var body = new FormUrlEncodedContent(new[]
             {
-        new KeyValuePair<string, string>("grant_type", "refresh_token"),
-        new KeyValuePair<string, string>("client_id", clientId),
-        new KeyValuePair<string, string>("client_secret", clientSecret),
-        new KeyValuePair<string, string>("refresh_token", refreshToken)
-    });
+                new KeyValuePair<string, string>("grant_type", "refresh_token"),
+                new KeyValuePair<string, string>("client_id", clientId),
+                new KeyValuePair<string, string>("client_secret", clientSecret),
+                new KeyValuePair<string, string>("refresh_token", refreshToken)
+            });
 
             var response = await _httpClient.PostAsync("https://oauth2.googleapis.com/token", body);
             response.EnsureSuccessStatusCode();
@@ -228,9 +169,6 @@ namespace ThreadClear.Functions.Services
             return doc.RootElement.GetProperty("access_token").GetString()!;
         }
 
-        /// <summary>
-        /// Setup Gmail push notifications via Pub/Sub watch
-        /// </summary>
         public async Task<GmailWatchResult> SetupWatchAsync(string accessToken, string pubSubTopic)
         {
             _httpClient.DefaultRequestHeaders.Authorization =
@@ -265,9 +203,6 @@ namespace ThreadClear.Functions.Services
             };
         }
 
-        /// <summary>
-        /// Get new message IDs since the last known historyId
-        /// </summary>
         public async Task<GmailHistoryResult> GetNewMessageIdsAsync(string accessToken, string startHistoryId)
         {
             _httpClient.DefaultRequestHeaders.Authorization =
@@ -313,6 +248,70 @@ namespace ThreadClear.Functions.Services
             }
 
             return result;
+        }
+
+        private string? GetHeader(GmailPayload? payload, string name)
+        {
+            return payload?.Headers?.FirstOrDefault(h =>
+                h.Name.Equals(name, StringComparison.OrdinalIgnoreCase))?.Value;
+        }
+
+        private string ExtractBody(GmailPayload? payload)
+        {
+            if (payload == null) return "";
+
+            if (!string.IsNullOrEmpty(payload.Body?.Data))
+                return DecodeBase64(payload.Body.Data);
+
+            if (payload.Parts != null)
+            {
+                var textPart = payload.Parts.FirstOrDefault(p => p.MimeType == "text/plain");
+                if (textPart?.Body?.Data != null)
+                    return DecodeBase64(textPart.Body.Data);
+
+                var htmlPart = payload.Parts.FirstOrDefault(p => p.MimeType == "text/html");
+                if (htmlPart?.Body?.Data != null)
+                    return StripHtml(DecodeBase64(htmlPart.Body.Data));
+
+                foreach (var part in payload.Parts)
+                {
+                    var nested = ExtractBody(part);
+                    if (!string.IsNullOrEmpty(nested))
+                        return nested;
+                }
+            }
+
+            return "";
+        }
+
+        private string DecodeBase64(string encoded)
+        {
+            try
+            {
+                var base64 = encoded.Replace('-', '+').Replace('_', '/');
+                var padded = base64.PadRight(base64.Length + (4 - base64.Length % 4) % 4, '=');
+                var bytes = Convert.FromBase64String(padded);
+                return Encoding.UTF8.GetString(bytes);
+            }
+            catch
+            {
+                return encoded;
+            }
+        }
+
+        private string StripHtml(string html)
+        {
+            var text = System.Text.RegularExpressions.Regex.Replace(html, "<[^>]+>", " ");
+            text = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ");
+            return System.Net.WebUtility.HtmlDecode(text).Trim();
+        }
+
+        private string ExtractSenderName(string from)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(from, @"^([^<]+)<");
+            if (match.Success)
+                return match.Groups[1].Value.Trim().Trim('"');
+            return from;
         }
     }
 
@@ -409,6 +408,15 @@ namespace ThreadClear.Functions.Services
     {
         public List<string> NewMessageIds { get; set; } = new();
         public string LatestHistoryId { get; set; } = "";
+    }
+
+    public class GmailEmailMetadata
+    {
+        public string MessageId { get; set; } = "";
+        public string Subject { get; set; } = "";
+        public string BodyText { get; set; } = "";
+        public string FromEmail { get; set; } = "";
+        public DateTime ReceivedAt { get; set; }
     }
 
     #endregion
